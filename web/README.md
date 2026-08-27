@@ -115,7 +115,7 @@ ar trasa apskritai įveikiama ir kiek yra reakcijos atsargos.
 Naršyklės konsolėje:
 
 ```js
-var s=document.createElement('script'); s.src='/dev/bot.js'; document.head.appendChild(s);
+var s=document.createElement('script'); s.src='dev/bot.js'; document.head.appendChild(s);
 runBot(400);                 // idealios reakcijos — turi grąžinti state:"win"
 window.BOT_EVERY = 12; runBot(400);   // ~100 ms vėlavimas — vis dar įveikia
 inspect(15000);              // kas yra trasoje ties nurodyta pozicija
