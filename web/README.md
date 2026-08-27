@@ -21,11 +21,16 @@ iPhone/iPad: Safari → Share → „Add to Home Screen" — žaidimas veiks per
 
 | Veiksmas | Telefonas / iPad | Kompiuteris |
 |---|---|---|
-| Šokti | swipe **aukštyn** (arba bakstelėti) | `↑` / `W` / `Space` |
-| Pasilenkti | swipe **žemyn** (laikyti pirštą) | `↓` / `S` |
+| Šokti | mygtukas **▲** arba swipe aukštyn (arba bakstelėti) | `↑` / `W` / `Space` |
+| Pasilenkti | mygtukas **▼** arba swipe žemyn (laikyti) | `↓` / `S` |
 | Pauzė | mygtukas viršuje | `Esc` / `P` |
 
 Lota bėga pati — kryptis nevaldoma.
+
+Liečiamuose ekranuose apatiniame dešiniajame kampe rodomos dvi rodyklės **▲ / ▼**. Jas
+laikyti galima kaip klaviatūros klavišus — laikant **▼** Lota lieka pasilenkusi, todėl
+ilgi tuneliai praeinami be pakartotinių swipe'ų. Rodyklės atsiranda automatiškai, kai
+naršyklė praneša `pointer: coarse`.
 
 ## Kaip veikia trasa
 
@@ -46,10 +51,28 @@ galima prabėgti apačia, todėl niekada nesusidaro aklavietė.
 **Kas pavojinga, o kas — tik dekoracija.** Kiekvienas objektas turi *vieną* reikšmę
 visame žaidime: arba į jį galima atsitrenkti, arba jis yra fonas — niekada abu. Dekoracijos
 yra plokščios (≤15 px aukščio) ir guli ant grindų: žolė, akmenukai, lapai, kelio ženklinimas,
-Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas stovi — jį reikia peršokti
-arba pralįsti**. Kliūtys papildomai meta šešėlį ant grindų ir turi vos pastebimą kontūrą.
-`assertPropRoles()` faile `js/level.js` neleidžia šiai taisyklei sugesti — jei koks nors
-objektas atsidurtų abiejuose sąrašuose, konsolėje pasirodytų klaida.
+Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas stovi — jį reikia peršokti,
+užšokti ant jo arba pralįsti**. Kliūtys papildomai meta šešėlį ant grindų ir turi vos
+pastebimą kontūrą. `assertPropRoles()` faile `js/level.js` neleidžia šiai taisyklei sugesti.
+
+**Ant kliūčių galima užšokti.** Dėžė, akmuo ar lagaminas žudo tik tada, kai į juos
+atsitrenkiama iš šono — nusileidus ant viršaus Lota tiesiog bėga jais. Vos kliudžius
+viršutinį kraštą ji užsiropščia, o ne žūva. Kabantys objektai (stalai, vamzdžiai, tuneliai)
+lieka mirtini iš bet kurios pusės — po jais reikia pralįsti. Kadangi iš kliūties viršaus
+tenka dar nukristi, generatorius prie tarpo po kiekvieno šablono prideda kritimo laiką,
+kad reakcijos atsarga galiotų ir aukštuoju keliu.
+
+## Kontroliniai taškai
+
+Kiekvienos vietos pradžioje stovi languota vėliavėlė. Pirmą kartą ją pasiekus ji užsidega,
+pasigirsta garsas ir ekrane trumpam pasirodo **✓ KONTROLINIS TAŠKAS**. Atsitrenkusi Lota
+grįžta ne į patį pradžią, o į paskutinės pasiektos vietos pradžią — mygtukas ekrane rodo,
+nuo kurios vietos tęsiama (pvz. *Tęsti nuo Parkas*).
+
+Skaniukai, surinkti iki kontrolinio taško, išlieka; tos vietos skaniukai atstatomi, nes
+per ją bėgama iš naujo. Surinkti skaniukai **atiduodami tik pasibaigus bėgimui** — pasiekus
+finišą arba paspaudus *Baigti*. Todėl žūtis prie kontrolinio taško nieko neduoda ir nieko
+neatima.
 
 ## Skanėstai
 

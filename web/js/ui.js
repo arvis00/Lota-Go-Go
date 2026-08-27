@@ -11,13 +11,13 @@ const UI = {
     $('btnPlay').onclick    = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Game.startRun(); };
     $('btnSkins').onclick   = () => { Sfx.click(); this.showSkins(); };
     $('btnSkinsBack').onclick = () => { Sfx.click(); this.showLobby(); };
-    $('btnRetry').onclick   = () => { Sfx.click(); Game.startRun(); };
-    $('btnLobby').onclick   = () => { Sfx.click(); Game.lobby(); };
+    $('btnRetry').onclick   = () => { Sfx.click(); Game.startRun(true); };
+    $('btnLobby').onclick   = () => { Sfx.click(); this.bank(false); Game.lobby(); };
     $('btnWinAgain').onclick = () => { Sfx.click(); Game.startRun(); };
     $('btnWinLobby').onclick = () => { Sfx.click(); Game.lobby(); };
     $('btnPause').onclick   = () => { Sfx.click(); this.pause(); };
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
-    $('btnPauseLobby').onclick = () => { Sfx.click(); Game.lobby(); };
+    $('btnPauseLobby').onclick = () => { Sfx.click(); this.bank(false); Game.lobby(); };
     $('btnSound').onclick   = () => {
       Save.data.sound = Save.data.sound ? 0 : 1; Save.write();
       Sfx.on = !!Save.data.sound; Sfx.init(); Sfx.resume(); if (Sfx.on) Sfx.click();
@@ -62,13 +62,26 @@ const UI = {
     this.setBones(0); this.setProgress(0);
   },
 
+  /** Treats are paid out once, when the run actually ends — otherwise every
+      death at a checkpoint would pay again. */
+  bank(finished) {
+    const r = Game.run;
+    if (!r || r.banked) return 0;
+    r.banked = true;
+    const base = r.bones === 15 ? 30 : r.bones;
+    const earned = base + (finished ? 10 : 0);
+    Save.addBones(earned);
+    if (earned > Save.data.bestBones) Save.data.bestBones = earned;
+    Save.write();
+    return earned;
+  },
+
   showOver() {
     const r = Game.run;
-    const earned = r.bones === 15 ? 30 : r.bones;
-    Save.addBones(earned);
+    const cp = Game.checkpoint || { start: true, name: ZONES[0].name };
     const zoneName = Game.zoneAt(Game.lota.x).zone.name;
-    if (earned > Save.data.bestBones) Save.data.bestBones = earned;
     Save.data.bestZone = zoneName; Save.write();
+    const pending = (r.bones === 15 ? 30 : r.bones);
 
     this.hideAll();
     $('screen-over').classList.remove('hidden');
@@ -76,17 +89,16 @@ const UI = {
       Math.round(clamp(Game.lota.x / Game.world.finishX, 0, 1) * 100) + '%';
     $('overStats').innerHTML =
       row('Surinkti skaniukai', r.bones + ' / 15') +
-      (r.bones === 15 ? row('Visi 15 — dvigubai!', '×2') : '') +
-      row('Uždirbta', '+' + earned + ' 🦴', true);
+      row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true);
+    $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
+    $('btnLobby').textContent = pending ? 'Baigti · +' + pending + ' 🦴' : 'Grįžti į Lobby';
   },
 
   showWin() {
     this.winShown = true;
     const r = Game.run;
     const base = r.bones === 15 ? 30 : r.bones;
-    const earned = base + 10;
-    Save.addBones(earned);
-    if (earned > Save.data.bestBones) Save.data.bestBones = earned;
+    const earned = this.bank(true);
     Save.data.finished = (Save.data.finished || 0) + 1;
     Save.data.bestZone = 'Londonas — finišas!';
     Save.write();
@@ -95,7 +107,8 @@ const UI = {
     $('screen-win').classList.remove('hidden');
     const mins = Math.floor(r.time / 60), secs = Math.round(r.time % 60);
     $('winSub').textContent = 'Nuo namų iki Londono per ' + mins + ':' + String(secs).padStart(2, '0') +
-      (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '');
+      (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
+      (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
     $('winStats').innerHTML =
       row('Surinkti skaniukai', r.bones + ' / 15') +
       (r.bones === 15 ? row('Visi 15 — dvigubai!', r.bones + ' → ' + base) : '') +
@@ -110,11 +123,13 @@ const UI = {
   setZone(name) { $('hudZone').textContent = name; },
   setProgress(p) { $('hudBarFill').style.width = (p * 100).toFixed(1) + '%'; },
   tut(on) { $('tut').classList.toggle('show', !!on); },
-  toast(msg) {
+  toast(msg, sub) {
     const el = $('toast');
-    el.textContent = msg; el.classList.add('show');
+    $('toastMain').textContent = msg;
+    $('toastSub').textContent = sub || '';
+    el.classList.add('show');
     clearTimeout(this.toastT);
-    this.toastT = setTimeout(() => el.classList.remove('show'), 1500);
+    this.toastT = setTimeout(() => el.classList.remove('show'), sub ? 2100 : 1500);
   },
 
   /* ---------------- skins ---------------- */

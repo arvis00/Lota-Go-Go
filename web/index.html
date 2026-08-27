@@ -12,7 +12,7 @@
 <body>
 <div id="app">
   <canvas id="game"></canvas>
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast"><span id="toastMain"></span><span id="toastSub"></span></div>
 
   <!-- ===== HUD ===== -->
   <div id="hud" class="layer hidden">
@@ -26,6 +26,10 @@
     <div id="tut" class="tut">
       <div class="tut-row"><b id="tutUp">↑ / W</b><span>šokti</span></div>
       <div class="tut-row"><b id="tutDown">↓ / S</b><span>pasilenkti</span></div>
+    </div>
+    <div id="touchpad" class="touchpad">
+      <button id="btnUp" class="tbtn" aria-label="Šokti">▲</button>
+      <button id="btnDown" class="tbtn" aria-label="Pasilenkti">▼</button>
     </div>
   </div>
 
@@ -66,7 +70,7 @@
       <div id="overSub" class="panel-sub"></div>
       <div id="overStats" class="stats"></div>
       <button id="btnRetry" class="big-btn play">Bandyti iš naujo</button>
-      <button id="btnLobby" class="big-btn alt">Grįžti į Lobby</button>
+      <button id="btnLobby" class="big-btn alt">Baigti ir atsiimti</button>
     </div>
   </div>
 

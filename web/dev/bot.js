@@ -6,6 +6,10 @@
     const c = queryCells(W(), x, x), out = [];
     c.ground.forEach(g => { if (x >= g.x && x <= g.x + g.w) out.push(0); });
     c.platforms.forEach(p => { if (x >= p.x && x <= p.x + p.w) out.push(p.y); });
+    /* obstacle tops are standable now, so they count as floor */
+    c.hazards.forEach(h => {
+      if (h.kind !== 'over' && x >= h.x && x <= h.x + h.w) out.push(h.y + h.h);
+    });
     return out;
   }
 
@@ -49,7 +53,7 @@
 
     if (overhead) jump = false;
     Game.input.duckHeld = duck;
-    if (jump && L.grounded && !duck) Game.input.jumpBuf = 0.15;
+    if (jump && !duck) Game.input.jumpBuf = 0.15;   // jump buffer fires it on landing
   }
 
   window.runBot = function (maxSec) {

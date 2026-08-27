@@ -33,9 +33,13 @@ canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
   border:1px solid rgba(255,255,255,.18)}
 #hudBarFill{height:100%;width:0;border-radius:5px;background:linear-gradient(90deg,#ffd870,#ff8fd0);transition:width .2s}
 #btnPause{pointer-events:auto;letter-spacing:2px}
-.toast{position:absolute;left:50%;top:34%;z-index:20;pointer-events:none;transform:translate(-50%,0) scale(.8);opacity:0;
+.toast{position:absolute;left:50%;top:30%;z-index:20;pointer-events:none;transform:translate(-50%,0) scale(.8);opacity:0;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
   font-weight:800;font-size:26px;line-height:1;font-family:var(--font);color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35);white-space:nowrap;
   transition:opacity .25s,transform .25s}
+#toastSub{font-size:14px;letter-spacing:1.5px;color:#3a2508;background:linear-gradient(180deg,#ffe89a,#f9c33a);
+  padding:6px 13px;border-radius:12px;text-shadow:none;box-shadow:0 3px 0 rgba(120,70,10,.45)}
+#toastSub:empty{display:none}
 .toast.show{opacity:1;transform:translate(-50%,-14px) scale(1)}
 .tut{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);display:flex;gap:26px;
   font-weight:600;font-size:14px;line-height:1;font-family:var(--font);opacity:0;transition:opacity .4s;text-shadow:0 2px 6px rgba(0,0,0,.7)}
@@ -94,3 +98,14 @@ canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
 .skin-tag.poor{background:rgba(0,0,0,.35);color:#ff9b9b}
 @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
 @media (max-height:430px){.logo{margin-top:0}.logo-main{font-size:38px}.big-btn{padding:12px;font-size:18px;margin-top:8px}}
+
+/* on-screen controls for touch */
+.touchpad{position:absolute;right:calc(env(safe-area-inset-right) + 14px);bottom:calc(env(safe-area-inset-bottom) + 14px);
+  display:none;flex-direction:column;gap:11px;pointer-events:auto;touch-action:none;z-index:8}
+body.touch .touchpad{display:flex}
+.tbtn{width:78px;height:62px;border-radius:20px;border:2px solid rgba(255,255,255,.34);
+  background:rgba(22,14,40,.40);color:rgba(255,255,255,.92);font-size:25px;line-height:1;
+  font-family:var(--font);backdrop-filter:blur(7px);touch-action:none;cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.tbtn.on{background:rgba(255,216,112,.62);color:#3a2508;border-color:#ffd870;transform:scale(.94)}
+@media (max-height:400px){.tbtn{width:66px;height:52px;font-size:21px}}

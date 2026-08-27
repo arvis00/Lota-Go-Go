@@ -96,6 +96,30 @@ const Game = {
     this.cv.addEventListener('mousedown', e => start(e.clientX, e.clientY));
     window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
     window.addEventListener('mouseup', end);
+
+    /* on-screen arrows — the only controls on a phone that never need a swipe */
+    const hold = (el, on, off) => {
+      if (!el) return;
+      el.addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        el.classList.add('on'); el.setPointerCapture && el.setPointerCapture(e.pointerId);
+        on();
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(k =>
+        el.addEventListener(k, e => {
+          e.preventDefault(); el.classList.remove('on'); if (off) off();
+        }));
+      el.addEventListener('contextmenu', e => e.preventDefault());
+    };
+    hold(document.getElementById('btnUp'), jump);
+    hold(document.getElementById('btnDown'), () => duckOn(), () => duckOff());
+
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+      document.body.classList.add('touch');
+      const tu = document.getElementById('tutUp'), td = document.getElementById('tutDown');
+      if (tu) tu.textContent = '▲  arba  swipe ↑';
+      if (td) td.textContent = '▼  arba  swipe ↓';
+    }
   },
 
   onJump() {
@@ -116,22 +140,56 @@ const Game = {
     UI.showLobby();
   },
 
-  startRun() {
-    this.world.bones.forEach(b => { b.got = false; });
+  startRun(fromCheckpoint) {
+    const cp = fromCheckpoint && this.checkpoint ? this.checkpoint : null;
+    if (cp) {
+      /* keep the treats picked up before the checkpoint, hand back the rest */
+      const kept = new Set(cp.bones);
+      this.world.bones.forEach(b => { b.got = kept.has(b.i); });
+      this.world.warps.forEach(w => { if (w.x >= cp.x) w.used = false; });
+      this.run.bones = cp.count;
+      this.run.zoneIdx = -1;
+      this.run.finished = false;
+      this.run.warpTo = null;
+      this.run.deaths++;
+    } else {
+      this.world.bones.forEach(b => { b.got = false; });
+      this.world.warps.forEach(w => { w.used = false; });
+      this.run = { bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
+                   finished: false, warpTo: null, deaths: 0, banked: false };
+      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZONES[0].name, start: true };
+    }
+    const sx = cp ? cp.x : 60;
     this.lota = {
-      x: 60, y: 0, vy: 0, grounded: true, duck: false, runPhase: 0,
+      x: sx, y: 0, vy: 0, grounded: true, duck: false, runPhase: 0,
       state: 'run', dead: false, sitT: 0, alpha: 1
     };
-    this.cam.x = 0; this.cam.y = 0;
+    this.cam.x = sx - this.VW * 0.30; this.cam.y = 0;
     this.input.jumpBuf = 0; this.input.duckHeld = false; this.input.duckTimer = 0; this.input.coyote = 0;
     this.fx.dust.length = 0; this.fx.confetti.length = 0; this.fx.sparks.length = 0;
     this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0;
-    this.run = { bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0, finished: false, warpTo: null };
     this.state = 'run'; this.stateT = 0;
     UI.showHud();
-    UI.toast('Pirmyn, Lota!');
-    UI.tut(true);
-    setTimeout(() => UI.tut(false), 4200);
+    UI.setBones(this.run.bones);
+    UI.toast(cp && !cp.start ? cp.name : 'Pirmyn, Lota!', cp && !cp.start ? 'nuo kontrolinio taško' : '');
+    if (!cp) { UI.tut(true); setTimeout(() => UI.tut(false), 4200); }
+  },
+
+  setCheckpoint(idx) {
+    const z = this.world.zones[idx];
+    this.checkpoint = {
+      x: z.x0 + 24, zoneIdx: idx, name: z.zone.name, start: idx === 0,
+      bones: this.world.bones.filter(b => b.got).map(b => b.i),
+      count: this.run.bones
+    };
+    if (idx === 0) return;
+    Sfx.checkpoint();
+    this.fx.flash = 0.5;
+    for (let k = 0; k < 22; k++) this.fx.sparks.push({
+      x: z.x0 + 24 + (Math.random() - .5) * 40, y: 60 + Math.random() * 90,
+      vx: (Math.random() - .5) * 150, vy: 40 + Math.random() * 190,
+      life: .8, c: k % 2 ? '#ffd870' : '#fff6d8'
+    });
   },
 
   crash(reason) {
@@ -226,6 +284,10 @@ const Game = {
       };
       near.ground.forEach(gd => consider({ x: gd.x, w: gd.w, top: 0 }));
       near.platforms.forEach(p => consider({ x: p.x, w: p.w, top: p.y }));
+      near.hazards.forEach(hz => {
+        if (hz.kind === 'over') return;      // you cannot perch on a hanging bar
+        consider({ x: hz.x, w: hz.w, top: hz.y + hz.h });
+      });
       if (bestTop !== null) {
         if (!L.grounded && L.vy < -180) { Sfx.land(); this.puff(L.x - 6, bestTop, 4); }
         L.y = bestTop; L.vy = 0; L.grounded = true; L.landY = bestTop;
@@ -238,33 +300,46 @@ const Game = {
         };
         near.ground.forEach(gd => chk({ x: gd.x, w: gd.w, top: 0 }));
         near.platforms.forEach(p => chk({ x: p.x, w: p.w, top: p.y }));
+        near.hazards.forEach(hz => {
+          if (hz.kind !== 'over') chk({ x: hz.x, w: hz.w, top: hz.y + hz.h });
+        });
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
       }
 
-      /* --- walls (solid platforms & resumed ground after a pit) ---
-         a near miss becomes a scramble onto the ledge instead of a crash */
+      /* --- running into the FACE of something solid: platform walls, the wall
+         after a pit, and the side of a ground obstacle. Clipping the very top
+         edge scrambles her up instead of killing her. --- */
       const b2 = this.box(L);
-      let wallTop = null;
+      let wallTop = null, wallGrab = 0;
+      const face = (top, grab) => {
+        if (L.y >= top - 2.5) return;                 // she is already on top of it
+        if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; }
+      };
       near.platforms.forEach(p => {
         if (p.oneWay) return;
         if (b2.x1 - 5 <= p.x || b2.x0 + 5 >= p.x + p.w) return;
-        if (L.y < p.y - 2.5 && (wallTop === null || p.y > wallTop)) wallTop = p.y;
+        face(p.y, 34);
       });
       near.ground.forEach(gd => {
         if (b2.x1 - 5 <= gd.x || b2.x0 + 5 >= gd.x + gd.w) return;
-        if (L.y < -2.5 && (wallTop === null || 0 > wallTop)) wallTop = 0;
+        face(0, 34);
+      });
+      near.hazards.forEach(hz => {
+        if (hz.kind === 'over') return;
+        if (b2.x1 - 6 <= hz.x || b2.x0 + 6 >= hz.x + hz.w) return;
+        face(hz.y + hz.h, Math.min(20, hz.h * 0.32));
       });
       if (wallTop !== null) {
-        if (wallTop - L.y <= 34 && L.vy > -760) {
+        if (wallTop - L.y <= wallGrab && L.vy > -760) {
           L.y = wallTop; L.vy = 0; L.grounded = true; L.landY = wallTop;
           this.puff(L.x - 8, wallTop, 3);
         } else { this.crash('wall'); return; }
       }
 
-      /* --- hazards --- */
+      /* --- overhead hazards still kill on contact: you have to duck --- */
       let hit = null;
       near.hazards.forEach(hz => {
-        if (hit) return;
+        if (hit || hz.kind !== 'over') return;
         if (b2.x1 - 7 <= hz.x || b2.x0 + 7 >= hz.x + hz.w) return;
         if (b2.y1 - 5 <= hz.y || b2.y0 + 4 >= hz.y + hz.h) return;
         hit = hz;
@@ -372,9 +447,16 @@ const Game = {
     let idx = 0;
     for (let i = 0; i < zs.length; i++) if (this.lota.x >= zs[i].x0) idx = i;
     if (idx !== this.run.zoneIdx) {
+      const resumed = this.run.zoneIdx < 0;
       this.run.zoneIdx = idx;
       UI.setZone(zs[idx].zone.name);
-      if (idx > 0) { Sfx.zone(); UI.toast(zs[idx].zone.name); }
+      /* only a place she has never reached before plants a new checkpoint */
+      if (idx > this.checkpoint.zoneIdx) {
+        this.setCheckpoint(idx);
+        if (idx > 0) UI.toast(zs[idx].zone.name, '✓ KONTROLINIS TAŠKAS');
+      } else if (!resumed && idx > 0) {
+        Sfx.zone(); UI.toast(zs[idx].zone.name, '');
+      }
     }
   },
 
@@ -519,6 +601,13 @@ const Game = {
     });
     ctx.restore();
 
+    /* ---- checkpoint flags at the mouth of every place ---- */
+    W.zones.forEach(zz => {
+      const fx = this.sx(zz.x0 + 24);
+      if (fx < -70 || fx > VW + 70 || zz.zone.index === 0) return;
+      this.drawFlag(fx, this.sy(0), this.checkpoint && this.checkpoint.zoneIdx >= zz.zone.index);
+    });
+
     /* ---- hazards, with a subtle "this one matters" rim ---- */
     near.hazards.forEach(hz => {
       const zz = ZONES[hz.zone];
@@ -605,6 +694,44 @@ const Game = {
     const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.42, VW / 2, VH / 2, VH * 0.95);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,6,20,.34)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  },
+
+  drawFlag(x, y, lit) {
+    const ctx = this.ctx, t = this.t;
+    const H = 104;
+    ctx.save(); ctx.translate(x, y);
+    ctx.save(); ctx.globalAlpha = .25; fillEll(ctx, 0, 0, 15, 5, '#000'); ctx.restore();
+    fillRR(ctx, -3.5, -H, 7, H, 3, lit ? '#d8b25e' : '#7a7686');
+    circle(ctx, 0, -H - 3, 5.5, lit ? '#ffd870' : '#8b8798');
+    if (lit) {
+      ctx.save(); ctx.globalAlpha = .28 + Math.sin(t * 3) * .12;
+      circle(ctx, 0, -H - 3, 15, '#ffd870'); ctx.restore();
+    }
+    /* the flag itself: checkered, and waving once it has been claimed */
+    ctx.save();
+    ctx.translate(3.5, -H + 4);
+    const w = 44, h = 30;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    for (let i = 0; i <= 6; i++) {
+      const f = i / 6;
+      ctx.lineTo(w * f, (lit ? Math.sin(t * 5 - f * 3.4) * 4.5 * f : f * 9));
+    }
+    for (let i = 6; i >= 0; i--) {
+      const f = i / 6;
+      ctx.lineTo(w * f, h + (lit ? Math.sin(t * 5 - f * 3.4) * 4.5 * f : f * 9));
+    }
+    ctx.closePath();
+    ctx.save(); ctx.clip();
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
+      ctx.fillStyle = (i + j) % 2 ? (lit ? '#fff8e6' : '#b8b4c2') : (lit ? '#2b2634' : '#5f5b6b');
+      ctx.fillRect(i * (w / 4) - 2, j * (h / 3) - 6, w / 4 + 2, h / 3 + 12);
+    }
+    ctx.restore();
+    ctx.strokeStyle = lit ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)';
+    ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.restore();
+    ctx.restore();
   },
 
   drawBone(x, y, s) {

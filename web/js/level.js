@@ -20,8 +20,9 @@ function speedAt(x) {
 function reachAt(x) { return speedAt(x) * PHYS.AIRTIME; }
 
 const MAX_STEP_H = 112;   // highest solid wall she must clear (apex is 188)
-const LEDGE_TOP  = 122;   // one-way shelf height
-const LEDGE_CLEAR = 80;   // free space underneath (she is 62 tall)
+const LEDGE_TOP  = 152;   // one-way shelf height
+const LEDGE_CLEAR = 110;  // free space underneath — she is 62 tall and can now
+                          // be standing on a 44-high obstacle while under it
 const DUCK_BOTTOM = 46;   // overhead hazards start here (duck box is 30 tall)
 
 /* An object must have exactly one meaning: either Lota can hit it, or it is
@@ -134,9 +135,10 @@ function buildWorld() {
       W.platforms.push({ x: x, y: LEDGE_TOP, w: len, oneWay: true, prop: rng.pick(z.pools.ledge),
                          zone: z.index, h: LEDGE_TOP - LEDGE_CLEAR });
       anchor(x + len * 0.5, LEDGE_TOP + 34, 'ledge', true);
-      /* something to dodge on the ground below — taking the shelf skips it */
+      /* something to dodge on the ground below — taking the shelf skips it.
+         Kept low so she still fits under the shelf while standing on it. */
       const hw = rng.range(46, 62);
-      hz(z, rng.pick(z.pools.hurdle), x + len * 0.42, 0, hw, rng.range(46, 58));
+      hz(z, rng.pick(z.pools.hurdle), x + len * 0.42, 0, hw, rng.range(34, 44));
       if (withBoneUnder) anchor(x + len * 0.42 + hw / 2, 70, 'jump', false);
       x += len;
     },
@@ -159,7 +161,7 @@ function buildWorld() {
       W.deco.push({ x: x + len - 34, y: LEDGE_TOP, prop: z.pools.tunnel[0], w: 58, h: 62, zone: z.index, shortcut: true });
       anchor(x + len - 70, LEDGE_TOP + 34, 'shortcut', true);
       const hw = rng.range(48, 64);
-      hz(z, rng.pick(z.pools.hurdle), x + len * 0.4, 0, hw, rng.range(46, 58));
+      hz(z, rng.pick(z.pools.hurdle), x + len * 0.4, 0, hw, rng.range(34, 44));
       x += len;
       pendingWarp = { trigger: trig, fromX: x, minSkip: dx(1.8) };
     }
@@ -213,8 +215,13 @@ function buildWorld() {
       else if (name === 'shortcut') P.shortcut(z);
       used = name;
 
-      /* breathing room — shrinks with difficulty but never below 0.46 s */
-      const restSec = Math.max(0.46, lerp(0.95, 0.55, z.diff) + rng.range(-0.06, 0.22));
+      /* Breathing room — shrinks with difficulty but never below 0.46 s.
+         She may leave a pattern from up on top of it, so add the time it takes
+         to fall back down: the reaction budget must hold on every route. */
+      const exitH = { ledge: LEDGE_TOP, shortcut: LEDGE_TOP, step: MAX_STEP_H,
+                      hurdle: 58, double: 58 }[name] || 0;
+      const fallSec = Math.sqrt((2 * exitH) / PHYS.GRAV);
+      const restSec = Math.max(0.46, lerp(0.95, 0.55, z.diff) + rng.range(-0.06, 0.22)) + fallSec;
       P.flat(restSec);
       if (rng.chance(0.5)) decorate(z, 1);
       budget -= (x - x0) / speed();

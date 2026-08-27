@@ -133,6 +133,10 @@ const Sfx = {
   warp()  { this.tone(300, 0.3, 'sawtooth', 0.22, 1200); },
   crash() { this.tone(260, 0.32, 'square', 0.3, 70); this.tone(150, 0.4, 'triangle', 0.24, 60, 0.05); },
   zone()  { [523, 659, 784].forEach((f, i) => this.tone(f, 0.18, 'triangle', 0.3, null, i * 0.07)); },
+  checkpoint() {
+    [659, 880, 1174].forEach((f, i) => this.tone(f, 0.26, 'triangle', 0.42, null, i * 0.09));
+    this.tone(440, 0.5, 'sine', 0.2, 880, 0.02);
+  },
   win()   { [523, 659, 784, 1046, 1318].forEach((f, i) => this.tone(f, 0.32, 'triangle', 0.4, null, i * 0.12)); },
   click() { this.tone(600, 0.06, 'triangle', 0.3); }
 };
