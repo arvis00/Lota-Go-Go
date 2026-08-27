@@ -463,15 +463,6 @@ const Game = {
 
     const near = queryCells(W, camX - 260, camX + VW + 300);
 
-    /* ---- decoration (pushed back so it never reads as an obstacle) ---- */
-    ctx.save(); ctx.globalAlpha = 0.72;
-    near.deco.forEach(d => {
-      if (d.finish || d.inGap || d.gateway) return;
-      const zz = ZONES[d.zone];
-      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, zz.pal);
-    });
-    ctx.restore();
-
     /* ---- the doorway into the next place ---- */
     near.deco.forEach(d => {
       if (!d.gateway) return;
@@ -520,15 +511,29 @@ const Game = {
       ctx.restore();
     });
 
+    /* ---- scenery: flat decals lying on the floor, never anything she can hit ---- */
+    ctx.save(); ctx.globalAlpha = 0.55;
+    near.deco.forEach(d => {
+      if (d.finish || d.inGap || d.gateway) return;
+      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal);
+    });
+    ctx.restore();
+
     /* ---- hazards, with a subtle "this one matters" rim ---- */
     near.hazards.forEach(hz => {
       const zz = ZONES[hz.zone];
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
+      /* something standing on the floor casts a shadow on it; scenery decals don't */
+      if (hz.kind !== 'over') {
+        ctx.save(); ctx.globalAlpha = .28;
+        fillEll(ctx, x0 + hz.w / 2, this.sy(hz.y) + 3, hz.w * 0.56, 7, '#1a1226');
+        ctx.restore();
+      }
       ctx.save();
-      ctx.globalAlpha = .16;
+      ctx.globalAlpha = .3;
       rr(ctx, x0 - 3, yTop - 3, hz.w + 6, hz.h + 6, 9);
       ctx.strokeStyle = hz.kind === 'over' ? '#ffd0e6' : '#fff4c8';
-      ctx.lineWidth = 5; ctx.stroke();
+      ctx.lineWidth = 4.5; ctx.stroke();
       ctx.restore();
       drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, zz.pal);
     });

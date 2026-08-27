@@ -24,7 +24,19 @@ const LEDGE_TOP  = 122;   // one-way shelf height
 const LEDGE_CLEAR = 80;   // free space underneath (she is 62 tall)
 const DUCK_BOTTOM = 46;   // overhead hazards start here (duck box is 30 tall)
 
+/* An object must have exactly one meaning: either Lota can hit it, or it is
+   scenery. Sharing an id between the two makes the track unreadable. */
+function assertPropRoles() {
+  const hits = new Set();
+  ZONES.forEach(z => ['hurdle', 'over', 'tunnel', 'ledge', 'step', 'gap']
+    .forEach(k => (z.pools[k] || []).forEach(p => hits.add(p))));
+  const clash = [];
+  ZONES.forEach(z => (z.pools.deco || []).forEach(p => { if (hits.has(p)) clash.push(z.id + ':' + p); }));
+  if (clash.length) console.error('Lota Go: prop is both scenery and hazard — ' + clash.join(', '));
+}
+
 function buildWorld() {
+  assertPropRoles();
   const rng = makeRng(20260827);
   const W = {
     ground: [], platforms: [], hazards: [], bones: [], deco: [], warps: [], zones: [],
@@ -52,8 +64,10 @@ function buildWorld() {
     for (let i = 0; i < count; i++) {
       if (!zone.pools.deco.length) return;
       const p = rng.pick(zone.pools.deco);
+      /* scenery is always a flat decal on the floor — never tall enough to be
+         mistaken for something that has to be jumped */
       W.deco.push({ x: x + rng.range(10, dx(0.5)), y: 0, prop: p,
-                    w: rng.range(34, 58), h: rng.range(28, 46), zone: zone.index });
+                    w: rng.range(52, 104), h: rng.range(9, 15), zone: zone.index, flat: true });
     }
   }
 

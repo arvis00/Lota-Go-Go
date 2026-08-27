@@ -231,11 +231,11 @@ const PROPS = {
   },
   puddle(ctx, x, y, w, h, t) { PROPS.pond(ctx, x, y, w, h, t); },
   flowers(ctx, x, y, w, h) {
-    for (let i = 0; i < 4; i++) {
-      const px = x + 6 + i * ((w - 12) / 3);
-      line(ctx, px, y + h, px, y + h * 0.3, '#4caf6d', 2.5);
-      circle(ctx, px, y + h * 0.28, 4, ['#ff8fa8', '#ffe07a', '#b48bff', '#fff'][i % 4]);
-      circle(ctx, px, y + h * 0.28, 1.6, '#ffd35e');
+    for (let i = 0; i < 5; i++) {
+      const px = x + 5 + i * ((w - 10) / 4);
+      line(ctx, px, y + h, px, y + h * 0.42, '#4caf6d', 2);
+      circle(ctx, px, y + h * 0.34, 3.4, ['#ff8fa8', '#ffe07a', '#b48bff', '#fff', '#ffb0d0'][i % 5]);
+      circle(ctx, px, y + h * 0.34, 1.3, '#ffd35e');
     }
   },
 
@@ -508,6 +508,73 @@ const PROPS = {
   },
 
 
+
+  /* ==================== SCENERY DECALS ====================
+     These never hurt Lota. They are deliberately flat and never share an
+     id with anything she can hit, so "if it stands up, it hurts" holds. */
+  pawPrints(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let i = 0; i < 4; i++) {
+      const px = x + 8 + i * ((w - 16) / 3), py = y + h * (i % 2 ? 0.28 : 0.72);
+      fillEll(ctx, px, py, 4.4, 3.4, '#6b4a2c');
+      for (let k = 0; k < 3; k++) circle(ctx, px - 3 + k * 3, py - 4.4, 1.5, '#6b4a2c');
+    }
+    ctx.restore();
+  },
+  grassTuft(ctx, x, y, w, h) {
+    for (let i = 0; i < 7; i++) {
+      const px = x + 4 + i * ((w - 8) / 6), lean = (i % 2 ? 3 : -3);
+      ctx.beginPath(); ctx.moveTo(px, y + h);
+      ctx.quadraticCurveTo(px + lean, y + h * 0.4, px + lean * 1.8, y + h * (i % 3 ? 0.15 : 0));
+      ctx.strokeStyle = i % 3 ? '#4caf6d' : '#69c98a'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.stroke();
+    }
+  },
+  pebbles(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .85;
+    for (let i = 0; i < 6; i++) {
+      const r = makeRng(i * 17 + (x | 0));
+      fillEll(ctx, x + 6 + r() * (w - 12), y + h - 2 - r() * (h * 0.5),
+        3 + r() * 3.5, 2.2 + r() * 2, i % 2 ? '#9aa0ad' : '#b3b9c4');
+    }
+    ctx.restore();
+  },
+  leafLitter(ctx, x, y, w, h) {
+    const cols = ['#e0862c', '#d64a2c', '#f2b04a', '#b5813a'];
+    for (let i = 0; i < 7; i++) {
+      const r = makeRng(i * 29 + (x | 0));
+      ctx.save();
+      ctx.translate(x + 5 + r() * (w - 10), y + h - 2 - r() * (h * 0.7));
+      ctx.rotate(r() * TAU); ctx.globalAlpha = .8;
+      fillEll(ctx, 0, 0, 5.5, 3, cols[i % 4]);
+      ctx.restore();
+    }
+  },
+  roadPaint(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .5;
+    fillRR(ctx, x, y + h - 5, w * 0.42, 5, 2, '#f0e9d8');
+    fillRR(ctx, x + w * 0.56, y + h - 5, w * 0.4, 5, 2, '#f0e9d8');
+    ctx.restore();
+  },
+  tileShine(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .3;
+    ctx.beginPath();
+    ctx.moveTo(x, y + h); ctx.lineTo(x + w * 0.34, y);
+    ctx.lineTo(x + w * 0.62, y); ctx.lineTo(x + w * 0.28, y + h);
+    ctx.closePath(); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.restore();
+  },
+  floorArrow(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .42;
+    fillRR(ctx, x, y + h * 0.3, w * 0.66, h * 0.4, 2, '#2f7fc4');
+    poly(ctx, [[x + w * 0.62, y], [x + w, y + h * 0.5], [x + w * 0.62, y + h]], '#2f7fc4');
+    ctx.restore();
+  },
+  aisleStrip(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .38;
+    fillRR(ctx, x, y + h * 0.2, w, h * 0.34, 2, '#8fd6ff');
+    fillRR(ctx, x, y + h * 0.72, w, h * 0.24, 2, '#6f9fd0');
+    ctx.restore();
+  },
   /* ==================== DOORWAYS BETWEEN PLACES ==================== */
   doorHouse(ctx, x, y, w, h) {
     fillRR(ctx, x - 8, y - 6, w + 16, h + 6, 6, '#8a6a45');

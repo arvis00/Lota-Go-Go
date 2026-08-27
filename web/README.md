@@ -43,6 +43,14 @@ Pilnas nubėgimas trunka **~2 min 50 s**; greitis auga nuo 330 iki 730 px/s.
 o alternatyvūs keliai (lentynos, šakos, markizės) yra **vienpusės platformos** — pro jas
 galima prabėgti apačia, todėl niekada nesusidaro aklavietė.
 
+**Kas pavojinga, o kas — tik dekoracija.** Kiekvienas objektas turi *vieną* reikšmę
+visame žaidime: arba į jį galima atsitrenkti, arba jis yra fonas — niekada abu. Dekoracijos
+yra plokščios (≤15 px aukščio) ir guli ant grindų: žolė, akmenukai, lapai, kelio ženklinimas,
+Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas stovi — jį reikia peršokti
+arba pralįsti**. Kliūtys papildomai meta šešėlį ant grindų ir turi vos pastebimą kontūrą.
+`assertPropRoles()` faile `js/level.js` neleidžia šiai taisyklei sugesti — jei koks nors
+objektas atsidurtų abiejuose sąrašuose, konsolėje pasirodytų klaida.
+
 ## Skanėstai
 
 Trasoje paslėpta lygiai **15 kaulų**, po vieną kiekvienoje vietoje (+ po vieną papildomą

@@ -236,7 +236,7 @@ const ZONES = [
     bg(ctx, VW, VH, camX, floorY, t, pal) { BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'leaf'); },
     pools: { hurdle: ['toybox', 'books', 'chair', 'basket', 'laundry', 'plantH'], over: ['table'],
              tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['sofa', 'bed', 'dresser', 'stairsH'],
-             gap: ['hatch'], deco: ['rugDeco', 'plantH'] }
+             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'yard1', exit: 'doorHouse', name: 'Kiemas', sec: 10, diff: 0.08, floor: 'grass',
@@ -255,7 +255,7 @@ const ZONES = [
     },
     pools: { hurdle: ['rock', 'bushY', 'logpile', 'bucket', 'wheelbarrow', 'fenceY'], over: ['branchY'],
              tunnel: ['hedge'], ledge: ['treeLedge', 'benchY'], step: ['benchY', 'logpile', 'stump'],
-             gap: ['puddle'], deco: ['flowers', 'bushY'] }
+             gap: ['puddle'], deco: ['grassTuft', 'flowers', 'pebbles'] }
   },
   {
     id: 'home2', exit: 'doorHouse', name: 'Kaimynų namas', sec: 10, diff: 0.16, floor: 'tile',
@@ -271,7 +271,7 @@ const ZONES = [
     },
     pools: { hurdle: ['laundry', 'basket', 'books', 'toybox', 'plantH'], over: ['table'],
              tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['dresser', 'sofa', 'stairsH'],
-             gap: ['hatch'], deco: ['plantH', 'rugDeco'] }
+             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'yard2', exit: 'doorHouse', name: 'Rudens kiemas', sec: 10, diff: 0.24, floor: 'path',
@@ -294,7 +294,7 @@ const ZONES = [
     },
     pools: { hurdle: ['rock', 'bushY', 'logpile', 'wheelbarrow', 'fenceY', 'bucket'], over: ['branchY'],
              tunnel: ['hedge'], ledge: ['treeLedge', 'benchY'], step: ['stump', 'logpile', 'benchY'],
-             gap: ['puddle'], deco: ['flowers', 'bushY'] }
+             gap: ['puddle'], deco: ['leafLitter', 'pebbles', 'grassTuft'] }
   },
   {
     id: 'home3', exit: 'doorHouse', name: 'Senelės namas', sec: 10, diff: 0.32, floor: 'carpet',
@@ -313,7 +313,7 @@ const ZONES = [
     },
     pools: { hurdle: ['chair', 'basket', 'books', 'plantH', 'laundry'], over: ['table'],
              tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['bed', 'dresser', 'sofa'],
-             gap: ['hatch'], deco: ['rugDeco', 'plantH'] }
+             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'street1', name: 'Miesto gatvė', sec: 12, diff: 0.4, floor: 'asphalt',
@@ -333,7 +333,7 @@ const ZONES = [
     },
     pools: { hurdle: ['cone', 'bin', 'crate', 'signFallen', 'hydrant', 'barrier'], over: ['pipeS', 'awning'],
              tunnel: ['scaffold'], ledge: ['awning', 'car'], step: ['car', 'crate'],
-             gap: ['manhole'], deco: ['cone', 'hydrant'] }
+             gap: ['manhole'], deco: ['roadPaint', 'leafLitter'] }
   },
   {
     id: 'park', name: 'Parkas', sec: 12, diff: 0.48, floor: 'path',
@@ -356,7 +356,7 @@ const ZONES = [
     },
     pools: { hurdle: ['rockP', 'bushP', 'logP', 'roots', 'benchP'], over: ['rootArch'],
              tunnel: ['hedgeP'], ledge: ['branchP', 'benchP'], step: ['stump', 'rockP', 'benchP'],
-             gap: ['pond'], deco: ['flowers', 'bushP'] }
+             gap: ['pond'], deco: ['grassTuft', 'flowers', 'pebbles', 'leafLitter'] }
   },
   {
     id: 'street2', name: 'Vakaro gatvė', sec: 10, diff: 0.56, floor: 'asphalt',
@@ -378,7 +378,7 @@ const ZONES = [
     },
     pools: { hurdle: ['bin', 'crate', 'cone', 'barrier', 'signFallen'], over: ['pipeS', 'awning'],
              tunnel: ['scaffold'], ledge: ['awning', 'car'], step: ['car', 'crate'],
-             gap: ['manhole'], deco: ['hydrant', 'cone'] }
+             gap: ['manhole'], deco: ['roadPaint', 'leafLitter'] }
   },
   {
     id: 'mall', exit: 'doorService', name: 'Prekybos centras', sec: 12, diff: 0.62, floor: 'tile',
@@ -422,7 +422,7 @@ const ZONES = [
     },
     pools: { hurdle: ['cart', 'boxM', 'goods', 'wetsign', 'plantM'], over: ['railM'],
              tunnel: ['scannerA'], ledge: ['shelfM'], step: ['escalator', 'shelfM', 'boxM'],
-             gap: ['holeM'], deco: ['plantM', 'wetsign'] }
+             gap: ['holeM'], deco: ['tileShine', 'floorArrow'] }
   },
   {
     id: 'bus', exit: 'busDoor', name: 'Autobusas', sec: 7, diff: 0.66, floor: 'metal',
@@ -445,7 +445,7 @@ const ZONES = [
     },
     pools: { hurdle: ['seatB', 'bagB', 'bagP'], over: ['handrail'],
              tunnel: ['curtainP'], ledge: ['rackB'], step: ['seatB'],
-             gap: ['stepB'], deco: ['bagB'] }
+             gap: ['stepB'], deco: ['aisleStrip'] }
   },
   {
     id: 'airport', exit: 'jetbridge', name: 'Oro uostas', sec: 13, diff: 0.74, floor: 'tile',
@@ -501,7 +501,7 @@ const ZONES = [
     },
     pools: { hurdle: ['suitcase', 'trolley', 'ropes', 'coneA', 'bagA'], over: ['screenA'],
              tunnel: ['scannerA'], ledge: ['chairsA'], step: ['beltA', 'chairsA', 'suitcase'],
-             gap: ['gapA'], deco: ['suitcase', 'ropes'] }
+             gap: ['gapA'], deco: ['floorArrow', 'tileShine'] }
   },
   {
     id: 'plane', exit: 'planeDoor', name: 'Lėktuvas', sec: 12, diff: 0.85, floor: 'carpet',
@@ -550,7 +550,7 @@ const ZONES = [
     },
     pools: { hurdle: ['cartP', 'bagP', 'galley'], over: ['binP'],
              tunnel: ['curtainP'], ledge: ['seatP'], step: ['seatP', 'galley'],
-             gap: ['gapP'], deco: ['bagP'] }
+             gap: ['gapP'], deco: ['aisleStrip'] }
   },
   {
     id: 'london', name: 'Londonas', sec: 14, diff: 1.0, floor: 'asphalt', last: true,
@@ -590,7 +590,7 @@ const ZONES = [
     },
     pools: { hurdle: ['booth', 'postbox', 'crateL', 'barrierL', 'bin'], over: ['railL', 'awningL'],
              tunnel: ['archL'], ledge: ['awningL', 'busL'], step: ['busL', 'crateL', 'booth'],
-             gap: ['gapL'], deco: ['postbox', 'booth'] }
+             gap: ['gapL'], deco: ['roadPaint', 'leafLitter', 'pebbles'] }
   }
 ];
 const ZONE_BY_ID = {};
