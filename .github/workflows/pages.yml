@@ -29,10 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pages source is set to "github actions" in the repo settings; the token
+      # this runs with cannot create the site itself
       - uses: actions/configure-pages@v5
-        with:
-          # turns Pages on the first time this runs, so no manual setup is needed
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
