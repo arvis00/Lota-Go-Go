@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1430">
+<title>Lota Go</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+  <div id="toast" class="toast"></div>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="layer hidden">
+    <div class="hud-top">
+      <div class="hud-bones"><span class="bone-ico"></span><span id="hudBones">0</span><span class="hud-sub">/15</span></div>
+      <div class="hud-zone"><div id="hudZone">Namai</div>
+        <div class="hud-bar"><div id="hudBarFill"></div></div>
+      </div>
+      <button id="btnPause" class="icon-btn" aria-label="Pauzė">II</button>
+    </div>
+    <div id="tut" class="tut">
+      <div class="tut-row"><b id="tutUp">↑ / W</b><span>šokti</span></div>
+      <div class="tut-row"><b id="tutDown">↓ / S</b><span>pasilenkti</span></div>
+    </div>
+  </div>
+
+  <!-- ===== LOBBY ===== -->
+  <div id="screen-lobby" class="layer screen hidden">
+    <div class="logo">
+      <div class="logo-main">LOTA <span>GO</span></div>
+      <div class="logo-sub">Didysis Lotos nuotykis</div>
+    </div>
+    <div class="lobby-spacer"></div>
+    <div class="lobby-actions">
+      <button id="btnPlay" class="big-btn play">ŽAISTI</button>
+      <button id="btnSkins" class="big-btn alt">APRANGOS</button>
+    </div>
+    <div class="lobby-foot">
+      <div class="wallet"><span class="bone-ico"></span><span id="lobbyBones">0</span></div>
+      <div id="lobbyBest" class="best"></div>
+      <button id="btnSound" class="icon-btn round" aria-label="Garsas">♪</button>
+    </div>
+  </div>
+
+  <!-- ===== SKINS ===== -->
+  <div id="screen-skins" class="layer screen hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <button id="btnSkinsBack" class="icon-btn">‹</button>
+        <h2>Aprangos</h2>
+        <div class="wallet small"><span class="bone-ico"></span><span id="skinsBones">0</span></div>
+      </div>
+      <div id="skinGrid" class="skin-grid"></div>
+    </div>
+  </div>
+
+  <!-- ===== GAME OVER ===== -->
+  <div id="screen-over" class="layer screen dim hidden">
+    <div class="panel">
+      <div class="panel-title">GAME OVER</div>
+      <div id="overSub" class="panel-sub"></div>
+      <div id="overStats" class="stats"></div>
+      <button id="btnRetry" class="big-btn play">Bandyti iš naujo</button>
+      <button id="btnLobby" class="big-btn alt">Grįžti į Lobby</button>
+    </div>
+  </div>
+
+  <!-- ===== WIN ===== -->
+  <div id="screen-win" class="layer screen dim hidden">
+    <div class="panel win">
+      <div class="panel-title">FINIŠAS!</div>
+      <div id="winSub" class="panel-sub">Lota pasiekė Londoną!</div>
+      <div id="winStats" class="stats"></div>
+      <button id="btnWinAgain" class="big-btn play">Dar kartą</button>
+      <button id="btnWinLobby" class="big-btn alt">Grįžti į Lobby</button>
+    </div>
+  </div>
+
+  <!-- ===== PAUSE ===== -->
+  <div id="screen-pause" class="layer screen dim hidden">
+    <div class="panel">
+      <div class="panel-title small">PAUZĖ</div>
+      <button id="btnResume" class="big-btn play">Tęsti</button>
+      <button id="btnPauseLobby" class="big-btn alt">Grįžti į Lobby</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/lota.js"></script>
+<script src="js/props.js"></script>
+<script src="js/zones.js"></script>
+<script src="js/level.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
