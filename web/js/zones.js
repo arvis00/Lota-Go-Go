@@ -235,8 +235,8 @@ const ZONES = [
            floorTop: '#d9a86a', floorBody: '#a87a4a', accent: '#ffd15c' },
     bg(ctx, VW, VH, camX, floorY, t, pal) { BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'leaf'); },
     pools: { hurdle: ['toybox', 'books', 'chair', 'basket', 'laundry', 'plantH'], over: ['table'],
-             tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['sofa', 'bed', 'dresser', 'stairsH'],
-             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
+             tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['sofa', 'bed', 'dresser'],
+             deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'yard1', exit: 'doorHouse', name: 'Kiemas', sec: 10, diff: 0.08, floor: 'grass',
@@ -255,10 +255,11 @@ const ZONES = [
     },
     pools: { hurdle: ['rock', 'bushY', 'logpile', 'bucket', 'wheelbarrow', 'fenceY'], over: ['branchY'],
              tunnel: ['hedge'], ledge: ['treeLedge', 'benchY'], step: ['benchY', 'logpile', 'stump'],
-             gap: ['puddle'], deco: ['grassTuft', 'flowers', 'pebbles'] }
+             deco: ['grassTuft', 'flowers', 'pebbles', 'puddleD'] }
   },
   {
-    id: 'home2', exit: 'doorHouse', name: 'Kaimynų namas', sec: 10, diff: 0.16, floor: 'tile',
+    id: 'home2', exit: 'doorHouse', name: 'Kaimynų namas', sec: 15, diff: 0.16, floor: 'tile',
+    branch: 'upstairs',
     pal: { far: '#a8d6e6', mid: '#7fbdd6', skirt: '#6f9db5', frame: '#e6dccd', pic: '#ffd8e6',
            floorTop: '#dfe9ef', floorBody: '#9fb4c2', accent: '#6fc9ff' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -270,8 +271,8 @@ const ZONES = [
       });
     },
     pools: { hurdle: ['laundry', 'basket', 'books', 'toybox', 'plantH'], over: ['table'],
-             tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['dresser', 'sofa', 'stairsH'],
-             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
+             tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['dresser', 'sofa'],
+             deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'yard2', exit: 'doorHouse', name: 'Rudens kiemas', sec: 10, diff: 0.24, floor: 'path',
@@ -294,7 +295,7 @@ const ZONES = [
     },
     pools: { hurdle: ['rock', 'bushY', 'logpile', 'wheelbarrow', 'fenceY', 'bucket'], over: ['branchY'],
              tunnel: ['hedge'], ledge: ['treeLedge', 'benchY'], step: ['stump', 'logpile', 'benchY'],
-             gap: ['puddle'], deco: ['leafLitter', 'pebbles', 'grassTuft'] }
+             deco: ['leafLitter', 'pebbles', 'grassTuft', 'puddleD'] }
   },
   {
     id: 'home3', exit: 'doorHouse', name: 'Senelės namas', sec: 10, diff: 0.32, floor: 'carpet',
@@ -313,7 +314,7 @@ const ZONES = [
     },
     pools: { hurdle: ['chair', 'basket', 'books', 'plantH', 'laundry'], over: ['table'],
              tunnel: ['vent'], ledge: ['shelfH', 'sofa'], step: ['bed', 'dresser', 'sofa'],
-             gap: ['hatch'], deco: ['rugDeco', 'pawPrints'] }
+             deco: ['rugDeco', 'pawPrints'] }
   },
   {
     id: 'street1', name: 'Miesto gatvė', sec: 12, diff: 0.4, floor: 'asphalt',
@@ -333,7 +334,7 @@ const ZONES = [
     },
     pools: { hurdle: ['cone', 'bin', 'crate', 'signFallen', 'hydrant', 'barrier'], over: ['pipeS', 'awning'],
              tunnel: ['scaffold'], ledge: ['awning', 'car'], step: ['car', 'crate'],
-             gap: ['manhole'], deco: ['roadPaint', 'leafLitter'] }
+             deco: ['roadPaint', 'leafLitter', 'manholeD', 'drainD'] }
   },
   {
     id: 'park', name: 'Parkas', sec: 12, diff: 0.48, floor: 'path',
@@ -356,7 +357,7 @@ const ZONES = [
     },
     pools: { hurdle: ['rockP', 'bushP', 'logP', 'roots', 'benchP'], over: ['rootArch'],
              tunnel: ['hedgeP'], ledge: ['branchP', 'benchP'], step: ['stump', 'rockP', 'benchP'],
-             gap: ['pond'], deco: ['grassTuft', 'flowers', 'pebbles', 'leafLitter'] }
+             deco: ['grassTuft', 'flowers', 'pebbles', 'leafLitter', 'puddleD'] }
   },
   {
     id: 'street2', name: 'Vakaro gatvė', sec: 10, diff: 0.56, floor: 'asphalt',
@@ -378,7 +379,7 @@ const ZONES = [
     },
     pools: { hurdle: ['bin', 'crate', 'cone', 'barrier', 'signFallen'], over: ['pipeS', 'awning'],
              tunnel: ['scaffold'], ledge: ['awning', 'car'], step: ['car', 'crate'],
-             gap: ['manhole'], deco: ['roadPaint', 'leafLitter'] }
+             deco: ['roadPaint', 'leafLitter', 'manholeD', 'drainD'] }
   },
   {
     id: 'mall', exit: 'doorService', name: 'Prekybos centras', sec: 12, diff: 0.62, floor: 'tile',
@@ -422,7 +423,7 @@ const ZONES = [
     },
     pools: { hurdle: ['cart', 'boxM', 'goods', 'wetsign', 'plantM'], over: ['railM'],
              tunnel: ['scannerA'], ledge: ['shelfM'], step: ['escalator', 'shelfM', 'boxM'],
-             gap: ['holeM'], deco: ['tileShine', 'floorArrow'] }
+             deco: ['tileShine', 'floorArrow'] }
   },
   {
     id: 'bus', exit: 'busDoor', name: 'Autobusas', sec: 7, diff: 0.66, floor: 'metal',
@@ -445,7 +446,7 @@ const ZONES = [
     },
     pools: { hurdle: ['seatB', 'bagB', 'bagP'], over: ['handrail'],
              tunnel: ['curtainP'], ledge: ['rackB'], step: ['seatB'],
-             gap: ['stepB'], deco: ['aisleStrip'] }
+             deco: ['aisleStrip'] }
   },
   {
     id: 'airport', exit: 'jetbridge', name: 'Oro uostas', sec: 13, diff: 0.74, floor: 'tile',
@@ -501,7 +502,7 @@ const ZONES = [
     },
     pools: { hurdle: ['suitcase', 'trolley', 'ropes', 'coneA', 'bagA'], over: ['screenA'],
              tunnel: ['scannerA'], ledge: ['chairsA'], step: ['beltA', 'chairsA', 'suitcase'],
-             gap: ['gapA'], deco: ['floorArrow', 'tileShine'] }
+             deco: ['floorArrow', 'tileShine'] }
   },
   {
     id: 'plane', exit: 'planeDoor', name: 'Lėktuvas', sec: 12, diff: 0.85, floor: 'carpet',
@@ -548,12 +549,13 @@ const ZONES = [
       });
       fillRR(ctx, 0, floorY - 74, VW, 74, 0, '#b9c4d4');
     },
-    pools: { hurdle: ['cartP', 'bagP', 'galley'], over: ['binP'],
+    pools: { hurdle: ['cartP', 'bagP', 'galley'], over: ['maskDrop'],
              tunnel: ['curtainP'], ledge: ['seatP'], step: ['seatP', 'galley'],
-             gap: ['gapP'], deco: ['aisleStrip'] }
+             deco: ['aisleStrip'] }
   },
   {
-    id: 'london', name: 'Londonas', sec: 14, diff: 1.0, floor: 'asphalt', last: true,
+    id: 'london', name: 'Londonas', sec: 19, diff: 1.0, floor: 'asphalt', last: true,
+    branch: 'metro',
     pal: { sky1: '#7f93b5', sky2: '#cfd8e6', far: '#7a86a0', mid: '#5f6b85',
            floorTop: '#a9a29a', floorBody: '#55505c', accent: '#c9302c', cloud: '#eef2f8', car: '#c9302c' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -590,8 +592,245 @@ const ZONES = [
     },
     pools: { hurdle: ['booth', 'postbox', 'crateL', 'barrierL', 'bin'], over: ['railL', 'awningL'],
              tunnel: ['archL'], ledge: ['awningL', 'busL'], step: ['busL', 'crateL', 'booth'],
-             gap: ['gapL'], deco: ['roadPaint', 'leafLitter', 'pebbles'] }
+             deco: ['roadPaint', 'leafLitter', 'pebbles', 'manholeD', 'drainD'] }
   }
 ];
 const ZONE_BY_ID = {};
 ZONES.forEach((z, i) => { z.index = i; ZONE_BY_ID[z.id] = z; });
+
+/* =============================================================
+   BRANCHES — the second route through a place.
+
+   A branch is laid out over exactly the same stretch of track as the main
+   route, just at a different height, so whichever way she goes takes the
+   same time and she comes out at the same point. Stairs join the two.
+============================================================= */
+const BRANCHES = {
+  /* ---------- Londono metro: down the steps, through the station, one stop
+       on the train, back up into the same street ---------- */
+  metro: {
+    id: 'metro', drop: -250, enterSec: 2.4, sec: 9.0,
+    sign: 'metroSign', exitSign: 'metroExit',
+    rooms: [
+      {
+        id: 'station', name: 'Metro', share: 0.5, floor: 'tile', diff: 0.82,
+        pal: { floorTop: '#d8d2c4', floorBody: '#8b857a', accent: '#c9302c',
+               treadTop: '#d8d2c4', treadSide: '#9a9488', rail: '#8d94a3', post: '#6f7686' },
+        bg(ctx, VW, VH, camX, floorY, t, pal) {
+          ctx.fillStyle = '#2b2f3c'; ctx.fillRect(0, 0, VW, VH);
+          /* the cream-tiled platform wall */
+          fillRR(ctx, 0, floorY - 250, VW, 250, 0, '#e8e2d4');
+          ctx.save(); ctx.globalAlpha = .3;
+          for (let px = -imod(camX * 0.3, 34); px < VW; px += 34) line(ctx, px, floorY - 250, px, floorY, '#b8b0a0', 1.6);
+          for (let i = 0; i < 7; i++) line(ctx, 0, floorY - 244 + i * 34, VW, floorY - 244 + i * 34, '#b8b0a0', 1.6);
+          ctx.restore();
+          fillRR(ctx, 0, floorY - 178, VW, 26, 0, '#1f3b7a');
+          fillRR(ctx, 0, floorY - 152, VW, 7, 0, '#c9302c');
+          /* roundels and posters along the wall */
+          tileLayer(camX * 0.3, 330, VW, (x, i) => {
+            circle(ctx, x + 60, floorY - 165, 30, '#c9302c');
+            circle(ctx, x + 60, floorY - 165, 19, '#e8e2d4');
+            fillRR(ctx, x + 22, floorY - 174, 76, 19, 3, '#1f3b7a');
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('METRO', x + 60, floorY - 160);
+            const c = ['#f0a93a', '#4a9d6e', '#8fd6ff'][imod(i, 3)];
+            fillRR(ctx, x + 168, floorY - 240, 116, 82, 4, '#3c414f');
+            fillRR(ctx, x + 173, floorY - 235, 106, 72, 3, c);
+            ctx.save(); ctx.globalAlpha = .55;
+            fillRR(ctx, x + 181, floorY - 226, 88, 18, 2, '#fff');
+            fillRR(ctx, x + 181, floorY - 200, 60, 12, 2, '#fff'); ctx.restore();
+          });
+          /* the tunnel mouth, far down the platform */
+          tileLayer(camX * 0.5, 1400, VW, x => {
+            ctx.beginPath();
+            ctx.moveTo(x, floorY); ctx.lineTo(x, floorY - 120);
+            ctx.quadraticCurveTo(x + 70, floorY - 196, x + 140, floorY - 120);
+            ctx.lineTo(x + 140, floorY); ctx.closePath();
+            ctx.fillStyle = '#12141d'; ctx.fill();
+            ctx.strokeStyle = '#6f7a8c'; ctx.lineWidth = 6; ctx.stroke();
+          });
+          /* dark ceiling with strip lights */
+          fillRR(ctx, 0, 0, VW, floorY - 250, 0, '#22252f');
+          tileLayer(camX * 0.55, 200, VW, x => {
+            fillRR(ctx, x, floorY - 286, 130, 9, 4, '#ffeec2');
+            ctx.save(); ctx.globalAlpha = .16;
+            fillRR(ctx, x - 14, floorY - 277, 158, 40, 8, '#ffeec2'); ctx.restore();
+          });
+        },
+        pools: { hurdle: ['turnstile', 'ticketMachine', 'binM', 'bagB'], over: ['metroMap'],
+                 tunnel: ['metroArch'], ledge: ['metroBench'], step: ['metroBench'],
+                 deco: ['tactile', 'tileShine'] }
+      },
+      {
+        id: 'train', name: 'Traukinys', share: 0.5, floor: 'metal', diff: 0.72,
+        pal: { floorTop: '#8d94a3', floorBody: '#3f4552', accent: '#d8b64a',
+               treadTop: '#8d94a3', treadSide: '#5b6472' },
+        bg(ctx, VW, VH, camX, floorY, t, pal) {
+          const g0 = ctx.createLinearGradient(0, 0, 0, floorY);
+          g0.addColorStop(0, '#e6ebf3'); g0.addColorStop(1, '#b4bdcb');
+          ctx.fillStyle = g0; ctx.fillRect(0, 0, VW, VH);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(VW, 0); ctx.lineTo(VW, 58);
+          ctx.quadraticCurveTo(VW / 2, 16, 0, 58); ctx.closePath();
+          ctx.fillStyle = '#d5dce7'; ctx.fill();
+          tileLayer(camX * 0.4, 150, VW, x => {
+            fillRR(ctx, x, 46, 108, 11, 5, '#fff6d8');
+            ctx.save(); ctx.globalAlpha = .18; fillRR(ctx, x - 12, 56, 132, 34, 8, '#fff6d8'); ctx.restore();
+          });
+          fillRR(ctx, 0, 92, VW, floorY - 150, 0, '#ccd4e0');
+          /* windows onto the tunnel tearing past */
+          tileLayer(camX * 0.22, 210, VW, x => {
+            fillRR(ctx, x, floorY - 250, 132, 104, 12, '#9fabbd');
+            ctx.save(); rr(ctx, x + 7, floorY - 243, 118, 90, 8); ctx.clip();
+            ctx.fillStyle = '#10131c'; ctx.fillRect(x, floorY - 243, 132, 90);
+            /* cable loops and lights streaking by */
+            const sp = imod(camX * 3.2 + t * 900, 260);
+            ctx.strokeStyle = '#2d3444'; ctx.lineWidth = 3;
+            for (let k = -1; k < 4; k++) {
+              ctx.beginPath();
+              ctx.moveTo(x - sp + k * 90, floorY - 226);
+              ctx.quadraticCurveTo(x - sp + k * 90 + 45, floorY - 200, x - sp + k * 90 + 90, floorY - 226);
+              ctx.stroke();
+            }
+            for (let k = -1; k < 3; k++) {
+              const lx = x - imod(camX * 4.4 + t * 1400, 340) + k * 170;
+              ctx.save(); ctx.globalAlpha = .85;
+              fillRR(ctx, lx, floorY - 214, 30, 5, 2, '#ffe7a8');
+              ctx.globalAlpha = .2; fillRR(ctx, lx - 22, floorY - 216, 78, 9, 4, '#ffe7a8');
+              ctx.restore();
+            }
+            ctx.restore();
+            ctx.save(); ctx.globalAlpha = .28;
+            fillRR(ctx, x + 14, floorY - 236, 22, 34, 9, '#ffffff'); ctx.restore();
+          });
+          /* seat backs receding down the carriage */
+          tileLayer(camX * 0.44, 138, VW, x => {
+            fillRR(ctx, x, floorY - 138, 116, 62, 8, '#25406b');
+            fillRR(ctx, x + 9, floorY - 130, 96, 24, 6, '#3f6fb5');
+            fillRR(ctx, x, floorY - 80, 116, 14, 5, '#1d3358');
+          });
+          fillRR(ctx, 0, floorY - 68, VW, 68, 0, '#aab4c3');
+        },
+        pools: { hurdle: ['bagB', 'suitcase', 'binM'], over: ['trainRail'],
+                 tunnel: ['curtainP'], ledge: ['trainRack'], step: ['trainSeat'],
+                 deco: ['aisleStrip'] }
+      }
+    ]
+  },
+
+  /* ---------- viršus pas kaimynus: up the stairs, through the boy's room,
+       the bathroom and the girl's room, then out of the open window ---------- */
+  upstairs: {
+    id: 'upstairs', rise: 330, enterSec: 2.6, sec: 6.2,
+    sign: 'stairsUpSign', exitProp: 'windowOpen',
+    rooms: [
+      {
+        id: 'boyroom', name: 'Berniuko kambarys', share: 0.36, floor: 'wood', diff: 0.2,
+        pal: { far: '#9fc4e6', mid: '#7fa8d6', skirt: '#6f8fb5', frame: '#e6dccd', pic: '#cfe6ff',
+               floorTop: '#d9a86a', floorBody: '#a87a4a', accent: '#4f8ce2',
+               treadTop: '#d9a86a', treadSide: '#a87a4a', rail: '#a8794a', post: '#8a6a45' },
+        bg(ctx, VW, VH, camX, floorY, t, pal) {
+          BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'dots');
+          /* rocket poster + a shelf of models: unmistakably a boy's room */
+          tileLayer(camX * 0.5, 400, VW, (x, i) => {
+            fillRR(ctx, x, floorY - 300, 104, 128, 5, '#1f2a44');
+            poly(ctx, [[x + 52, floorY - 290], [x + 70, floorY - 240], [x + 34, floorY - 240]], '#e8eef8');
+            poly(ctx, [[x + 34, floorY - 240], [x + 70, floorY - 240], [x + 78, floorY - 214], [x + 26, floorY - 214]], '#c9302c');
+            poly(ctx, [[x + 44, floorY - 214], [x + 60, floorY - 214], [x + 52, floorY - 190]], '#f6c93a');
+            for (let k = 0; k < 9; k++) circle(ctx, x + 10 + imod(k * 37, 88), floorY - 294 + imod(k * 53, 118), 1.8, '#fff');
+            fillRR(ctx, x + 150, floorY - 214, 130, 9, 3, '#8a6a45');
+            for (let k = 0; k < 4; k++) {
+              fillRR(ctx, x + 158 + k * 30, floorY - 240, 20, 26, 3, ['#4f8ce2', '#e2584f', '#68c77e', '#f0b23a'][k]);
+              circle(ctx, x + 168 + k * 30, floorY - 244, 5, '#dfe6f0');
+            }
+          });
+        },
+        pools: { hurdle: ['toyRobot', 'blocks', 'books', 'basket', 'toybox'], over: ['table'],
+                 ledge: ['shelfH', 'deskH'], step: ['bunkBed', 'deskH'],
+                 deco: ['starsDeco', 'rugDeco', 'pawPrints'] }
+      },
+      {
+        id: 'bathroom', name: 'Vonia', share: 0.28, floor: 'tile', diff: 0.2,
+        pal: { floorTop: '#e6eef4', floorBody: '#9fb2c6', accent: '#8fd6ff',
+               treadTop: '#e6eef4', treadSide: '#9fb2c6' },
+        bg(ctx, VW, VH, camX, floorY, t, pal) {
+          ctx.fillStyle = '#cfe0ea'; ctx.fillRect(0, 0, VW, VH);
+          fillRR(ctx, 0, floorY - 300, VW, 300, 0, '#eef6fb');
+          ctx.save(); ctx.globalAlpha = .35;
+          for (let px = -imod(camX * 0.35, 40); px < VW; px += 40) line(ctx, px, floorY - 300, px, floorY, '#a9c2d4', 1.8);
+          for (let i = 0; i < 8; i++) line(ctx, 0, floorY - 296 + i * 40, VW, floorY - 296 + i * 40, '#a9c2d4', 1.8);
+          ctx.restore();
+          fillRR(ctx, 0, floorY - 168, VW, 20, 0, '#8fd6ff');
+          ctx.save(); ctx.globalAlpha = .5;
+          for (let px = -imod(camX * 0.35, 40); px < VW; px += 40) fillRR(ctx, px + 8, floorY - 163, 22, 10, 3, '#dff0fb');
+          ctx.restore();
+          tileLayer(camX * 0.5, 470, VW, x => {
+            /* mirror over a basin */
+            fillRR(ctx, x, floorY - 288, 108, 96, 10, '#c9d8e4');
+            ctx.save(); rr(ctx, x + 7, floorY - 281, 94, 82, 7); ctx.clip();
+            ctx.fillStyle = '#dff0fb'; ctx.fillRect(x, floorY - 281, 108, 82);
+            ctx.globalAlpha = .55; fillRR(ctx, x + 16, floorY - 274, 26, 66, 6, '#ffffff'); ctx.restore();
+            /* shower head and a rail */
+            line(ctx, x + 250, floorY - 300, x + 250, floorY - 254, '#c9ced9', 6);
+            fillEll(ctx, x + 250, floorY - 250, 20, 8, '#c9ced9');
+            ctx.save(); ctx.globalAlpha = .45;
+            for (let k = 0; k < 6; k++) line(ctx, x + 236 + k * 6, floorY - 244, x + 234 + k * 6, floorY - 210, '#8fd6ff', 2);
+            ctx.restore();
+            /* rubber duck on a stool, because of course */
+            fillRR(ctx, x + 350, floorY - 44, 40, 44, 4, '#dfe8f0');
+            fillEll(ctx, x + 370, floorY - 56, 15, 11, '#ffd94a');
+            circle(ctx, x + 379, floorY - 64, 8, '#ffd94a');
+            poly(ctx, [[x + 385, floorY - 65], [x + 394, floorY - 62], [x + 385, floorY - 60]], '#f2762c');
+            circle(ctx, x + 381, floorY - 66, 1.6, '#2b2b34');
+          });
+          fillRR(ctx, 0, 0, VW, Math.max(0, floorY - 300), 0, '#e4eff6');
+        },
+        pools: { hurdle: ['toiletH', 'sinkH', 'basket'], over: ['towelRail'],
+                 tunnel: ['showerCurtainH'], ledge: ['shelfH'], step: ['bathtub'],
+                 deco: ['bathMat', 'tileShine'] }
+      },
+      {
+        id: 'girlroom', name: 'Mergaitės kambarys', share: 0.36, floor: 'carpet', diff: 0.2,
+        pal: { far: '#f0c9dc', mid: '#e0a8c4', skirt: '#c98fa8', frame: '#fff2f6', pic: '#ffe7f0',
+               floorTop: '#d9a2bd', floorBody: '#a86f8a', accent: '#ff8fb0',
+               treadTop: '#d9a2bd', treadSide: '#a86f8a' },
+        bg(ctx, VW, VH, camX, floorY, t, pal) {
+          BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'stripe');
+          /* fairy lights along the wall */
+          tileLayer(camX * 0.55, 190, VW, (x, i) => {
+            ctx.beginPath(); ctx.moveTo(x, floorY - 300);
+            ctx.quadraticCurveTo(x + 95, floorY - 268, x + 190, floorY - 300);
+            ctx.strokeStyle = '#c2607a'; ctx.lineWidth = 2.4; ctx.stroke();
+            for (let k = 1; k < 5; k++) {
+              const f = k / 5, lx = x + 190 * f, ly = floorY - 300 + Math.sin(Math.PI * f) * 30;
+              const on = 0.55 + Math.sin(t * 3 + i + k) * 0.35;
+              ctx.save(); ctx.globalAlpha = on;
+              circle(ctx, lx, ly + 6, 4.4, ['#ffe07a', '#ff8fb0', '#b48bff', '#8fd6ff'][k % 4]);
+              ctx.globalAlpha = on * 0.3;
+              circle(ctx, lx, ly + 6, 11, '#fff3c4'); ctx.restore();
+            }
+          });
+          /* a wardrobe and a rocking horse pushed back against the wall */
+          tileLayer(camX * 0.5, 460, VW, x => {
+            fillRR(ctx, x, floorY - 218, 118, 218, 6, '#e8c9d8');
+            fillRR(ctx, x + 6, floorY - 210, 50, 202, 4, '#f2dae6');
+            fillRR(ctx, x + 62, floorY - 210, 50, 202, 4, '#f2dae6');
+            circle(ctx, x + 58, floorY - 108, 4, '#c2607a');
+            fillEll(ctx, x + 250, floorY - 46, 42, 16, '#f6efe2');
+            fillRR(ctx, x + 236, floorY - 76, 46, 34, 10, '#f6efe2');
+            circle(ctx, x + 286, floorY - 82, 15, '#f6efe2');
+            circle(ctx, x + 292, floorY - 85, 2.6, '#3a2f38');
+            ctx.save(); ctx.globalAlpha = .8;
+            for (let k = 0; k < 4; k++) line(ctx, x + 276 + k * 4, floorY - 96, x + 268 + k * 5, floorY - 74, '#e0a8c4', 3);
+            ctx.restore();
+          });
+        },
+        pools: { hurdle: ['dollhouse', 'vanity', 'plushPile', 'toyboxG'], over: ['bunting'],
+                 ledge: ['shelfH'], step: ['bedGirl', 'dollhouse'],
+                 deco: ['heartsDeco', 'rugDeco'] }
+      }
+    ]
+  }
+};
+Object.keys(BRANCHES).forEach(k => {
+  BRANCHES[k].rooms.forEach((r, i) => { r.index = i; r.branch = BRANCHES[k]; });
+});

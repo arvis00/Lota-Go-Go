@@ -47,7 +47,11 @@ Trasa yra **viena, fiksuota ir vienoda kiekvieną kartą** (deterministinis seed
 `Lotos namai → Kiemas → Kaimynų namas → Rudens kiemas → Senelės namas → Miesto gatvė →
 Parkas → Vakaro gatvė → Prekybos centras → Autobusas → Oro uostas → Lėktuvas → Londonas`
 
-Pilnas nubėgimas trunka **~2 min 50 s**; greitis auga nuo 330 iki 730 px/s.
+Pilnas nubėgimas trunka **~3 min**; greitis auga nuo 330 iki 730 px/s.
+
+**Trasoje nėra nė vienos skylės.** Duobių, angų grindyse ir pralaimėjimo dėl kritimo
+nebėra — jos visos pašalintos. Ten, kur anksčiau buvo skylė, dabar arba paprasta kliūtis,
+arba **laiptai**, kuriais Lota nubėga į kitą trasos aukštį (žr. „Du keliai" žemiau).
 
 **Sąžiningumo garantija.** Kliūtys dėliojamos ne pikseliais, o *laiku*: generatorius
 žino, koks bus greitis konkrečioje trasos vietoje, ir tarp kliūčių visada palieka bent
@@ -57,10 +61,22 @@ galima prabėgti apačia, todėl niekada nesusidaro aklavietė.
 
 **Kas pavojinga, o kas — tik dekoracija.** Kiekvienas objektas turi *vieną* reikšmę
 visame žaidime: arba į jį galima atsitrenkti, arba jis yra fonas — niekada abu. Dekoracijos
-yra plokščios (≤15 px aukščio) ir guli ant grindų: žolė, akmenukai, lapai, kelio ženklinimas,
-Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas stovi — jį reikia peršokti,
-užšokti ant jo arba pralįsti**. Kliūtys papildomai meta šešėlį ant grindų ir turi vos
-pastebimą kontūrą. `assertPropRoles()` faile `js/level.js` neleidžia šiai taisyklei sugesti.
+yra plokščios (≤15 px aukščio) ir guli ant grindų: žolė, akmenukai, lapai, balos, šulinių
+dangčiai, kelio ženklinimas, Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas
+stovi — jį reikia peršokti, užšokti ant jo arba pralįsti**. Kliūtys meta šešėlį ant grindų;
+**apvadų aplink jas nebėra** — užtenka atsitrenkti į patį daiktą. `assertPropRoles()` faile
+`js/level.js` neleidžia šiai taisyklei sugesti ir dar patikrina, ar kiekvienas naudojamas
+objektas apskritai turi piešinį.
+
+Vienintelė išimtis — **ženklai** (metro rodyklė, rodyklė į laiptus). Jie piešiami blankiau
+ir atitraukti į foną, o Lota per juos tiesiog prabėga.
+
+**Kiekvienas daiktas piešiamas tokio dydžio, koks jis iš tikrųjų yra.** Anksčiau kliūties
+plotis ir aukštis buvo atsitiktiniai, todėl karutis susitraukdavo į dėmę, o šiukšlių dėžė
+išsitęsdavo į konteinerį. Dabar dydį duoda `PROP_SIZE` (`js/props.js`), o per platūs objektai
+ne tempiami, o kartojami (`PROP_NATURAL`). Viskas, po kuo lendama — stalas, markizė, turėklas,
+vamzdis, gyvatvorės arka — turi kojas iki grindų arba pakabinimą prie lubų, todėl matyti,
+kas tą daiktą laiko.
 
 **Ant kliūčių galima užšokti — ant bet kurios.** Šuolis niekada nėra tai, kas Lotą
 užmuša. Dėžė, akmuo ar lagaminas mirtini tik tada, kai į juos įbėgama žeme, stačiomis;
@@ -77,6 +93,30 @@ Mirtinas lieka tik per vėlai pradėtas šuolis, kai Lota jau nebespėja pasiekt
 Kadangi iš kliūties viršaus tenka dar nukristi, generatorius prie tarpo po kiekvieno
 šablono prideda kritimo laiką, kad reakcijos atsarga galiotų ir aukštuoju keliu.
 
+## Du keliai
+
+Dviejose vietose trasa turi **antrą kelią**. Jis nutiestas virš to paties trasos ruožo tik
+kitame aukštyje, todėl **abu keliai trunka lygiai tiek pat** ir baigiasi toje pačioje vietoje.
+Sujungia juos tikri laiptai: jais ne šokinėjama, o *bėgama* — pakopa yra pakopa, ant laiptų
+mirti neįmanoma. Bėgant laiptais aukštyn ar žemyn kamera juda kartu, Lota visada matoma.
+
+**Londono metro.** Netoli Londono pradžios šaligatvyje yra laiptų anga su METRO ženklu.
+
+- **Peršoki** — bėgi gatve toliau, tarsi nieko nebūtų.
+- **Nieko nedarai** — Lota nubėga laiptais žemyn į metro stotį, prabėga peroną, įlipa į
+  traukinį, truputį pavažiuoja ir kitais laiptais išlenda atgal į tą pačią gatvę.
+
+Išėjimas yra dar toli iki finišo (~8 s Londono lieka po jo). Prie išėjimo laiptų gatvėje
+stovi tik turėklas — jei peršokai pirmuosius laiptus, čia į metro nebepateksi, Lota tiesiog
+bėga toliau. Metro yra **tik** Londone.
+
+**Kaimynų namo antras aukštas.** Koridoriuje virš galvos prasideda laiptai.
+
+- **Nieko nedarai** — prabėgi po jais pirmu aukštu.
+- **Užšoki ant apatinės pakopos** — Lota užbėga į viršų: berniuko miegamasis (raketų
+  plakatai, žaislai), paskui vonia, paskui mergaitės kambarys. Jo gale pro **atvirą langą**
+  ji iššoka ir nusileidžia jau kieme — lygiai ten, kur išeitų pro duris bėgusi apačia.
+
 ## Kontroliniai taškai
 
 Kiekvienos vietos pradžioje stovi languota vėliavėlė. Pirmą kartą ją pasiekus ji užsidega,
@@ -92,8 +132,13 @@ neatima.
 ## Skanėstai
 
 Trasoje paslėpta lygiai **15 kaulų**, po vieną kiekvienoje vietoje (+ po vieną papildomą
-oro uoste ir Londone). Dauguma jų — ant alternatyvių kelių, virš duobių arba
-trumpiniuose, todėl reikia rizikuoti.
+oro uoste ir Londone). Dauguma jų — ant alternatyvių kelių arba trumpiniuose, todėl reikia
+rizikuoti.
+
+**Nesvarbu, kurį kelią pasirinksi.** Ten, kur trasa šakojasi, tos vietos kaulas padėtas
+**abiejuose** keliuose — tai tas pats kaulas, pasiimtas bet kurioje pusėje jis užsiskaito
+vieną kartą. Likę tos vietos kaulai dedami tik ten, kur eina abu keliai. Todėl surinkti
+visus 15 galima ir viršumi, ir apačia, ir per metro.
 
 - surinkti < 15 → gauni tiek, kiek surinkai
 - surinkti visi 15 → **dvigubai** (15 → 30)
@@ -105,8 +150,8 @@ trumpiniuose, todėl reikia rizikuoti.
 |---|---|
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + 10 aprangų |
-| `js/props.js` | ~70 kliūčių, platformų ir dekoracijų piešiniai |
-| `js/zones.js` | 13 vietų: paletės, parallax fonai, grindų stiliai, kliūčių rinkiniai |
+| `js/props.js` | ~130 kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
+| `js/zones.js` | 13 vietų + `BRANCHES` (metro ir antras aukštas): paletės, fonai, grindys, kliūčių rinkiniai |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
 | `js/ui.js` | ekranai, HUD, aprangų parduotuvė |
@@ -117,6 +162,9 @@ trumpiniuose, todėl reikia rizikuoti.
 Dažniausiai keičiami dalykai:
 
 - **Trasos ilgis** — `sec:` reikšmės kiekvienoje zonoje (`js/zones.js`)
+- **Antri keliai** — `BRANCHES` (`js/zones.js`): `enterSec` (kur prasideda), `sec` (kiek trunka),
+  `drop` / `rise` (kiek žemyn ar aukštyn veda laiptai), `rooms` (patalpos ir jų kliūtys)
+- **Laiptai** — `STAIR_RISE`, `STAIR_UP`, `STAIR_FIRST` (`js/level.js`)
 - **Greitis** — `PHYS.V_MIN`, `PHYS.V_MAX`, `PHYS.X_FULL` (`js/level.js`)
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį ir tarpus
 - **Šuolis** — `PHYS.JUMP_V`, `PHYS.GRAV`
@@ -133,6 +181,10 @@ Naršyklės konsolėje:
 var s=document.createElement('script'); s.src='dev/bot.js'; document.head.appendChild(s);
 runBot(400);                 // idealios reakcijos — turi grąžinti state:"win"
 window.BOT_EVERY = 12; runBot(400);   // ~100 ms vėlavimas — vis dar įveikia
+
+// kurį kelią rinktis ten, kur trasa šakojasi (numatyta: metro taip, viršus ne)
+window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
+
 inspect(15000);              // kas yra trasoje ties nurodyta pozicija
 ```
 

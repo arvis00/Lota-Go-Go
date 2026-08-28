@@ -1,24 +1,29 @@
-/* dev-only: a reflex bot that plays the track, to prove it is completable */
+/* dev-only: a reflex bot that plays the track, to prove it is completable.
+   `BOT_TAKE` chooses which way it goes where a place offers two routes:
+   { metro: true, upstairs: false } is what a player who does nothing gets. */
 (function () {
   const W = () => Game.world;
+  const LY = () => Game.lota.layer;
 
   function topsAt(x) {
-    const c = queryCells(W(), x, x), out = [];
-    c.ground.forEach(g => { if (x >= g.x && x <= g.x + g.w) out.push(0); });
-    c.platforms.forEach(p => { if (x >= p.x && x <= p.x + p.w) out.push(p.y); });
+    const c = queryCells(W(), x, x), out = [], ly = LY();
+    c.ground.forEach(g => { if (g.layer === ly && x >= g.x && x <= g.x + g.w) out.push(g.y); });
+    c.platforms.forEach(p => { if (p.layer === ly && x >= p.x && x <= p.x + p.w) out.push(p.y); });
     /* every obstacle top is standable now, hanging ones included */
-    c.hazards.forEach(h => { if (x >= h.x && x <= h.x + h.w) out.push(h.y + h.h); });
+    c.hazards.forEach(h => { if (h.layer === ly && x >= h.x && x <= h.x + h.w) out.push(h.y + h.h); });
     return out;
   }
 
   function decide() {
-    const L = Game.lota, v = speedAt(L.x);
+    const L = Game.lota, v = speedAt(L.x), ly = L.layer;
+    const take = window.BOT_TAKE || { metro: true, upstairs: false };
     const front = L.x + LOTA.STAND_W / 2;
-    const near = queryCells(W(), L.x - 120, L.x + v * 1.1 + 260);
+    const near = queryCells(W(), L.x - 120, L.x + v * 1.1 + 300);
     const react = v * 0.26;
     let jump = false, duck = false, overhead = false;
 
     near.hazards.forEach(h => {
+      if (h.layer !== ly) return;
       const d = h.x - front;
       if (h.kind === 'over') {
         if (d < v * 0.34 && L.x < h.x + h.w + 20) { duck = true; if (d < 10) overhead = true; }
@@ -27,32 +32,38 @@
       }
     });
 
-    /* solid walls we must clear */
+    /* solid walls we must clear — stairs are never one of them */
     near.platforms.forEach(p => {
-      if (p.oneWay) return;
+      if (p.layer !== ly || p.oneWay || p.stair) return;
       const d = p.x - front;
       if (d > -6 && d < react && p.y > L.y + 12) jump = true;
     });
 
-    /* the floor running out */
-    if (L.grounded) {
+    /* the way up: land on the bottom treads of a flight that starts overhead */
+    if (take.upstairs && L.grounded) {
+      near.platforms.forEach(p => {
+        if (p.layer !== ly || !p.stair) return;
+        const d = p.x - front;
+        if (p.y - L.y > 60 && d > 90 && d < 210) jump = true;
+      });
+    }
+
+    /* the mouth of the stairs down: doing nothing takes them, jumping stays up */
+    if (!take.metro && L.grounded) {
       let edge = null;
       for (let dxp = 6; dxp < v * 0.5 + 200; dxp += 6) {
         const x = L.x + dxp;
         if (!topsAt(x).some(t => Math.abs(t - L.y) < 2.5)) { edge = x; break; }
       }
-      if (edge !== null) {
-        /* right past the lip: a lower floor means it is only a step down,
-           nothing at all means it is a hole and we must jump */
-        const stepDown = topsAt(edge + 10).some(t => t <= L.y + 2 && t > L.y - 150);
-        if (!stepDown && edge - front < v * 0.20) jump = true;
-      }
+      if (edge !== null && edge - front < v * 0.20) jump = true;
     }
 
     if (overhead) jump = false;
     Game.input.duckHeld = duck;
     if (jump && !duck) Game.input.jumpBuf = 0.15;   // jump buffer fires it on landing
   }
+
+  window.botDecide = decide;
 
   window.runBot = function (maxSec) {
     const setP = UI.setProgress, setB = UI.setBones, setZ = UI.setZone, tst = UI.toast, tut = UI.tut;
@@ -61,19 +72,21 @@
     Game.startRun();
     const dt = 1 / 120; let t = 0, frame = 0;
     const every = window.BOT_EVERY || 1;
-    const trail = [];
+    const seen = {};
     while (t < (maxSec || 400) && Game.state === 'run') {
       if (frame % every === 0) decide();
       frame++;
       Game.step(dt);
       t += dt;
-      if (trail.length === 0 || Game.lota.x - trail[trail.length - 1] > 2000) trail.push(Math.round(Game.lota.x));
+      seen[Game.lota.layer] = (seen[Game.lota.layer] || 0) + 1;
     }
     const out = {
       state: Game.state, x: Math.round(Game.lota.x), finishX: Math.round(Game.world.finishX),
       pct: (Game.lota.x / Game.world.finishX * 100).toFixed(1) + '%',
       bones: Game.run.bones, reason: Game.crashReason || null,
-      zone: Game.zoneAt(Game.lota.x).zone.name, seconds: Math.round(t)
+      zone: Game.zoneAt(Game.lota.x).zone.name, layer: Game.lota.layer,
+      routes: Object.keys(seen).map(k => k + ':' + (seen[k] / 120).toFixed(1) + 's').join(' '),
+      seconds: Math.round(t)
     };
     UI.setProgress = setP; UI.setBones = setB; UI.setZone = setZ; UI.toast = tst; UI.tut = tut;
     Sfx.on = soundWas;
@@ -84,10 +97,12 @@
   window.inspect = function (x, r) {
     r = r || 400;
     const c = queryCells(W(), x - r, x + r);
+    const near = (o, w) => o.x + (w || 0) > x - r && o.x < x + r;
     return {
-      hazards: c.hazards.filter(h => h.x > x - r && h.x < x + r).map(h => [h.prop, Math.round(h.x), Math.round(h.y), Math.round(h.w), Math.round(h.h), h.kind]),
-      platforms: c.platforms.filter(p => p.x + p.w > x - r && p.x < x + r).map(p => [p.prop || (p.pit ? 'PIT' : '?'), Math.round(p.x), Math.round(p.y), Math.round(p.w), p.oneWay ? 'oneway' : 'solid']),
-      ground: c.ground.filter(g => g.x + g.w > x - r && g.x < x + r).map(g => [Math.round(g.x), Math.round(g.w)])
+      hazards: c.hazards.filter(h => near(h, h.w)).map(h => [h.layer, h.prop, Math.round(h.x), Math.round(h.y), Math.round(h.w), Math.round(h.h), h.kind]),
+      platforms: c.platforms.filter(p => near(p, p.w)).map(p => [p.layer, p.prop + (p.stair ? '/stair' : ''), Math.round(p.x), Math.round(p.y), Math.round(p.w), p.oneWay ? 'oneway' : 'solid']),
+      ground: c.ground.filter(g => near(g, g.w)).map(g => [g.layer, Math.round(g.x), Math.round(g.w), Math.round(g.y)]),
+      portals: c.portals.filter(p => near(p, p.w)).map(p => [p.from + '->' + p.to, Math.round(p.x), Math.round(p.w)])
     };
   };
 })();

@@ -14,7 +14,8 @@ const Game = {
   lota: null,
   cam: { x: 0, y: 0 },
   input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0 },
-  fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0 },
+  fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0,
+        layerFade: 0, fromLayer: 'main', fromX: 0 },
   run: null,
 
   /* ================= setup ================= */
@@ -32,7 +33,9 @@ const Game = {
   },
 
   resize() {
-    const cw = window.innerWidth, ch = window.innerHeight;
+    /* a zero-sized window (a hidden tab, a pane being restored) used to make
+       VW NaN and take the whole renderer down with it */
+    const cw = Math.max(1, window.innerWidth || 1), ch = Math.max(1, window.innerHeight || 1);
     this.cw = cw; this.ch = ch;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     this.cv.width = Math.round(cw * this.dpr);
@@ -162,12 +165,13 @@ const Game = {
     const sx = cp ? cp.x : 60;
     this.lota = {
       x: sx, y: 0, vy: 0, grounded: true, duck: false, runPhase: 0,
-      state: 'run', dead: false, sitT: 0, alpha: 1
+      state: 'run', dead: false, sitT: 0, alpha: 1, layer: 'main'
     };
     this.cam.x = sx - this.VW * 0.30; this.cam.y = 0;
     this.input.jumpBuf = 0; this.input.duckHeld = false; this.input.duckTimer = 0; this.input.coyote = 0;
     this.fx.dust.length = 0; this.fx.confetti.length = 0; this.fx.sparks.length = 0;
     this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0;
+    this.fx.layerFade = 0; this.fx.fromLayer = 'main'; this.fx.fromX = sx;
     this.state = 'run'; this.stateT = 0;
     UI.showHud();
     UI.setBones(this.run.bones);
@@ -241,6 +245,22 @@ const Game = {
   },
 
   /* ---------- simulation ---------- */
+  /** The height of the floor on a given route. Everything vertical — the
+      camera, the safety net, what counts as "the ground" — is measured from
+      here, so the metro and the upstairs behave exactly like the street. */
+  layerBase(id) {
+    const l = this.world.layers[id];
+    return l ? l.base : 0;
+  },
+  switchLayer(to) {
+    const L = this.lota;
+    if (L.layer === to) return;
+    this.fx.fromLayer = L.layer;
+    this.fx.fromX = L.x;
+    this.fx.layerFade = 1;
+    L.layer = to;
+  },
+
   step(dt) {
     const L = this.lota, W = this.world, I = this.input;
     const SUB = Math.ceil(dt / (1 / 240));
@@ -271,6 +291,18 @@ const Game = {
       const prevY = L.y;
       if (!L.grounded) { L.vy -= g * h; L.y += L.vy * h; }
 
+      /* --- which route is she on? The stairs hand her over. --- */
+      const pb = this.box(L);
+      for (let i = 0; i < near.portals.length; i++) {
+        const p = near.portals[i];
+        if (p.from !== L.layer) continue;
+        if (pb.x1 <= p.x || pb.x0 >= p.x + p.w) continue;
+        if (pb.y1 <= p.y0 || pb.y0 >= p.y1) continue;
+        this.switchLayer(p.to);
+        break;
+      }
+      const LY = L.layer;
+
       /* --- land on surfaces --- */
       const box = this.box(L);
       let bestTop = null;
@@ -282,9 +314,9 @@ const Game = {
           if (bestTop === null || top > bestTop) bestTop = top;
         }
       };
-      near.ground.forEach(gd => consider({ x: gd.x, w: gd.w, top: 0 }));
-      near.platforms.forEach(p => consider({ x: p.x, w: p.w, top: p.y }));
-      near.hazards.forEach(hz => consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }));
+      near.ground.forEach(gd => { if (gd.layer === LY) consider({ x: gd.x, w: gd.w, top: gd.y }); });
+      near.platforms.forEach(p => { if (p.layer === LY) consider({ x: p.x, w: p.w, top: p.y }); });
+      near.hazards.forEach(hz => { if (hz.layer === LY) consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
       if (bestTop !== null) {
         if (!L.grounded && L.vy < -180) { Sfx.land(); this.puff(L.x - 6, bestTop, 4); }
         L.y = bestTop; L.vy = 0; L.grounded = true; L.landY = bestTop;
@@ -295,15 +327,29 @@ const Game = {
           if (surf.x > box.x1 - 3 || surf.x + surf.w < box.x0 + 3) return;
           if (Math.abs(surf.top - L.y) < 1.2) sup = true;
         };
-        near.ground.forEach(gd => chk({ x: gd.x, w: gd.w, top: 0 }));
-        near.platforms.forEach(p => chk({ x: p.x, w: p.w, top: p.y }));
-        near.hazards.forEach(hz => chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }));
+        near.ground.forEach(gd => { if (gd.layer === LY) chk({ x: gd.x, w: gd.w, top: gd.y }); });
+        near.platforms.forEach(p => { if (p.layer === LY) chk({ x: p.x, w: p.w, top: p.y }); });
+        near.hazards.forEach(hz => { if (hz.layer === LY) chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
       }
 
+      /* --- stairs are stairs: a riser one step high she simply runs up, and a
+         flight is never something she can die on. That is what makes taking
+         the metro or going upstairs a choice rather than a hazard. --- */
+      const bs = this.box(L);
+      let stairTop = null;
+      near.platforms.forEach(p => {
+        if (p.layer !== LY || !p.stair) return;
+        if (bs.x1 - 5 <= p.x || bs.x0 + 5 >= p.x + p.w) return;
+        if (bs.y1 <= p.y - p.h + 1 || bs.y0 >= p.y) return;
+        const rise = p.y - L.y;
+        if (rise > 0 && rise <= STAIR_UP && (stairTop === null || p.y > stairTop)) stairTop = p.y;
+      });
+      if (stairTop !== null) { L.y = stairTop; L.vy = 0; L.grounded = true; L.landY = stairTop; }
+
       /* --- running into the FACE of something solid: platform walls, the wall
-         after a pit, and the side of a ground obstacle. Clipping the very top
-         edge scrambles her up instead of killing her. --- */
+         after a step down, and the side of a ground obstacle. Clipping the very
+         top edge scrambles her up instead of killing her. --- */
       const b2 = this.box(L);
       let wallTop = null, wallGrab = 0;
       const face = (top, grab) => {
@@ -311,15 +357,20 @@ const Game = {
         if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; }
       };
       near.platforms.forEach(p => {
-        if (p.oneWay) return;
+        if (p.layer !== LY || p.oneWay || p.stair) return;
         if (b2.x1 - 5 <= p.x || b2.x0 + 5 >= p.x + p.w) return;
+        /* a block is a wall only where its body actually is: a tread hanging
+           overhead is something she runs under, not into */
+        if (b2.y1 <= p.y - (p.h || 0) + 1 || b2.y0 >= p.y) return;
         face(p.y, GRAB);
       });
       near.ground.forEach(gd => {
+        if (gd.layer !== LY) return;
         if (b2.x1 - 5 <= gd.x || b2.x0 + 5 >= gd.x + gd.w) return;
-        face(0, GRAB);
+        face(gd.y, GRAB);
       });
       near.hazards.forEach(hz => {
+        if (hz.layer !== LY) return;
         if (b2.x1 - 6 <= hz.x || b2.x0 + 6 >= hz.x + hz.w) return;
         const top = hz.y + hz.h;
         if (hz.kind !== 'over') { face(top, GRAB); return; }
@@ -332,7 +383,7 @@ const Game = {
         /* On her feet and running straight into it — that is a crash, whatever
            its height. In the air she jumped at it, so she scrambles up on top
            instead: a jump is never what kills her. Still falling counts only
-           within reach, otherwise missing a hole would be free. */
+           within reach. */
         const canGrab = !L.grounded && (L.vy > 0 || wallTop - L.y <= wallGrab) && L.vy > -760;
         if (canGrab) {
           L.y = wallTop; L.vy = 0; L.grounded = true; L.landY = wallTop;
@@ -346,7 +397,7 @@ const Game = {
       const b3 = this.box(L);
       let hit = null;
       near.hazards.forEach(hz => {
-        if (hit || hz.kind !== 'over') return;
+        if (hit || hz.kind !== 'over' || hz.layer !== LY) return;
         if (b3.x1 - 7 <= hz.x || b3.x0 + 7 >= hz.x + hz.w) return;
         if (b3.y1 - 5 <= hz.y || b3.y0 + 4 >= hz.y + hz.h) return;
         hit = hz;
@@ -366,12 +417,14 @@ const Game = {
         UI.toast('Trumpinys!');
       });
 
-      /* --- treats --- */
+      /* --- treats. A treat that sits on both routes is one treat: picking up
+         either copy claims it, so 15 stays 15 whichever way she came. --- */
       near.bones.forEach(bn => {
-        if (bn.got) return;
+        if (bn.got || bn.layer !== LY) return;
         const cx = L.x, cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
         if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) {
-          bn.got = true; this.run.bones++;
+          W.bones.forEach(o => { if (o.i === bn.i) o.got = true; });
+          this.run.bones++;
           Sfx.bone();
           for (let k = 0; k < 10; k++) this.fx.sparks.push({
             x: bn.x, y: bn.y, vx: (Math.random() - .5) * 160, vy: 60 + Math.random() * 160, life: .55, c: '#ffe8a8'
@@ -380,8 +433,9 @@ const Game = {
         }
       });
 
-      /* --- fell into a gap --- */
-      if (L.y < -330) { this.crash('fall'); return; }
+      /* --- safety net. There are no holes to fall down any more, so this only
+         ever fires if the world itself went wrong. --- */
+      if (L.y < this.layerBase(LY) - 460) { this.crash('fall'); return; }
 
       /* --- finish --- */
       if (L.x >= W.finishX) { this.finish(); return; }
@@ -390,6 +444,7 @@ const Game = {
     /* warp teleport once the wipe has covered the screen */
     if (this.run.warpTo && this.fx.warp < 0.21) {
       L.x = this.run.warpTo.x; L.y = 0; L.vy = 0; L.grounded = true;
+      L.layer = 'main';
       this.cam.x = L.x - this.VW * 0.30;
       this.run.warpTo = null;
     }
@@ -428,11 +483,18 @@ const Game = {
 
   updateCam(dt) {
     const L = this.lota;
+    const base = this.layerBase(L.layer);
     const tx = L.x - this.VW * 0.30;
-    const ty = clamp(L.y * 0.6, -60, 150);
+    const ty = base + clamp((L.y - base) * 0.6, -70, 170);
     this.cam.x = lerp(this.cam.x, tx, 1 - Math.pow(0.0001, dt));
-    this.cam.y = lerp(this.cam.y, ty, 1 - Math.pow(0.02, dt));
+    this.cam.y = lerp(this.cam.y, ty, 1 - Math.pow(0.004, dt));
     if (this.state === 'run') this.cam.x = Math.max(this.cam.x, tx - 40);
+    /* Whatever the stairs are doing to her height, she stays on screen. */
+    const feet = this.groundY - (L.y - this.cam.y);
+    const head = this.groundY - (L.y + LOTA.STAND_H - this.cam.y);
+    const bot = this.VH * 0.84, top = this.VH * 0.17;
+    if (feet > bot) this.cam.y -= (feet - bot);
+    else if (head < top) this.cam.y += (top - head);
   },
 
   updateZone() {
@@ -480,6 +542,7 @@ const Game = {
       const c = f.confetti[i]; c.x += c.vx * dt; c.y += c.vy * dt; c.r += c.vr * dt; c.vy += 40 * dt;
       if (c.y > this.VH + 40) f.confetti.splice(i, 1);
     }
+    f.layerFade = Math.max(0, f.layerFade - dt * 2.4);
     f.shake = Math.max(0, f.shake - dt * 1.6);
     f.flash = Math.max(0, f.flash - dt * 2.2);
     f.warp = Math.max(0, f.warp - dt);
@@ -515,73 +578,99 @@ const Game = {
     ctx.restore();
   },
 
+  /* which palette and floor an object belongs to: a room on a branch carries
+     its own, everything else takes them from its zone */
+  palOf(o) { return o.pal || (ZONES[o.zone] || ZONES[0]).pal; },
+  floorOf(o) { return o.floor || (ZONES[o.zone] || ZONES[0]).floor; },
+
+  /** The place behind her: a zone on the street, or a room on a branch. */
+  drawPlaceBg(layerId, atX) {
+    const ctx = this.ctx, W = this.world, VW = this.VW, VH = this.VH;
+    const lay = W.layers[layerId];
+    if (layerId === 'main' || !lay || !lay.rooms.length) {
+      const zs = W.zones;
+      let zi = 0;
+      for (let i = 0; i < zs.length; i++) if (atX >= zs[i].x0 - 200) zi = i;
+      const z = zs[zi].zone;
+      z.bg(ctx, VW, VH, this.cam.x, this.sy(0), this.t, z.pal);
+      if (zi + 1 < zs.length) {
+        const fade = inv(atX, zs[zi].x1 - 420, zs[zi].x1 + 60);
+        if (fade > 0) {
+          ctx.save(); ctx.globalAlpha = fade;
+          const nz = zs[zi + 1].zone;
+          nz.bg(ctx, VW, VH, this.cam.x, this.sy(0), this.t, nz.pal);
+          ctx.restore();
+        }
+      }
+      return;
+    }
+    let rm = lay.rooms[0];
+    for (let i = 0; i < lay.rooms.length; i++) if (atX >= lay.rooms[i].x0) rm = lay.rooms[i];
+    rm.room.bg(ctx, VW, VH, this.cam.x, this.sy(lay.base), this.t, rm.room.pal);
+  },
+
   renderWorld() {
     const ctx = this.ctx, W = this.world, VW = this.VW, VH = this.VH;
-    const camX = this.cam.x, camY = this.cam.y;
-    const floorY = this.sy(0);
+    const camX = this.cam.x;
+    const L = this.lota;
+    const LY = L ? L.layer : 'main';
 
     /* ---- background, with a soft crossfade between places ---- */
-    const zs = W.zones;
-    let zi = 0;
-    for (let i = 0; i < zs.length; i++) if (this.lota.x >= zs[i].x0 - 200) zi = i;
-    const z = zs[zi].zone;
-    z.bg(ctx, VW, VH, camX, floorY, this.t, z.pal);
-    if (zi + 1 < zs.length) {
-      const fade = inv(this.lota.x, zs[zi].x1 - 420, zs[zi].x1 + 60);
-      if (fade > 0) {
-        ctx.save(); ctx.globalAlpha = fade;
-        const nz = zs[zi + 1].zone;
-        nz.bg(ctx, VW, VH, camX, floorY, this.t, nz.pal);
-        ctx.restore();
-      }
+    this.drawPlaceBg(LY, L ? L.x : 0);
+    if (this.fx.layerFade > 0) {
+      ctx.save(); ctx.globalAlpha = clamp(this.fx.layerFade, 0, 1);
+      this.drawPlaceBg(this.fx.fromLayer, this.fx.fromX);
+      ctx.restore();
     }
 
     const near = queryCells(W, camX - 260, camX + VW + 300);
+    const mine = o => o.layer === LY;
 
     /* ---- the doorway into the next place ---- */
     near.deco.forEach(d => {
-      if (!d.gateway) return;
-      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal, d.x);
+      if (!d.gateway || !mine(d)) return;
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x,
+               { role: 'gateway', floorY: this.sy(d.y) });
     });
 
-    /* ---- holes in the floor: darkness first, themed bottom on top ---- */
+    /* ---- the stairwell down to the metro: steps, not a hole ---- */
     near.deco.forEach(d => {
-      if (!d.inGap) return;
-      const zz = ZONES[d.zone], x0 = this.sx(d.x), y0 = this.sy(0);
-      const gg = ctx.createLinearGradient(0, y0, 0, y0 + 150);
-      gg.addColorStop(0, '#16121f'); gg.addColorStop(1, '#0a0810');
-      ctx.fillStyle = gg; ctx.fillRect(x0, y0, d.w, VH - y0 + 240);
-      drawProp(ctx, d.prop, x0, y0, d.w, d.h, this.t, zz.pal, d.x);
-      /* lit lips so the edges read at speed */
-      ctx.save(); ctx.globalAlpha = .5;
-      fillRR(ctx, x0 - 3, y0 - 3, 6, 8, 2, '#fff');
-      fillRR(ctx, x0 + d.w - 3, y0 - 3, 6, 8, 2, '#fff');
-      ctx.restore();
+      if (!d.shaft || !mine(d)) return;
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y), d.w, d.h, this.t, this.palOf(d), d.x, { role: 'shaft' });
     });
 
     /* ---- floors ---- */
     near.ground.forEach(g => {
-      const zz = ZONES[g.zone == null ? this.zoneAt(g.x + 1).zone.index : g.zone];
-      const y0 = this.sy(0);
+      if (!mine(g)) return;
+      const y0 = this.sy(g.y);
       const a = Math.max(this.sx(g.x), -30), b = Math.min(this.sx(g.x + g.w), VW + 30);
       if (b <= a) return;
-      paintFloor(ctx, zz.floor, a, y0, b - a, VH - y0 + 240, zz.pal, this.t, camX);
+      paintFloor(ctx, this.floorOf(g), a, y0, b - a, VH - y0 + 320, this.palOf(g), this.t, camX);
     });
+
+    /* ---- signage: the metro roundel, the arrow up the stairs. These are the
+       one thing on the track she can run straight through, so they are drawn
+       set back and dimmed rather than sitting up in her lane. ---- */
+    ctx.save(); ctx.globalAlpha = .62;
+    near.deco.forEach(d => {
+      if (!d.sign || !mine(d)) return;
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x,
+               { role: 'sign', floorY: this.sy(d.y) });
+    });
+    ctx.restore();
+
     near.platforms.forEach(p => {
-      const zz = ZONES[p.zone];
+      if (!mine(p)) return;
       const x0 = this.sx(p.x), y0 = this.sy(p.y);
-      if (p.pit) {
-        const a = Math.max(x0, -30), b = Math.min(x0 + p.w, VW + 30);
-        if (b > a) paintFloor(ctx, zz.floor, a, y0, b - a, VH - y0 + 240, zz.pal, this.t, camX);
-        return;
-      }
       const hgt = p.h || 40;
       ctx.save();
       if (p.oneWay) { ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 6; }
-      drawPropTiled(ctx, p.prop, x0, y0, p.w, hgt, this.t, zz.pal, p.x);
+      drawPropTiled(ctx, p.prop, x0, y0, p.w, hgt, this.t, this.palOf(p), p.x,
+                    { role: p.stair ? 'stair' : 'step', floorY: this.sy(this.layerBase(p.layer)),
+                      rise: p.rise, dir: p.dir });
       ctx.restore();
       /* readable landing edge */
-      ctx.save(); ctx.globalAlpha = .5;
+      ctx.save(); ctx.globalAlpha = .38;
       fillRR(ctx, x0, y0 - 2, p.w, 3, 2, 'rgba(255,255,255,.55)');
       ctx.restore();
     });
@@ -589,35 +678,31 @@ const Game = {
     /* ---- scenery: flat decals lying on the floor, never anything she can hit ---- */
     ctx.save(); ctx.globalAlpha = 0.55;
     near.deco.forEach(d => {
-      if (d.finish || d.inGap || d.gateway) return;
-      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal, d.x);
+      if (d.finish || d.shaft || d.sign || d.gateway || !mine(d)) return;
+      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x);
     });
     ctx.restore();
 
     /* ---- checkpoint flags at the mouth of every place ---- */
-    W.zones.forEach(zz => {
+    if (LY === 'main') W.zones.forEach(zz => {
       const fx = this.sx(zz.x0 + 24);
       if (fx < -70 || fx > VW + 70 || zz.zone.index === 0) return;
       this.drawFlag(fx, this.sy(0), this.checkpoint && this.checkpoint.zoneIdx >= zz.zone.index);
     });
 
-    /* ---- hazards, with a subtle "this one matters" rim ---- */
+    /* ---- obstacles. No rim any more: an object stops her because it is an
+       object, and it reads as one — the shadow under it is the only cue. ---- */
     near.hazards.forEach(hz => {
-      const zz = ZONES[hz.zone];
+      if (!mine(hz)) return;
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
-      /* something standing on the floor casts a shadow on it; scenery decals don't */
+      const floorY = this.sy(this.layerBase(hz.layer));
       if (hz.kind !== 'over') {
-        ctx.save(); ctx.globalAlpha = .28;
+        ctx.save(); ctx.globalAlpha = .3;
         fillEll(ctx, x0 + hz.w / 2, this.sy(hz.y) + 3, hz.w * 0.56, 7, '#1a1226');
         ctx.restore();
       }
-      ctx.save();
-      ctx.globalAlpha = .3;
-      rr(ctx, x0 - 3, yTop - 3, hz.w + 6, hz.h + 6, 9);
-      ctx.strokeStyle = hz.kind === 'over' ? '#ffd0e6' : '#fff4c8';
-      ctx.lineWidth = 4.5; ctx.stroke();
-      ctx.restore();
-      drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, zz.pal, hz.x);
+      drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, this.palOf(hz), hz.x,
+                    { role: hz.kind, floorY: floorY });
     });
 
     /* ---- finish arch ---- */
@@ -626,7 +711,10 @@ const Game = {
     });
 
     /* ---- treats ---- */
-    near.bones.forEach(b => { if (!b.got) this.drawBone(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5); });
+    near.bones.forEach(b => {
+      if (b.got || !mine(b)) return;
+      this.drawBone(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5);
+    });
 
     /* ---- dust ---- */
     this.fx.dust.forEach(p => {
@@ -635,7 +723,6 @@ const Game = {
     });
 
     /* ---- Lota ---- */
-    const L = this.lota;
     if (L) {
       drawLota(ctx, this.sx(L.x), this.sy(L.y), {
         state: L.state, t: this.t, run: L.runPhase, skin: Save.data.skin,
