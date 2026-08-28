@@ -3,52 +3,113 @@
    lota.js — the black miniature schnauzer, drawn procedurally.
    Local space: origin = centre between her paws, +x = forward,
    y grows downward (so her head sits at negative y).
+
+   She is a black-and-silver mini: the coat is black, the schnauzer
+   furnishings — beard, eyebrows, chest and the lower half of every
+   leg — are silver, which is what makes the breed readable at the
+   size she is actually drawn on screen.
 ----------------------------------------------------------------*/
 const LOTA = {
   STAND_W: 56, STAND_H: 62,
   DUCK_W: 66,  DUCK_H: 30,
-  fur:      '#26242f',
+  fur:      '#242231',
   furLight: '#3b3849',
-  furDark:  '#17161e',
-  beard:    '#c6c0b8',
-  beardHi:  '#e2ddd6',
-  paw:      '#312e3c',
-  nose:     '#0f0e14',
+  furDark:  '#15141c',
+  beard:    '#b9b4ab',
+  beardHi:  '#ded9d0',
+  beardSh:  '#8b867e',
+  furnish:  '#7f7a71',
+  furnishD: '#57534f',
+  nose:     '#0e0d13',
   ink:      'rgba(150,145,175,.55)',
   tongue:   '#ff8fa8'
 };
 
-/* quadratic limb with a paw at the end */
-function limb(ctx, hx, hy, fx, fy, bend, col, w) {
+/* split a quadratic at t and return the far half's control + start */
+function quadTail(p0, p1, p2, t) {
+  const lp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const a = lp(p0, p1), b = lp(p1, p2);
+  return { s: lp(a, b), c: b };
+}
+
+/* quadratic limb; `furn` silvers the lower half the way her furnishings do */
+function limb(ctx, hx, hy, fx, fy, bend, col, w, furn) {
   const mx = (hx + fx) / 2, my = (hy + fy) / 2;
   const dx = fx - hx, dy = fy - hy, L = Math.hypot(dx, dy) || 1;
   const nx = -dy / L, ny = dx / L;
+  const cx = mx + nx * bend, cy = my + ny * bend;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath();
   ctx.moveTo(hx, hy);
-  ctx.quadraticCurveTo(mx + nx * bend, my + ny * bend, fx, fy);
-  ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.quadraticCurveTo(cx, cy, fx, fy);
+  ctx.strokeStyle = col; ctx.lineWidth = w;
   ctx.stroke();
+  if (furn) {
+    const h = quadTail([hx, hy], [cx, cy], [fx, fy], 0.68);
+    ctx.beginPath();
+    ctx.moveTo(h.s[0], h.s[1]);
+    ctx.quadraticCurveTo(h.c[0], h.c[1], fx, fy);
+    ctx.strokeStyle = furn; ctx.lineWidth = w * 0.88;
+    ctx.stroke();
+  }
 }
 
-/* one upright schnauzer ear */
-function ear(ctx, bx, by, ang, len, col) {
+/* one small V-shaped ear, creased at the base and folded forward.
+   The pivot is the crease, so the whole flap hangs off the skull top. */
+function ear(ctx, bx, by, ang, sc, col) {
   ctx.save();
-  ctx.translate(bx, by); ctx.rotate(ang);
+  ctx.translate(bx, by); ctx.rotate(ang); ctx.scale(sc, sc);
   ctx.beginPath();
-  ctx.moveTo(-6.5, 2);
-  ctx.quadraticCurveTo(-4.5, -len * 0.75, 0.4, -len);
-  ctx.quadraticCurveTo(5, -len * 0.6, 6.5, 2.5);
-  ctx.quadraticCurveTo(0, 6, -6.5, 2);
+  ctx.moveTo(-5.5, -1);
+  ctx.quadraticCurveTo(-1.5, -4.5, 4.5, -1.5);
+  ctx.quadraticCurveTo(7.8, 2.5, 5.4, 8.5);
+  ctx.quadraticCurveTo(2.6, 12, -0.4, 8.2);
+  ctx.quadraticCurveTo(-5.5, 3.5, -5.5, -1);
   ctx.closePath();
   ctx.fillStyle = col; ctx.fill();
-  ctx.strokeStyle = LOTA.ink; ctx.lineWidth = 1.6; ctx.stroke();
-  /* inner ear */
+  ctx.strokeStyle = LOTA.ink; ctx.lineWidth = 1.4; ctx.stroke();
+  /* the crease catches the light */
+  ctx.save(); ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.moveTo(-2.4, 1);
-  ctx.quadraticCurveTo(-1.4, -len * 0.55, 0.3, -len * 0.72);
-  ctx.quadraticCurveTo(2.4, -len * 0.5, 3, 1);
+  ctx.moveTo(-4.4, -1.2);
+  ctx.quadraticCurveTo(-1.2, -3.6, 3.6, -1.2);
+  ctx.quadraticCurveTo(5.2, 0.8, 4.2, 2.6);
+  ctx.quadraticCurveTo(-0.6, 0.4, -4.4, -1.2);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(120,95,110,.5)'; ctx.fill();
+  ctx.fillStyle = LOTA.furLight; ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+
+/* torso: straight topline, deep chest up front, tucked-up waist */
+function bodyPath(ctx, rx, ry) {
+  ctx.beginPath();
+  ctx.moveTo(-rx, -ry * 0.30);
+  ctx.quadraticCurveTo(-rx * 1.0, -ry * 1.02, -rx * 0.52, -ry * 1.0);
+  ctx.quadraticCurveTo(rx * 0.1, -ry * 1.02, rx * 0.5, -ry * 0.92);
+  ctx.quadraticCurveTo(rx * 0.98, -ry * 0.82, rx, -ry * 0.05);
+  ctx.quadraticCurveTo(rx * 1.02, ry * 0.72, rx * 0.58, ry * 0.98);
+  ctx.quadraticCurveTo(rx * 0.12, ry * 0.8, -rx * 0.3, ry * 0.82);
+  ctx.quadraticCurveTo(-rx * 0.82, ry * 0.84, -rx, -ry * 0.30);
+  ctx.closePath();
+}
+
+/* the silver fringe that hangs off her belly */
+function skirt(ctx, rx, ry) {
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(rx * 0.88, ry * 0.36);
+  ctx.quadraticCurveTo(rx * 0.9, ry * 0.72, rx * 0.6, ry * 0.9);
+  const x0 = rx * 0.6, x1 = -rx * 0.2, n = 3;
+  for (let i = 0; i < n; i++) {
+    const a = lerp(x0, x1, i / n), b = lerp(x0, x1, (i + 1) / n);
+    ctx.quadraticCurveTo((a + b) / 2, ry * 0.99, b, ry * 0.86);
+  }
+  ctx.quadraticCurveTo(-rx * 0.34, ry * 0.76, -rx * 0.22, ry * 0.66);
+  ctx.quadraticCurveTo(rx * 0.34, ry * 0.78, rx * 0.88, ry * 0.36);
+  ctx.closePath();
+  ctx.fillStyle = LOTA.furnish; ctx.fill();
   ctx.restore();
 }
 
@@ -89,18 +150,21 @@ function drawLota(ctx, px, py, opts) {
     const tilt = o.tilt != null ? o.tilt : Math.sin(t * 0.9) * 0.11;
     const earTw = Math.sin(t * 5.5) * (((t * 0.5) % 4 > 3.4) ? 0.35 : 0.05);
 
-    /* tail curled behind */
+    /* short docked tail, carried up behind */
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(-26, -22);
-    ctx.quadraticCurveTo(-40, -30 + Math.sin(t * 3) * 3, -34, -44 + Math.sin(t * 3) * 4);
-    ctx.strokeStyle = F.fur; ctx.lineWidth = 11; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.moveTo(-24, -20);
+    ctx.quadraticCurveTo(-34, -26 + Math.sin(t * 3) * 3, -31, -36 + Math.sin(t * 3) * 4);
+    ctx.strokeStyle = F.fur; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.stroke();
     ctx.restore();
 
     /* haunch + back paw */
     fillEll(ctx, -13, -18, 20, 18, F.fur);
     ctx.strokeStyle = F.ink; ctx.lineWidth = 2; ctx.stroke();
-    fillEll(ctx, -4, -5, 13, 6, F.paw);
+    ctx.save(); ctx.globalAlpha = 0.8;
+    fillEll(ctx, -5, -7, 11, 6, F.furnishD);
+    ctx.restore();
+    fillEll(ctx, -4, -4, 12, 5.5, F.furnishD);
 
     /* chest / body upright */
     ctx.save();
@@ -108,18 +172,27 @@ function drawLota(ctx, px, py, opts) {
     ell(ctx, 0, 0, 19, 22, -0.06);
     ctx.fillStyle = F.fur; ctx.fill(); ctx.strokeStyle = F.ink; ctx.lineWidth = 2; ctx.stroke();
     ctx.restore();
-    /* chest beard */
-    ctx.save(); ctx.globalAlpha = 0.95;
-    ell(ctx, 12, -30, 9, 12, 0.2); ctx.fillStyle = F.beard; ctx.fill();
+    /* silver chest, from the beard down to the front paws */
+    ctx.save(); ctx.globalAlpha = 0.96;
+    ctx.beginPath();
+    ctx.moveTo(10, -48);
+    ctx.quadraticCurveTo(20, -43, 19, -31);
+    ctx.quadraticCurveTo(18, -21, 13, -17);
+    ctx.quadraticCurveTo(8, -24, 10, -48);
+    ctx.closePath();
+    ctx.fillStyle = F.furnish; ctx.fill();
+    ctx.globalAlpha = 0.35;
+    line(ctx, 14, -40, 13, -20, F.furnishD, 1.3);
+    line(ctx, 18, -38, 17, -22, F.furnishD, 1.3);
     ctx.restore();
 
-    /* front legs */
+    /* front legs, silver from the elbow down */
     const lift = o.paw ? Math.max(0, Math.sin(t * 2.6)) * 16 : 0;
-    limb(ctx, 8, -40, 12, -2, 2, F.fur, 11);
-    limb(ctx, 17, -40, 22 + lift * 0.5, -2 - lift, 2, F.fur, 11);
-    fillEll(ctx, 12, -2, 8, 4.5, F.paw);
-    if (lift < 3) fillEll(ctx, 22, -2, 8, 4.5, F.paw);
-    else fillEll(ctx, 22 + lift * 0.5, -2 - lift, 7, 5, F.paw);
+    limb(ctx, 8, -40, 12, -2, 2, F.fur, 10.5, F.furnishD);
+    limb(ctx, 17, -40, 22 + lift * 0.5, -2 - lift, 2, F.fur, 10.5, F.furnish);
+    fillEll(ctx, 12, -2, 7, 4.2, F.furnishD);
+    if (lift < 3) fillEll(ctx, 22, -2, 7, 4.2, F.furnish);
+    else fillEll(ctx, 22 + lift * 0.5, -2 - lift, 6.5, 4.6, F.furnish);
 
     /* head */
     ctx.save();
@@ -143,59 +216,60 @@ function drawLota(ctx, px, py, opts) {
     const headY = (duck ? -26 : -49) + bob * 0.8;
     const headA = duck ? 0.22 : air ? (st === 'jump' ? -0.24 : 0.16) : Math.sin(p * 2) * 0.06;
 
-    /* ---- tail (short, curled up) ---- */
+    /* ---- tail (docked short, carried up) ---- */
     const wag = duck ? 0.1 : air ? -0.25 : Math.sin(p * 2.4) * 0.42;
     ctx.save();
-    ctx.translate(-24, bodyY - 8);
+    ctx.translate(-23, bodyY - 9);
     ctx.rotate(wag + (duck ? 0.5 : -0.15));
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.quadraticCurveTo(-11, -6, -9, -18);
-    ctx.strokeStyle = F.fur; ctx.lineWidth = 10.5; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.moveTo(0, 2);
+    ctx.quadraticCurveTo(-8, -4, -6.5, -14);
+    ctx.strokeStyle = F.fur; ctx.lineWidth = 11.5; ctx.lineCap = 'round'; ctx.stroke();
     ctx.strokeStyle = F.furLight; ctx.lineWidth = 3.5;
-    ctx.beginPath(); ctx.moveTo(-2, -2); ctx.quadraticCurveTo(-11, -7, -9.5, -16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-1.5, 0); ctx.quadraticCurveTo(-8, -5, -7, -12.5); ctx.stroke();
     ctx.restore();
 
     /* ---- back legs ---- */
     const bhx = -17, bhy = bodyY + 10;
     const legs = legPositions(p, st, duck);
-    limb(ctx, bhx, bhy, bhx + legs.b1x, legs.b1y, -5, F.furDark, 9);
-    limb(ctx, bhx + 3, bhy, bhx + 3 + legs.b2x, legs.b2y, -5, F.fur, 9.5);
+    limb(ctx, bhx, bhy, bhx + legs.b1x, legs.b1y, -5, F.furDark, 9, F.furnishD);
+    limb(ctx, bhx + 3, bhy, bhx + 3 + legs.b2x, legs.b2y, -5, F.fur, 9.5, F.furnish);
 
     /* ---- front legs (behind body) ---- */
     const fhx = 16, fhy = bodyY + 9;
-    limb(ctx, fhx, fhy, fhx + legs.f1x, legs.f1y, 5, F.furDark, 8.5);
+    limb(ctx, fhx, fhy, fhx + legs.f1x, legs.f1y, 5, F.furDark, 8.5, F.furnishD);
 
     /* ---- body ---- */
     ctx.save();
     ctx.translate(0, bodyY); ctx.rotate(tilt);
-    ell(ctx, 0, 0, bodyRX, bodyRY, 0);
+    bodyPath(ctx, bodyRX, bodyRY);
     ctx.fillStyle = F.fur; ctx.fill();
     ctx.strokeStyle = F.ink; ctx.lineWidth = 2.2; ctx.stroke();
-    /* back highlight */
-    ctx.save(); ctx.globalAlpha = 0.5;
-    ell(ctx, -2, -bodyRY * 0.45, bodyRX * 0.72, bodyRY * 0.3, -0.05);
+    /* back highlight along the straight topline */
+    ctx.save(); ctx.globalAlpha = 0.45;
+    ell(ctx, -2, -bodyRY * 0.6, bodyRX * 0.66, bodyRY * 0.22, -0.04);
     ctx.fillStyle = F.furLight; ctx.fill();
     ctx.restore();
-    /* schnauzer skirt (lighter belly fringe) */
-    ctx.save(); ctx.globalAlpha = 0.55;
-    ell(ctx, 4, bodyRY * 0.55, bodyRX * 0.6, bodyRY * 0.42, 0);
-    ctx.fillStyle = '#5c5768'; ctx.fill();
-    ctx.restore();
+    /* silver skirt along the belly */
+    skirt(ctx, bodyRX, bodyRY);
     ctx.restore();
 
     /* ---- front leg (in front of body) ---- */
-    limb(ctx, fhx + 4, fhy, fhx + 4 + legs.f2x, legs.f2y, 5, F.fur, 9);
+    limb(ctx, fhx + 4, fhy, fhx + 4 + legs.f2x, legs.f2y, 5, F.fur, 9, F.furnish);
     /* paws */
-    pawAt(ctx, bhx + legs.b1x, legs.b1y, F.furDark);
-    pawAt(ctx, bhx + 3 + legs.b2x, legs.b2y, F.paw);
-    pawAt(ctx, fhx + legs.f1x, legs.f1y, F.furDark);
-    pawAt(ctx, fhx + 4 + legs.f2x, legs.f2y, F.paw);
+    pawAt(ctx, bhx + legs.b1x, legs.b1y, F.furnishD);
+    pawAt(ctx, bhx + 3 + legs.b2x, legs.b2y, F.furnish);
+    pawAt(ctx, fhx + legs.f1x, legs.f1y, F.furnishD);
+    pawAt(ctx, fhx + 4 + legs.f2x, legs.f2y, F.furnish);
 
     /* ---- neck + head ---- */
     ctx.save();
     ctx.translate(headX - 10, headY + 12); ctx.rotate(headA * 0.5);
     fillEll(ctx, 0, 0, 13, 12, F.fur);
+    /* silver chest between the front legs, under the beard */
+    ctx.save(); ctx.globalAlpha = 0.85;
+    ell(ctx, 2, 8, 6, 5, 0.3); ctx.fillStyle = F.furnish; ctx.fill();
+    ctx.restore();
     ctx.restore();
 
     ctx.save();
@@ -220,7 +294,7 @@ function drawLota(ctx, px, py, opts) {
   ctx.restore();
 }
 
-function pawAt(ctx, x, y, col) { fillEll(ctx, x, y, 7, 4.4, col); }
+function pawAt(ctx, x, y, col) { fillEll(ctx, x + 0.5, y, 5.4, 3.8, col); }
 
 /* leg target positions for the current pose */
 function legPositions(p, st, duck) {
@@ -245,96 +319,154 @@ function legPositions(p, st, duck) {
   };
 }
 
-/* head drawn at local origin = head centre */
+/* head drawn at local origin = head centre.
+   The schnauzer read comes from three shapes: a blocky flat-topped
+   skull, brows that overhang the eyes, and a beard that squares off
+   the whole muzzle. */
 function drawHead(ctx, t, blink, face, earA, earVis) {
   const F = LOTA;
-  /* ears behind skull */
-  if (earVis > 0.2) {
-    ear(ctx, -6, -10, -0.30 + earA, 19 * earVis, F.fur);
-    ear(ctx,  6, -12,  0.16 + earA * 0.7, 20 * earVis, F.furLight);
-  } else {
-    ear(ctx, -8, -6, -1.35 + earA, 16, F.fur);
-    ear(ctx,  2, -9, -1.05 + earA, 17, F.furLight);
-  }
+  const eSc = earVis > 0.2 ? 1 : 0.8;
+
+  /* far ear, behind the skull */
+  ear(ctx, -13.5, -9.5, -0.95 + earA * 0.7, 0.74 * eSc, F.furDark);
 
   /* skull */
-  ell(ctx, 0, 0, 16, 14.5, 0);
+  ctx.beginPath();
+  ctx.moveTo(-15, -5);
+  ctx.quadraticCurveTo(-15.5, -15, -5, -16);
+  ctx.quadraticCurveTo(6, -16.5, 11, -13);
+  ctx.quadraticCurveTo(14.5, -10, 14, -3);
+  ctx.quadraticCurveTo(13.5, 5, 8, 9);
+  ctx.quadraticCurveTo(0, 13.5, -8, 10.5);
+  ctx.quadraticCurveTo(-14.5, 6.5, -15, -5);
+  ctx.closePath();
   ctx.fillStyle = F.fur; ctx.fill();
   ctx.strokeStyle = F.ink; ctx.lineWidth = 2.1; ctx.stroke();
 
-  /* muzzle + big schnauzer beard */
+  /* near ear, folded forward off the top of the skull */
+  ear(ctx, -6.5, -15.5, -0.14 + earA, 0.8 * eSc, F.fur);
+
+  /* muzzle bridge — black, running flat forward off the brow to the nose */
+  ctx.beginPath();
+  ctx.moveTo(6, -11);
+  ctx.quadraticCurveTo(16, -11.5, 23, -9);
+  ctx.quadraticCurveTo(27, -7, 26, -1);
+  ctx.quadraticCurveTo(18, 1.5, 6, 0.5);
+  ctx.closePath();
+  ctx.fillStyle = F.fur; ctx.fill();
+
+  /* beard — a square curtain hung off the muzzle */
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(4, -3);
-  ctx.quadraticCurveTo(21, -4.5, 24, 3);
-  ctx.quadraticCurveTo(26, 14, 14, 17);
-  ctx.quadraticCurveTo(2, 19, 1, 8);
+  ctx.moveTo(1, -1);
+  ctx.quadraticCurveTo(13, -3.5, 25, -2);
+  ctx.quadraticCurveTo(28.5, -1, 28, 5);
+  ctx.quadraticCurveTo(27.5, 12.5, 24, 16.5);   /* front face, straight down */
+  ctx.quadraticCurveTo(20, 20.5, 16.5, 17);     /* notched hem */
+  ctx.quadraticCurveTo(13, 21, 9.5, 16.5);
+  ctx.quadraticCurveTo(5.5, 19.5, 2.5, 14);
+  ctx.quadraticCurveTo(-1.5, 7.5, 1, -1);
   ctx.closePath();
   ctx.fillStyle = F.beard; ctx.fill();
-  ctx.strokeStyle = 'rgba(90,84,80,.45)'; ctx.lineWidth = 1.6; ctx.stroke();
-  /* beard strands */
-  ctx.globalAlpha = 0.5;
-  line(ctx, 9, 8, 8, 16, '#a49d94', 1.4);
-  line(ctx, 14, 8, 14, 17, '#a49d94', 1.4);
-  line(ctx, 19, 7, 20, 14, '#a49d94', 1.4);
+  ctx.strokeStyle = 'rgba(80,75,72,.32)'; ctx.lineWidth = 1.5; ctx.stroke();
+  /* it sits in the shade where it meets the muzzle */
+  ctx.save(); ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(1.5, 0); ctx.quadraticCurveTo(13, -2.5, 25, -1);
+  ctx.quadraticCurveTo(14, 2.5, 2, 4); ctx.closePath();
+  ctx.fillStyle = F.beardSh; ctx.fill();
+  ctx.restore();
+  /* strands */
+  ctx.globalAlpha = 0.4;
+  line(ctx, 6, 6, 4.5, 14.5, F.beardSh, 1.5);
+  line(ctx, 12, 5, 11.5, 16.5, F.beardSh, 1.5);
+  line(ctx, 18, 4, 18, 16.5, F.beardSh, 1.5);
+  line(ctx, 23.5, 4, 24, 13.5, F.beardSh, 1.5);
+  ctx.globalAlpha = 0.45;
+  line(ctx, 9, 7, 8, 13.5, F.beardHi, 1.3);
+  line(ctx, 21, 6, 21, 12.5, F.beardHi, 1.3);
   ctx.restore();
 
-  /* nose */
+  /* nose — big and square-ish, at the end of the muzzle */
   ctx.beginPath();
-  ctx.moveTo(19, -1.5); ctx.quadraticCurveTo(27, -1, 26, 4);
-  ctx.quadraticCurveTo(24, 8, 19, 6); ctx.closePath();
+  ctx.moveTo(20, -9.5);
+  ctx.quadraticCurveTo(28, -9, 28.5, -3.5);
+  ctx.quadraticCurveTo(28.5, 1, 23, 1);
+  ctx.quadraticCurveTo(19.5, 0.5, 20, -9.5);
+  ctx.closePath();
   ctx.fillStyle = F.nose; ctx.fill();
-  fillEll(ctx, 22.5, 0.6, 2.2, 1.2, 'rgba(255,255,255,.45)');
+  fillEll(ctx, 24, -6.6, 2.4, 1.3, 'rgba(255,255,255,.4)');
 
-  /* eyebrows — the schnauzer signature */
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(-3, -10); ctx.quadraticCurveTo(6, -16, 14, -8);
-  ctx.quadraticCurveTo(6, -10.5, -3, -6); ctx.closePath();
-  ctx.fillStyle = F.beardHi; ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-12, -9); ctx.quadraticCurveTo(-6, -15, 0, -9.5);
-  ctx.quadraticCurveTo(-6, -10, -12, -6); ctx.closePath();
-  ctx.fillStyle = F.beard; ctx.fill();
-  ctx.restore();
-
-  /* eyes */
+  /* eyes, small and dark, set deep under the brow ridge */
   const wow = face === 'wow', sad = face === 'sad';
-  const eyeR = wow ? 5.4 : sad ? 4.2 : 4.8;
-  const eyes = [[2.5, -3.2], [12.5, -2.4]];
-  eyes.forEach((e, i) => {
-    if (blink) { line(ctx, e[0] - 4, e[1], e[0] + 4, e[1], '#0c0b11', 2.2); return; }
-    fillEll(ctx, e[0], e[1], eyeR, eyeR * 1.06, '#fdfcff');
-    const px = e[0] + (wow ? 0.6 : 1.1), py = e[1] + (sad ? 1.2 : 0.4);
-    circle(ctx, px, py, eyeR * 0.62, '#171622');
-    circle(ctx, px - eyeR * 0.28, py - eyeR * 0.34, eyeR * 0.26, '#fff');
-    circle(ctx, px + eyeR * 0.3, py + eyeR * 0.32, eyeR * 0.13, 'rgba(255,255,255,.6)');
-    if (i === 1 && !wow) ctx.globalAlpha = 1;
+  const eyeR = wow ? 4.6 : sad ? 3.6 : 4.0;
+  const eyes = [[1.5, -5.2], [10.8, -4.6]];
+  eyes.forEach(e => {
+    if (blink) { line(ctx, e[0] - 3.6, e[1], e[0] + 3.6, e[1], '#0c0b11', 2.1); return; }
+    fillEll(ctx, e[0], e[1], eyeR, eyeR * 1.04, '#fdfcff');
+    const px = e[0] + (wow ? 0.5 : 1.1), py = e[1] + (sad ? 1.0 : 0.4);
+    circle(ctx, px, py, eyeR * 0.72, '#171622');
+    circle(ctx, px - eyeR * 0.28, py - eyeR * 0.34, eyeR * 0.27, '#fff');
+    circle(ctx, px + eyeR * 0.3, py + eyeR * 0.32, eyeR * 0.14, 'rgba(255,255,255,.6)');
   });
 
-  /* mouth / tongue */
+  /* eyebrows — bushy, overhanging, the other half of the signature.
+     Drawn last on the face so nothing crops them. */
+  const brow = sad ? 1.8 : wow ? -1.6 : 0;
+  ctx.save();
+  ctx.translate(0, brow);
+  /* far brow */
+  ctx.beginPath();
+  ctx.moveTo(-8, -7.6);
+  ctx.quadraticCurveTo(-7.4, -13.4, -1.6, -12.8);
+  ctx.quadraticCurveTo(3.6, -12.2, 5, -7.2);
+  ctx.quadraticCurveTo(1.4, -8.8, -2.8, -8.6);
+  ctx.quadraticCurveTo(-6.2, -8.4, -8, -7.6);
+  ctx.closePath();
+  ctx.fillStyle = F.furnishD; ctx.fill();
+  /* near brow, jutting forward over the outer corner of the eye */
+  ctx.beginPath();
+  ctx.moveTo(3.6, -8.4);
+  ctx.quadraticCurveTo(6, -14.8, 12.2, -13.4);
+  ctx.quadraticCurveTo(18.2, -12, 17.4, -5.6);
+  ctx.quadraticCurveTo(15.2, -8.2, 10.2, -8.4);
+  ctx.quadraticCurveTo(6.4, -8.6, 3.6, -8.4);
+  ctx.closePath();
+  ctx.fillStyle = F.beard; ctx.fill();
+  ctx.save(); ctx.globalAlpha = 0.5;
+  line(ctx, 6.2, -12.2, 5.6, -8.6, F.beardHi, 1.3);
+  line(ctx, 10, -13.6, 9.8, -8.6, F.beardHi, 1.3);
+  line(ctx, 13.6, -12.9, 14.2, -7.6, F.beardHi, 1.3);
+  line(ctx, 16.3, -11.3, 16.8, -6.6, F.beardHi, 1.2);
+  line(ctx, -5.4, -11.8, -5.8, -8.8, F.beard, 1.2);
+  line(ctx, -1.8, -12.4, -2, -9, F.beard, 1.2);
+  line(ctx, 1.8, -11.8, 2, -8.9, F.beard, 1.2);
+  ctx.restore();
+  ctx.restore();
+
+  /* mouth / tongue, peeking out of the beard under the nose */
   if (face === 'happy') {
     ctx.beginPath();
-    ctx.moveTo(12, 8); ctx.quadraticCurveTo(16, 13, 20, 9);
-    ctx.strokeStyle = '#3a3238'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.moveTo(19, 4); ctx.quadraticCurveTo(22.5, 8, 25.5, 4.5);
+    ctx.strokeStyle = '#4a4340'; ctx.lineWidth = 1.7; ctx.stroke();
     if (Math.sin(t * 6) > -0.2) {
       ctx.beginPath();
-      ctx.moveTo(14, 10); ctx.quadraticCurveTo(17, 18, 21, 11);
+      ctx.moveTo(20, 5.5); ctx.quadraticCurveTo(22.5, 13.5, 26, 6.5);
       ctx.closePath(); ctx.fillStyle = LOTA.tongue; ctx.fill();
     }
   } else if (face === 'wow') {
-    fillEll(ctx, 16, 10, 3.4, 4, '#3a2b33');
+    fillEll(ctx, 22.5, 6.5, 3.2, 3.8, '#3a2b33');
   } else if (face === 'sad') {
-    ctx.beginPath(); ctx.moveTo(12, 12); ctx.quadraticCurveTo(16, 8, 20, 12);
-    ctx.strokeStyle = '#3a3238'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(19, 7.5); ctx.quadraticCurveTo(22.5, 4, 26, 7.5);
+    ctx.strokeStyle = '#4a4340'; ctx.lineWidth = 1.7; ctx.stroke();
   } else {
-    ctx.beginPath(); ctx.moveTo(13, 9); ctx.quadraticCurveTo(16, 12, 19, 9);
-    ctx.strokeStyle = '#3a3238'; ctx.lineWidth = 1.7; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, 4.5); ctx.quadraticCurveTo(22.5, 7, 25, 4.5);
+    ctx.strokeStyle = '#4a4340'; ctx.lineWidth = 1.6; ctx.stroke();
   }
 
   /* cheek blush */
-  ctx.save(); ctx.globalAlpha = 0.22;
-  fillEll(ctx, -6, 3, 5, 3.2, '#ff8fb0');
+  ctx.save(); ctx.globalAlpha = 0.16;
+  fillEll(ctx, -5, 2, 4, 2.6, '#ff8fb0');
   ctx.restore();
 }
 
