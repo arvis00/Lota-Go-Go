@@ -7,6 +7,9 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp  = (a, b, t) => a + (b - a) * t;
 const smooth = t => t * t * (3 - 2 * t);
 const inv = (v, a, b) => clamp((v - a) / (b - a || 1), 0, 1);
+/* modulo that stays positive — picking a colour with a negative index
+   used to hand `undefined` to shade() and kill the whole render loop */
+const imod = (n, m) => ((n % m) + m) % m;
 
 /* deterministic RNG so the track is identical every run */
 function mulberry32(a) {

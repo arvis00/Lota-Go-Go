@@ -233,7 +233,10 @@ const Game = {
       if (this.stateT > 1.7 && !UI.winShown) UI.showWin();
     }
     this.stepFx(dt);
-    this.render(dt);
+    /* one bad colour used to throw out of render() and, because the next frame
+       was requested after it, silently freeze the whole game mid-run */
+    try { this.render(dt); }
+    catch (e) { if (!this.drawErr) { this.drawErr = 1; console.error('Lota Go: piešimo klaida', e); } }
     requestAnimationFrame(t2 => this.frame(t2));
   },
 
@@ -251,11 +254,8 @@ const Game = {
       const v = speedAt(L.x);
       const near = queryCells(W, L.x - 260, L.x + 420);
 
-      /* --- ducking --- */
-      const wantDuck = I.duckHeld || I.duckTimer > 0;
-      const forced = this.headBlocked(near, L.x, L.y);
-      L.duck = (wantDuck || forced) && L.grounded;
-      if (forced && !wantDuck) I.duckTimer = Math.max(I.duckTimer, 0.08);
+      /* --- ducking: only ever because the player asked for it --- */
+      L.duck = (I.duckHeld || I.duckTimer > 0) && L.grounded;
 
       /* --- jump --- */
       if (I.jumpBuf > 0 && (L.grounded || I.coyote > 0) && !L.duck) {
@@ -284,10 +284,7 @@ const Game = {
       };
       near.ground.forEach(gd => consider({ x: gd.x, w: gd.w, top: 0 }));
       near.platforms.forEach(p => consider({ x: p.x, w: p.w, top: p.y }));
-      near.hazards.forEach(hz => {
-        if (hz.kind === 'over') return;      // you cannot perch on a hanging bar
-        consider({ x: hz.x, w: hz.w, top: hz.y + hz.h });
-      });
+      near.hazards.forEach(hz => consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }));
       if (bestTop !== null) {
         if (!L.grounded && L.vy < -180) { Sfx.land(); this.puff(L.x - 6, bestTop, 4); }
         L.y = bestTop; L.vy = 0; L.grounded = true; L.landY = bestTop;
@@ -300,9 +297,7 @@ const Game = {
         };
         near.ground.forEach(gd => chk({ x: gd.x, w: gd.w, top: 0 }));
         near.platforms.forEach(p => chk({ x: p.x, w: p.w, top: p.y }));
-        near.hazards.forEach(hz => {
-          if (hz.kind !== 'over') chk({ x: hz.x, w: hz.w, top: hz.y + hz.h });
-        });
+        near.hazards.forEach(hz => chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }));
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
       }
 
@@ -318,30 +313,42 @@ const Game = {
       near.platforms.forEach(p => {
         if (p.oneWay) return;
         if (b2.x1 - 5 <= p.x || b2.x0 + 5 >= p.x + p.w) return;
-        face(p.y, 34);
+        face(p.y, GRAB);
       });
       near.ground.forEach(gd => {
         if (b2.x1 - 5 <= gd.x || b2.x0 + 5 >= gd.x + gd.w) return;
-        face(0, 34);
+        face(0, GRAB);
       });
       near.hazards.forEach(hz => {
-        if (hz.kind === 'over') return;
         if (b2.x1 - 6 <= hz.x || b2.x0 + 6 >= hz.x + hz.w) return;
-        face(hz.y + hz.h, Math.min(20, hz.h * 0.32));
+        const top = hz.y + hz.h;
+        if (hz.kind !== 'over') { face(top, GRAB); return; }
+        /* a hanging thing has no face down at floor level — she runs under it.
+           Only a jump that gets her near its top edge counts, and that puts her
+           up on top of it rather than killing her. */
+        if (L.y > hz.y && top - L.y <= GRAB_OVER) face(top, GRAB_OVER);
       });
       if (wallTop !== null) {
-        if (wallTop - L.y <= wallGrab && L.vy > -760) {
+        /* On her feet and running straight into it — that is a crash, whatever
+           its height. In the air she jumped at it, so she scrambles up on top
+           instead: a jump is never what kills her. Still falling counts only
+           within reach, otherwise missing a hole would be free. */
+        const canGrab = !L.grounded && (L.vy > 0 || wallTop - L.y <= wallGrab) && L.vy > -760;
+        if (canGrab) {
           L.y = wallTop; L.vy = 0; L.grounded = true; L.landY = wallTop;
           this.puff(L.x - 8, wallTop, 3);
         } else { this.crash('wall'); return; }
       }
 
-      /* --- overhead hazards still kill on contact: you have to duck --- */
+      /* --- running into a hanging thing at head height still kills: that is what
+         the duck is for. Read the box again — a scramble may have just lifted
+         her onto the very thing we are about to test. --- */
+      const b3 = this.box(L);
       let hit = null;
       near.hazards.forEach(hz => {
         if (hit || hz.kind !== 'over') return;
-        if (b2.x1 - 7 <= hz.x || b2.x0 + 7 >= hz.x + hz.w) return;
-        if (b2.y1 - 5 <= hz.y || b2.y0 + 4 >= hz.y + hz.h) return;
+        if (b3.x1 - 7 <= hz.x || b3.x0 + 7 >= hz.x + hz.w) return;
+        if (b3.y1 - 5 <= hz.y || b3.y0 + 4 >= hz.y + hz.h) return;
         hit = hz;
       });
       if (hit) { this.crash('hit'); return; }
@@ -349,8 +356,8 @@ const Game = {
       /* --- shortcuts --- */
       near.warps.forEach(wp => {
         if (wp.used || !wp.toX) return;
-        if (b2.x1 <= wp.x || b2.x0 >= wp.x + wp.w) return;
-        if (b2.y1 <= wp.y || b2.y0 >= wp.y + wp.h) return;
+        if (b3.x1 <= wp.x || b3.x0 >= wp.x + wp.w) return;
+        if (b3.y1 <= wp.y || b3.y0 >= wp.y + wp.h) return;
         wp.used = true;
         this.run.shortcuts++;
         this.fx.warp = 0.42;
@@ -417,20 +424,6 @@ const Game = {
     const w = L.duck ? LOTA.DUCK_W : LOTA.STAND_W;
     const h = L.duck ? LOTA.DUCK_H : LOTA.STAND_H;
     return { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y, y1: L.y + h };
-  },
-
-  /* would a standing Lota bump her head here? (keeps her ducked in tunnels) */
-  headBlocked(near, x, y) {
-    const x0 = x - LOTA.STAND_W / 2 + 4, x1 = x + LOTA.STAND_W / 2 - 4;
-    const y0 = y + LOTA.DUCK_H, y1 = y + LOTA.STAND_H;
-    let blocked = false;
-    near.hazards.forEach(hz => {
-      if (blocked || hz.kind !== 'over') return;
-      if (x1 <= hz.x - 30 || x0 >= hz.x + hz.w) return;
-      if (y1 <= hz.y || y0 >= hz.y + hz.h) return;
-      blocked = true;
-    });
-    return blocked;
   },
 
   updateCam(dt) {
@@ -548,7 +541,7 @@ const Game = {
     /* ---- the doorway into the next place ---- */
     near.deco.forEach(d => {
       if (!d.gateway) return;
-      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal);
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal, d.x);
     });
 
     /* ---- holes in the floor: darkness first, themed bottom on top ---- */
@@ -558,7 +551,7 @@ const Game = {
       const gg = ctx.createLinearGradient(0, y0, 0, y0 + 150);
       gg.addColorStop(0, '#16121f'); gg.addColorStop(1, '#0a0810');
       ctx.fillStyle = gg; ctx.fillRect(x0, y0, d.w, VH - y0 + 240);
-      drawProp(ctx, d.prop, x0, y0, d.w, d.h, this.t, zz.pal);
+      drawProp(ctx, d.prop, x0, y0, d.w, d.h, this.t, zz.pal, d.x);
       /* lit lips so the edges read at speed */
       ctx.save(); ctx.globalAlpha = .5;
       fillRR(ctx, x0 - 3, y0 - 3, 6, 8, 2, '#fff');
@@ -585,7 +578,7 @@ const Game = {
       const hgt = p.h || 40;
       ctx.save();
       if (p.oneWay) { ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 6; }
-      drawPropTiled(ctx, p.prop, x0, y0, p.w, hgt, this.t, zz.pal);
+      drawPropTiled(ctx, p.prop, x0, y0, p.w, hgt, this.t, zz.pal, p.x);
       ctx.restore();
       /* readable landing edge */
       ctx.save(); ctx.globalAlpha = .5;
@@ -597,7 +590,7 @@ const Game = {
     ctx.save(); ctx.globalAlpha = 0.55;
     near.deco.forEach(d => {
       if (d.finish || d.inGap || d.gateway) return;
-      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal);
+      drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, ZONES[d.zone].pal, d.x);
     });
     ctx.restore();
 
@@ -624,7 +617,7 @@ const Game = {
       ctx.strokeStyle = hz.kind === 'over' ? '#ffd0e6' : '#fff4c8';
       ctx.lineWidth = 4.5; ctx.stroke();
       ctx.restore();
-      drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, zz.pal);
+      drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, zz.pal, hz.x);
     });
 
     /* ---- finish arch ---- */

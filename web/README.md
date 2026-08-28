@@ -15,6 +15,9 @@ telefone atidarykite `http://<kompiuterio-IP>:8777`
 python3 -m http.server 8777
 ```
 
+Dirbant su kodu patogiau `python3 ../.claude/serve.py 8131` — tas pats serveris, tik
+siunčia `Cache-Control: no-store`, kad naršyklė nerodytų senų `js/` failų.
+
 iPhone/iPad: Safari → Share → „Add to Home Screen" — žaidimas veiks per visą ekraną.
 
 ## Valdymas
@@ -31,6 +34,10 @@ Liečiamuose ekranuose apatiniame dešiniajame kampe rodomos dvi rodyklės **▲
 laikyti galima kaip klaviatūros klavišus — laikant **▼** Lota lieka pasilenkusi, todėl
 ilgi tuneliai praeinami be pakartotinių swipe'ų. Rodyklės atsiranda automatiškai, kai
 naršyklė praneša `pointer: coarse`.
+
+**Lota niekada nepasilenkia pati.** Anksčiau prieš kabančią kliūtį ji pasilenkdavo
+automatiškai, net jei žaidėjas nieko nespaudė. Dabar pasilenkimą visada valdo žaidėjas:
+laikyk **▼**, kol tunelis baigsis — arba peršok ant jo viršaus.
 
 ## Kaip veikia trasa
 
@@ -55,12 +62,20 @@ Lotos pėdutės. Todėl galioja paprasta taisyklė: **jei objektas stovi — jį
 užšokti ant jo arba pralįsti**. Kliūtys papildomai meta šešėlį ant grindų ir turi vos
 pastebimą kontūrą. `assertPropRoles()` faile `js/level.js` neleidžia šiai taisyklei sugesti.
 
-**Ant kliūčių galima užšokti.** Dėžė, akmuo ar lagaminas žudo tik tada, kai į juos
-atsitrenkiama iš šono — nusileidus ant viršaus Lota tiesiog bėga jais. Vos kliudžius
-viršutinį kraštą ji užsiropščia, o ne žūva. Kabantys objektai (stalai, vamzdžiai, tuneliai)
-lieka mirtini iš bet kurios pusės — po jais reikia pralįsti. Kadangi iš kliūties viršaus
-tenka dar nukristi, generatorius prie tarpo po kiekvieno šablono prideda kritimo laiką,
-kad reakcijos atsarga galiotų ir aukštuoju keliu.
+**Ant kliūčių galima užšokti — ant bet kurios.** Šuolis niekada nėra tai, kas Lotą
+užmuša. Dėžė, akmuo ar lagaminas mirtini tik tada, kai į juos įbėgama žeme, stačiomis;
+jei Lota jau kyla, atsitrenkusi į šoną ji tiesiog užsiropščia ant viršaus, kad ir koks jis
+aukštas. Krisdama ji dar pasigauna kraštą per `GRAB` = 34 px (`js/level.js`) — toliau
+nebeužtenka, kitaip nepataikyti į duobę nieko nekainuotų.
+
+Tas pat galioja ir kabantiems objektams — ekranams, vamzdžiams, tuneliams: laiku pašokusi
+Lota atsistoja jiems ant viršaus ir nubėga juo (`GRAB_OVER` = 52 px). Todėl kiekviena
+kabanti kliūtis turi du kelius: pralįsti apačia laikant **▼** arba užšokti ant viršaus.
+Mirtinas lieka tik per vėlai pradėtas šuolis, kai Lota jau nebespėja pasiekti viršaus ir
+įlekia kliūčiai tiesiai į vidurį — dėl to pasilenkimas vis dar turi prasmę.
+
+Kadangi iš kliūties viršaus tenka dar nukristi, generatorius prie tarpo po kiekvieno
+šablono prideda kritimo laiką, kad reakcijos atsarga galiotų ir aukštuoju keliu.
 
 ## Kontroliniai taškai
 

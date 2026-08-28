@@ -53,7 +53,7 @@ const BG = {
     tileLayer(off, period || 150, VW, (x, i) => {
       const r = makeRng(i * 137 + 5);
       const w = 90 + r() * 70, h = minH + r() * (maxH - minH);
-      const c = cols[i % cols.length];
+      const c = cols[imod(i, cols.length)];
       fillRR(ctx, x, base - h, w, h + 20, 5, c);
       if (roofs) { fillRR(ctx, x - 4, base - h - 8, w + 8, 12, 3, shade(c, -.18)); }
       ctx.save(); ctx.globalAlpha = .9;
@@ -328,7 +328,7 @@ const ZONES = [
       tileLayer((camX * 0.42 + t * 55) % 100000, 340, VW, (x, i) => {
         const cols = ['#e2453c', '#3f8fd6', '#4a9d6e', '#f0a93a'];
         ctx.save(); ctx.globalAlpha = .95;
-        PROPS.car(ctx, x, floorY - 54, 78, 40, t, { car: cols[i % 4] }); ctx.restore();
+        PROPS.car(ctx, x, floorY - 54, 78, 40, t, { car: cols[imod(i, 4)] }); ctx.restore();
       });
     },
     pools: { hurdle: ['cone', 'bin', 'crate', 'signFallen', 'hydrant', 'barrier'], over: ['pipeS', 'awning'],
@@ -398,11 +398,11 @@ const ZONES = [
       fillRR(ctx, 0, floorY - 272, VW, 8, 0, '#7f96ac');
       /* shopfronts */
       tileLayer(camX * 0.3, 250, VW, (x, i) => {
-        const c = ['#ff5f8f', '#3fa8e8', '#f5b731', '#4ec46f', '#a06ff0'][i % 5];
+        const c = ['#ff5f8f', '#3fa8e8', '#f5b731', '#4ec46f', '#a06ff0'][imod(i, 5)];
         fillRR(ctx, x, floorY - 224, 200, 224, 8, '#e8f0f7');
         fillRR(ctx, x + 8, floorY - 218, 184, 40, 6, c);
         ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(['LOTA', 'ZOO', 'MODA', 'KAVA', 'BATAI'][i % 5], x + 100, floorY - 190);
+        ctx.fillText(['LOTA', 'ZOO', 'MODA', 'KAVA', 'BATAI'][imod(i, 5)], x + 100, floorY - 190);
         fillRR(ctx, x + 14, floorY - 172, 172, 120, 6, '#f7fbfe');
         ctx.save(); ctx.globalAlpha = .5;
         fillRR(ctx, x + 14, floorY - 172, 172, 120, 6, shade(c, .55)); ctx.restore();
@@ -415,7 +415,7 @@ const ZONES = [
       /* hanging banners */
       tileLayer(camX * 0.55, 330, VW, (x, i) => {
         line(ctx, x + 60, 74, x + 60, 96, '#7f96ac', 3);
-        const c = ['#ff5f8f', '#3fa8e8', '#f5b731'][i % 3];
+        const c = ['#ff5f8f', '#3fa8e8', '#f5b731'][imod(i, 3)];
         fillRR(ctx, x + 16, 96, 90, 62, 6, c);
         poly(ctx, [[x + 16, 158], [x + 61, 142], [x + 106, 158]], shade(c, -.15));
       });

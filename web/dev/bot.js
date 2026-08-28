@@ -6,10 +6,8 @@
     const c = queryCells(W(), x, x), out = [];
     c.ground.forEach(g => { if (x >= g.x && x <= g.x + g.w) out.push(0); });
     c.platforms.forEach(p => { if (x >= p.x && x <= p.x + p.w) out.push(p.y); });
-    /* obstacle tops are standable now, so they count as floor */
-    c.hazards.forEach(h => {
-      if (h.kind !== 'over' && x >= h.x && x <= h.x + h.w) out.push(h.y + h.h);
-    });
+    /* every obstacle top is standable now, hanging ones included */
+    c.hazards.forEach(h => { if (x >= h.x && x <= h.x + h.w) out.push(h.y + h.h); });
     return out;
   }
 

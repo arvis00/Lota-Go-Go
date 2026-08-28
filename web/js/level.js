@@ -24,6 +24,11 @@ const LEDGE_TOP  = 152;   // one-way shelf height
 const LEDGE_CLEAR = 110;  // free space underneath — she is 62 tall and can now
                           // be standing on a 44-high obstacle while under it
 const DUCK_BOTTOM = 46;   // overhead hazards start here (duck box is 30 tall)
+/* Landing on a thing is never fatal, and neither is jumping at one: a rising
+   Lota always ends up on top of whatever solid thing she clips. GRAB is the
+   extra reach she still has on the way back down. */
+const GRAB = 34;          // anything solid: crates, shelves, the lip of a pit
+const GRAB_OVER = 52;     // hanging things: getting on top of one is a real route
 
 /* An object must have exactly one meaning: either Lota can hit it, or it is
    scenery. Sharing an id between the two makes the track unreadable. */

@@ -413,9 +413,12 @@ const PROPS = {
     ctx.beginPath(); ctx.arc(x + w / 2, y + 6, w * 0.28, Math.PI, 0); ctx.strokeStyle = '#7c5232'; ctx.lineWidth = 3.5; ctx.stroke();
     fillRR(ctx, x + 4, y + h * 0.45, w - 8, 5, 2, '#8f5a3a');
   },
-  suitcase(ctx, x, y, w, h, t, pal) {
+  suitcase(ctx, x, y, w, h, t, pal, seed) {
     const cols = ['#e2453c', '#3f8fd6', '#4a9d6e', '#f0a93a', '#a86fd6'];
-    const c = cols[(x | 0) % 5];
+    /* keyed on where the case stands in the world, not on where it happens to be
+       on screen: screen x goes negative once it scrolls past the left edge, and
+       a negative index handed shade() undefined and froze the render loop */
+    const c = cols[imod(Math.round(seed || 0), cols.length)];
     fillRR(ctx, x, y + 6, w, h - 6, 7, c); ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
     fillRR(ctx, x + w * 0.3, y, w * 0.4, 8, 3, '#5d6470');
     ctx.save(); ctx.globalAlpha = .35;
@@ -699,8 +702,8 @@ Object.assign(PROPS, {
   bagP: PROPS.bagB, rackB: PROPS.railM, awningL: PROPS.awning, shelfH: PROPS.shelfM,
   bagA: PROPS.bagB, plantY: PROPS.flowers
 });
-function drawProp(ctx, id, x, y, w, h, t, pal) {
-  (PROPS[id] || PROPS._default)(ctx, x, y, w, h, t || 0, pal || {});
+function drawProp(ctx, id, x, y, w, h, t, pal, seed) {
+  (PROPS[id] || PROPS._default)(ctx, x, y, w, h, t || 0, pal || {}, seed || 0);
 }
 
 /* how wide each prop wants to be — long platforms repeat it instead of stretching */
@@ -712,10 +715,10 @@ const PROP_NATURAL = {
   boxM: 104, suitcase: 82, cart: 96, railM: 185, rackB: 185
 };
 /* draw a prop across a wide platform, repeating it at a sane size */
-function drawPropTiled(ctx, id, x, y, w, h, t, pal) {
+function drawPropTiled(ctx, id, x, y, w, h, t, pal, seed) {
   const nat = PROP_NATURAL[id] || 0;
-  if (!nat || w <= nat * 1.45) { drawProp(ctx, id, x, y, w, h, t, pal); return; }
+  if (!nat || w <= nat * 1.45) { drawProp(ctx, id, x, y, w, h, t, pal, seed); return; }
   const n = Math.max(1, Math.round(w / nat));
   const tw = w / n;
-  for (let i = 0; i < n; i++) drawProp(ctx, id, x + i * tw, y, tw + 0.6, h, t, pal);
+  for (let i = 0; i < n; i++) drawProp(ctx, id, x + i * tw, y, tw + 0.6, h, t, pal, (seed || 0) + i * 37);
 }
