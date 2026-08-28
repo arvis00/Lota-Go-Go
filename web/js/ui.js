@@ -1,15 +1,35 @@
 'use strict';
 /* ---------------------------------------------------------------
-   ui.js — screens, HUD, the treat shop
+   ui.js — screens, HUD, the outfit shops
+
+   There is one lobby page per level and one shop per level. What a
+   level pays out is spent on that level's page and nowhere else, so
+   every shop reads its own purse out of Save.
 ----------------------------------------------------------------*/
 const $ = id => document.getElementById(id);
 
+/** price tags: treats, toys, or both */
+function costHtml(cost) {
+  if (!cost) return 'BOSO PRIZAS';
+  const parts = [];
+  if (cost.b) parts.push('<span class="bone-ico"></span>' + cost.b);
+  if (cost.t) parts.push('<span class="toy-ico"></span>' + cost.t);
+  return parts.length ? parts.join('<i>+</i>') : 'Nemokama';
+}
+function walletHtml(level) {
+  const w = Save.purse(level), picks = Levels.get(level).picks, out = [];
+  if (picks.indexOf('b') >= 0) out.push('<span class="cur"><span class="bone-ico"></span>' + w.b + '</span>');
+  if (picks.indexOf('t') >= 0) out.push('<span class="cur"><span class="toy-ico"></span>' + w.t + '</span>');
+  if (!out.length) out.push('<span class="none">Čia nieko nerenkama</span>');
+  return out.join('');
+}
+
 const UI = {
-  winShown: false, toastT: null,
+  winShown: false, toastT: null, skinsLevel: 1,
 
   init() {
-    $('btnPlay').onclick    = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Game.startRun(); };
-    $('btnSkins').onclick   = () => { Sfx.click(); this.showSkins(); };
+    $('btnPlay').onclick    = () => { Sfx.init(); Sfx.resume(); this.play(); };
+    $('btnSkins').onclick   = () => { Sfx.init(); Sfx.resume(); this.openSkins(); };
     $('btnSkinsBack').onclick = () => { Sfx.click(); this.showLobby(); };
     $('btnRetry').onclick   = () => { Sfx.click(); Game.startRun(true); };
     $('btnLobby').onclick   = () => { Sfx.click(); this.bank(false); Game.lobby(); };
@@ -18,6 +38,10 @@ const UI = {
     $('btnPause').onclick   = () => { Sfx.click(); this.pause(); };
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
     $('btnPauseLobby').onclick = () => { Sfx.click(); this.bank(false); Game.lobby(); };
+    $('btnPreviewBack').onclick = () => { Sfx.click(); this.backFromPreview(); };
+    $('btnPreviewSkins').onclick = () => { Sfx.click(); this.showSkins(Game.previewLevel); };
+    $('btnPagePrev').onclick = () => Game.gotoLobbyPage(Game.lobbyPage - 1);
+    $('btnPageNext').onclick = () => Game.gotoLobbyPage(Game.lobbyPage + 1);
     $('btnSound').onclick   = () => {
       Save.data.sound = Save.data.sound ? 0 : 1; Save.write();
       Sfx.on = !!Save.data.sound; Sfx.init(); Sfx.resume(); if (Sfx.on) Sfx.click();
@@ -41,20 +65,113 @@ const UI = {
   syncSound() { $('btnSound').textContent = Save.data.sound ? '♪' : '✕'; $('btnSound').style.opacity = Save.data.sound ? 1 : .5; },
 
   hideAll() {
-    ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause']
+    ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview']
       .forEach(id => $(id).classList.add('hidden'));
   },
 
+  /* ---------------- lobby ---------------- */
   showLobby() {
     this.hideAll(); this.winShown = false;
     $('screen-lobby').classList.remove('hidden');
-    $('lobbyBones').textContent = Save.data.bones;
-    const d = Save.data;
-    $('lobbyBest').innerHTML = d.finished
-      ? 'Finišas pasiektas ×' + d.finished + '<br>Rekordas: ' + d.bestBones + ' 🦴'
-      : (d.bestZone ? 'Toliausiai: ' + d.bestZone : 'Pirmyn į Londoną!');
+    this.lobbyPageChanged();
     if (Game.state !== 'lobby') Game.lobby();
+    this.announceKeys();
   },
+
+  /** the overlay fades while the room slides, so the buttons never sit
+      over the wrong level's page */
+  lobbyFade(on) { $('screen-lobby').classList.toggle('sliding', !!on); },
+
+  /** re-dress the overlay for whichever page is now under it */
+  lobbyPageChanged() {
+    const level = Game.lobbyLevel(), L = Levels.get(level);
+    const open = Levels.unlocked(level);
+    const d = Save.data;
+
+    $('lobbySub').textContent = L.sub;
+    $('lobbyWallet').innerHTML = walletHtml(level);
+
+    const play = $('btnPlay'), skins = $('btnSkins'), note = $('lobbyLock');
+    play.classList.toggle('shut', !open);
+    skins.classList.toggle('shut', !open);
+    play.textContent = open ? (L.playable ? 'ŽAISTI' : 'NUOTRAUKA') : '🔒 ŽAISTI';
+    skins.textContent = open ? 'APRANGOS' : '🔒 APRANGOS';
+
+    if (!open) {
+      note.classList.remove('hidden');
+      note.innerHTML = '<b>' + level + ' lygio raktas</b><br>Reikia: ' + Levels.blockedBy(level) + '.';
+    } else {
+      note.classList.add('hidden');
+    }
+
+    if (level === 1) {
+      $('lobbyBest').innerHTML = Save.clears(1)
+        ? 'Finišas pasiektas ×' + Save.clears(1) + '<br>Rekordas: ' + d.bestBones + ' 🦴'
+        : (d.bestZone ? 'Toliausiai: ' + d.bestZone : 'Pirmyn į Londoną!');
+    } else if (open) {
+      const shop = Levels.shop(level);
+      const own = shop.filter(s => Save.owns(s.id)).length;
+      $('lobbyBest').innerHTML = shop.length
+        ? 'Aprangos: ' + own + ' / ' + shop.length
+        : 'Prizas: 2 aprangos';
+    } else {
+      $('lobbyBest').innerHTML = 'Užrakinta';
+    }
+
+    /* arrows + dots */
+    $('btnPagePrev').classList.toggle('off', Game.lobbyPage <= 0);
+    $('btnPageNext').classList.toggle('off', Game.lobbyPage >= LEVELS.length - 1);
+    const dots = $('lobbyDots');
+    dots.innerHTML = '';
+    LEVELS.forEach((lv, i) => {
+      const b = document.createElement('i');
+      if (i === Game.lobbyPage) b.className = 'on';
+      else if (!Levels.unlocked(lv.n)) b.className = 'shut';
+      dots.appendChild(b);
+    });
+  },
+
+  play() {
+    const level = Game.lobbyLevel(), L = Levels.get(level);
+    if (!Levels.unlocked(level)) return this.refuse(level);
+    Sfx.click();
+    if (L.playable) Game.startRun();
+    else Game.showPreview(level);
+  },
+  openSkins() {
+    const level = Game.lobbyLevel();
+    if (!Levels.unlocked(level)) return this.refuse(level);
+    Sfx.click(); this.showSkins(level);
+  },
+  /* the note under the logo already spells out what is missing, so the
+     toast only has to say that the button did nothing */
+  refuse(level) { Sfx.locked(); this.toast('🔒 Užrakinta'); },
+
+  /** the moment a key is earned, say so — once */
+  announceKeys() {
+    if (!Save.data.keys) Save.data.keys = {};
+    for (let n = 2; n <= LEVELS.length; n++) {
+      if (Levels.unlocked(n) && !Save.data.keys[n]) {
+        Save.data.keys[n] = 1; Save.write();
+        Sfx.init(); Sfx.resume(); Sfx.unlock();
+        this.toast('🔑 ' + n + ' lygio raktas!', 'Visos spynos atrakintos');
+        return;
+      }
+    }
+  },
+
+  /* ---------------- the level picture ---------------- */
+  showPreview(level) {
+    const L = Levels.get(level);
+    this.hideAll();
+    $('screen-preview').classList.remove('hidden');
+    $('previewName').textContent = L.name;
+    $('previewSub').textContent = L.sub;
+    $('previewNote').innerHTML = L.collect +
+      '<br>Trasa dar nepastatyta — kol kas čia tik nuotrauka.';
+    $('btnPreviewSkins').classList.toggle('hidden', !Levels.shop(level).length && !Levels.prize(level).length);
+  },
+  backFromPreview() { this.showLobby(); },
 
   showHud() {
     this.hideAll();
@@ -63,14 +180,15 @@ const UI = {
   },
 
   /** Treats are paid out once, when the run actually ends — otherwise every
-      death at a checkpoint would pay again. */
+      death at a checkpoint would pay again. They land in the purse of the
+      level they were found on. */
   bank(finished) {
     const r = Game.run;
     if (!r || r.banked) return 0;
     r.banked = true;
     const base = r.bones === 15 ? 30 : r.bones;
     const earned = base + (finished ? 10 : 0);
-    Save.addBones(earned);
+    Save.earn(r.level || 1, 'b', earned);
     if (earned > Save.data.bestBones) Save.data.bestBones = earned;
     Save.write();
     return earned;
@@ -99,7 +217,7 @@ const UI = {
     const r = Game.run;
     const base = r.bones === 15 ? 30 : r.bones;
     const earned = this.bank(true);
-    Save.data.finished = (Save.data.finished || 0) + 1;
+    Save.markCleared(r.level || 1);
     Save.data.bestZone = 'Londonas — finišas!';
     Save.write();
 
@@ -129,18 +247,24 @@ const UI = {
     $('toastSub').textContent = sub || '';
     el.classList.add('show');
     clearTimeout(this.toastT);
-    this.toastT = setTimeout(() => el.classList.remove('show'), sub ? 2100 : 1500);
+    this.toastT = setTimeout(() => el.classList.remove('show'), sub ? 2600 : 1500);
   },
 
-  /* ---------------- skins ---------------- */
-  showSkins() {
+  /* ---------------- outfits ---------------- */
+  showSkins(level) {
+    this.skinsLevel = level || Game.lobbyLevel();
+    level = this.skinsLevel;
     this.hideAll();
     $('screen-skins').classList.remove('hidden');
-    $('skinsBones').textContent = Save.data.bones;
+    $('skinsTitle').textContent = level === 1 ? 'Aprangos' : level + ' lygio aprangos';
+    $('skinsWallet').innerHTML = walletHtml(level);
+
     const grid = $('skinGrid');
     grid.innerHTML = '';
-    SKINS.forEach(sk => {
+    const list = Levels.shop(level).concat(Levels.prize(level));
+    list.forEach(sk => {
       const owned = Save.owns(sk.id), sel = Save.data.skin === sk.id;
+      const prize = !sk.cost;
       const card = document.createElement('div');
       card.className = 'skin-card' + (sel ? ' sel' : '') + (owned ? '' : ' locked');
 
@@ -172,21 +296,27 @@ const UI = {
       const tag = document.createElement('div');
       if (sel) { tag.className = 'skin-tag sel'; tag.textContent = 'DĖVIMA'; }
       else if (owned) { tag.className = 'skin-tag own'; tag.textContent = 'Apsirengti'; }
-      else if (Save.data.bones >= sk.price) { tag.className = 'skin-tag buy'; tag.textContent = sk.price + ' 🦴'; }
-      else { tag.className = 'skin-tag poor'; tag.textContent = sk.price + ' 🦴'; }
+      else if (prize) { tag.className = 'skin-tag prize'; tag.textContent = 'Nugalėk bosą'; }
+      else if (Save.canAfford(level, sk.cost)) { tag.className = 'skin-tag buy'; tag.innerHTML = costHtml(sk.cost); }
+      else { tag.className = 'skin-tag poor'; tag.innerHTML = costHtml(sk.cost); }
       card.appendChild(tag);
 
       card.onclick = () => {
         Sfx.init(); Sfx.resume();
-        if (Save.owns(sk.id)) { Save.data.skin = sk.id; Save.write(); Sfx.click(); this.showSkins(); return; }
-        if (Save.data.bones >= sk.price) {
-          Save.data.bones -= sk.price;
+        if (Save.owns(sk.id)) { Save.data.skin = sk.id; Save.write(); Sfx.click(); this.showSkins(level); return; }
+        if (prize) { Sfx.locked(); this.toast('Boso prizas', 'Įveik ' + level + ' lygį — gausi abi aprangas'); return; }
+        if (Save.canAfford(level, sk.cost)) {
+          Save.spend(level, sk.cost);
           Save.data.owned.push(sk.id);
           Save.data.skin = sk.id;
-          Save.write(); Sfx.bone(); this.showSkins();
+          Save.write(); Sfx.bone(); this.showSkins(level);
+          if (Levels.allOwned(level)) this.announceKeys();
         } else {
-          Sfx.tone(180, .18, 'square', .3, 120);
-          this.toast('Reikia dar ' + (sk.price - Save.data.bones) + ' skaniukų');
+          Sfx.locked();
+          const w = Save.purse(level), miss = [];
+          if ((sk.cost.b || 0) > w.b) miss.push((sk.cost.b - w.b) + ' skaniukų');
+          if ((sk.cost.t || 0) > w.t) miss.push((sk.cost.t - w.t) + ' žaisliukų');
+          this.toast('Dar trūksta', miss.join(' ir '));
         }
       };
       grid.appendChild(card);

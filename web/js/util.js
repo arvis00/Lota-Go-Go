@@ -84,22 +84,79 @@ function line(ctx, x1, y1, x2, y2, col, w, cap) {
 function outline(ctx, col, w) { ctx.strokeStyle = col || 'rgba(20,12,30,.35)'; ctx.lineWidth = w || 2.5; ctx.stroke(); }
 
 /* ---------- save game ---------- */
-const SAVE_KEY = 'lotago.save.v2';
+/* Four levels, four wallets. What Lota picks up on a level is spent on that
+   level's home page and nowhere else — treats found on level 1 can never pay
+   for a level-3 outfit, so each level has to be played for its own rewards. */
+const SAVE_KEY = 'lotago.save.v3';
+const OLD_SAVE_KEY = 'lotago.save.v2';
 const Save = {
-  data: { bones: 0, owned: ['classic'], skin: 'classic', bestBones: 0, bestZone: 0, finished: 0, sound: 1 },
+  data: {
+    wallet: { 1: { b: 0, t: 0 }, 2: { b: 0, t: 0 }, 3: { b: 0, t: 0 }, 4: { b: 0, t: 0 } },
+    cleared: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    keys: {},
+    owned: ['classic'], skin: 'classic',
+    bestBones: 0, bestZone: 0, sound: 1
+  },
   load() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (raw) Object.assign(this.data, JSON.parse(raw));
-      if (!Array.isArray(this.data.owned) || !this.data.owned.length) this.data.owned = ['classic'];
+      else {
+        const old = localStorage.getItem(OLD_SAVE_KEY);
+        if (old) this.migrate(JSON.parse(old));
+      }
     } catch (e) { /* private mode / disabled storage — play with defaults */ }
+    this.repair();
     return this.data;
+  },
+  /** a v2 save only ever knew about level 1, so its purse lands in wallet 1 */
+  migrate(o) {
+    const d = this.data;
+    d.wallet[1].b = o.bones || 0;
+    d.cleared[1] = o.finished || 0;
+    if (Array.isArray(o.owned) && o.owned.length) d.owned = o.owned.slice();
+    if (o.skin) d.skin = o.skin;
+    d.bestBones = o.bestBones || 0;
+    d.bestZone = o.bestZone || 0;
+    if (o.sound != null) d.sound = o.sound;
+  },
+  repair() {
+    const d = this.data;
+    if (!d.wallet || typeof d.wallet !== 'object') d.wallet = {};
+    if (!d.cleared || typeof d.cleared !== 'object') d.cleared = {};
+    for (let n = 1; n <= 4; n++) {
+      const w = d.wallet[n];
+      d.wallet[n] = { b: (w && +w.b) || 0, t: (w && +w.t) || 0 };
+      d.cleared[n] = (+d.cleared[n]) || 0;
+    }
+    if (!d.keys || typeof d.keys !== 'object') d.keys = {};
+    if (!Array.isArray(d.owned) || !d.owned.length) d.owned = ['classic'];
+    if (d.owned.indexOf('classic') < 0) d.owned.unshift('classic');
   },
   write() {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) {}
   },
-  addBones(n) { this.data.bones = Math.max(0, this.data.bones + n); this.write(); },
-  owns(id) { return this.data.owned.indexOf(id) >= 0; }
+  purse(level) { return this.data.wallet[level] || { b: 0, t: 0 }; },
+  /** kind is 'b' (treats) or 't' (toys) */
+  earn(level, kind, n) {
+    const w = this.purse(level);
+    w[kind] = Math.max(0, (w[kind] || 0) + n);
+    this.write();
+  },
+  spend(level, cost) {
+    const w = this.purse(level);
+    w.b = Math.max(0, w.b - (cost.b || 0));
+    w.t = Math.max(0, w.t - (cost.t || 0));
+    this.write();
+  },
+  canAfford(level, cost) {
+    const w = this.purse(level);
+    return w.b >= (cost.b || 0) && w.t >= (cost.t || 0);
+  },
+  clears(level) { return this.data.cleared[level] || 0; },
+  markCleared(level) { this.data.cleared[level] = this.clears(level) + 1; this.write(); },
+  owns(id) { return this.data.owned.indexOf(id) >= 0; },
+  give(id) { if (!this.owns(id)) { this.data.owned.push(id); this.write(); return true; } return false; }
 };
 
 /* ---------- sound (tiny WebAudio synth, no assets) ---------- */
@@ -141,5 +198,8 @@ const Sfx = {
     this.tone(440, 0.5, 'sine', 0.2, 880, 0.02);
   },
   win()   { [523, 659, 784, 1046, 1318].forEach((f, i) => this.tone(f, 0.32, 'triangle', 0.4, null, i * 0.12)); },
-  click() { this.tone(600, 0.06, 'triangle', 0.3); }
+  click() { this.tone(600, 0.06, 'triangle', 0.3); },
+  locked() { this.tone(200, 0.13, 'square', 0.26, 130); this.tone(150, 0.16, 'square', 0.2, 100, 0.08); },
+  unlock() { [392, 523, 659, 880, 1046].forEach((f, i) => this.tone(f, 0.3, 'triangle', 0.42, null, i * 0.1)); },
+  swipe()  { this.tone(520, 0.09, 'sine', 0.22, 760); }
 };

@@ -1,8 +1,9 @@
 # Lota Go 🐾
 
-2D endless-runner stiliaus žaidimas su juoda šnaucere Lota — viena ilga trasa nuo
-namų iki Londono finišo. Grynas HTML5 + Canvas, be jokių bibliotekų ir be paveikslėlių:
-visa grafika piešiama kodu (vektoriai), todėl visas žaidimas telpa į ~90 KB.
+2D endless-runner stiliaus žaidimas su juoda šnaucere Lota. Pirmasis lygis — viena ilga
+trasa nuo namų iki Londono finišo; už jo dar trys lygiai, kurių kol kas parodomos tik
+nuotraukos ir aprangos (žr. „Keturi lygiai"). Grynas HTML5 + Canvas, be jokių bibliotekų
+ir be paveikslėlių: visa grafika piešiama kodu (vektoriai).
 
 ## Paleidimas
 
@@ -27,6 +28,7 @@ iPhone/iPad: Safari → Share → „Add to Home Screen" — žaidimas veiks per
 | Šokti | mygtukas **▲** arba swipe aukštyn (arba bakstelėti) | `↑` / `W` / `Space` |
 | Pasilenkti | mygtukas **▼** arba swipe žemyn (laikyti) | `↓` / `S` |
 | Pauzė | mygtukas viršuje | `Esc` / `P` |
+| Kitas / ankstesnis lygis (pradžios ekrane) | swipe į kairę / dešinę arba **‹ ›** | `←` / `→` |
 
 Lota bėga pati — kryptis nevaldoma.
 
@@ -38,6 +40,55 @@ naršyklė praneša `pointer: coarse`.
 **Lota niekada nepasilenkia pati.** Anksčiau prieš kabančią kliūtį ji pasilenkdavo
 automatiškai, net jei žaidėjas nieko nespaudė. Dabar pasilenkimą visada valdo žaidėjas:
 laikyk **▼**, kol tunelis baigsis — arba peršok ant jo viršaus.
+
+## Keturi lygiai
+
+Pradžios ekranas yra ne vienas, o **keturi vienodi kambariai iš eilės**. Pastūmus pirštu
+į kairę (arba `→`, arba rodyklė ekrano krašte) vaizdas nuslenka į kito lygio namus.
+Kambarys visur tas pats — skiriasi tik ant lentynos gulintys daiktai ir ant sienos
+užrašytas lygio numeris.
+
+**Neatrakintas lygis yra tas pats kambarys, tik be spalvų.** Jis nupilkinamas, ant abiejų
+mygtukų uždedama spyna, o po logotipu parašoma, ko dar trūksta. Lotos tame kambaryje nėra —
+ant kilimo guli tik jos antkaklis.
+
+| Lygis | Vieta | Kas renkama | Kaip atrakinamas |
+|---|---|---|---|
+| 1 | Kelias į Londoną | skaniukai 🦴 | atviras nuo pradžios |
+| 2 | Žaislų kiemas | žaisliukai 🧸 | pereiti 1 lygį **ir** atrakinti visas 1 lygio aprangas |
+| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | pereiti 2 lygį **ir** atrakinti visas 2 lygio aprangas |
+| 4 | Bosas: Didysis Siurblys | nieko | pereiti 3 lygį **ir** atrakinti visas 3 lygio aprangas |
+
+Kai raktas uždirbamas, visos to lygio spynos atsirakina iš karto ir ekrane vieną kartą
+parodoma `🔑 N lygio raktas!`.
+
+**Kiekvienas lygis turi savo piniginę.** Kas surinkta lygyje, tame lygyje ir išleidžiama:
+pirmame lygyje pririnktais skaniukais trečio lygio aprangos nenusipirksi. Trečiame lygyje
+renkami abu dalykai, nes jo aprangos kainuoja ir skaniukų, ir žaisliukų — kiekviena
+skirtingą kiekį, kad nė viena nebūtų uždirbama taip pat kaip kita.
+
+## Aprangos
+
+Iš viso jų 22, po vieną lentyną kiekviename lygyje. Kiekvienos lygio aprangos gražesnės už
+ankstesniojo: 1 lygyje — kasdieniai kostiumai, 2 — audiniai ir sparnai, 3 — brangakmeniai
+ir švytėjimas.
+
+- **1 lygis** (25–140 🦴): Pilotė, Autobuso vairuotoja, Kadetė, Senelė, Futbolininkė,
+  Detektyvė, Karalienė, Astronautė, Vienaragė
+- **2 lygis** (20–85 🧸): Baletė, Piratė, Fėja, Roko žvaigždė, Snieguolė
+- **3 lygis** (30🦴+12🧸 … 80🦴+80🧸): Auksinė princesė, Undinė, Ugnies paukštė,
+  Žvaigždžių burtininkė, Krištolo šokėja
+- **4 lygis** — **neparduodamos**. Įveikus bosą abi atiduodamos iš karto:
+  **Vaivorykštės suknelė** (mirguliuojanti suknelė, skrybėlaitė su žiedu ir šydu, batukai
+  ir ilga pirštinaitė ant vienos priekinės letenos) ir prie jos derantis
+  **Vaivorykštės frakas** (frakas su uodegomis, cilindras, peteliškė, batai ir lazdelė).
+  Spalvos tos pačios, tad galima rinktis moterišką arba vyrišką variantą.
+
+**Kol kas 2, 3 ir boso lygiai yra tik nuotraukos.** Trasų juose dar nėra: paspaudus
+mygtuką parodoma to lygio nuotrauka (piešiama kodu, kaip ir visa kita) ir paaiškinama, kas
+ten bus renkama. Aprangų lentynos jau veikia — tik piniginės tuščios, nes jų dar nėra kur
+prisirinkti. Kai trasa atsiras, `js/levels.js` faile užtenka `playable: false` pakeisti į
+tikrą paleidimą.
 
 ## Kaip veikia trasa
 
@@ -144,6 +195,8 @@ visus 15 galima ir viršumi, ir apačia, ir per metro.
 - surinkti visi 15 → **dvigubai** (15 → 30)
 - pasiekus finišą → **+10**
 
+Visa tai keliauja į **pirmo lygio** piniginę ir kitiems lygiams netinka.
+
 ## Failai
 
 | Failas | Ką daro |
@@ -152,10 +205,12 @@ visus 15 galima ir viršumi, ir apačia, ir per metro.
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + 10 aprangų |
 | `js/props.js` | ~130 kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/zones.js` | 13 vietų + `BRANCHES` (metro ir antras aukštas): paletės, fonai, grindys, kliūčių rinkiniai |
+| `js/levels.js` | keturi lygiai: atrakinimo taisyklės, piniginės, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
 | `js/ui.js` | ekranai, HUD, aprangų parduotuvė |
 | `dev/bot.js` | testinis botas (žaidimo neįkeliamas) |
+| `dev/skins.html` | visos aprangos keturiose pozose, dideliu masteliu (atskiras puslapis) |
 
 ## Derinimas
 
@@ -168,7 +223,9 @@ Dažniausiai keičiami dalykai:
 - **Greitis** — `PHYS.V_MIN`, `PHYS.V_MAX`, `PHYS.X_FULL` (`js/level.js`)
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį ir tarpus
 - **Šuolis** — `PHYS.JUMP_V`, `PHYS.GRAV`
-- **Aprangos ir kainos** — `SKINS` masyvas (`js/lota.js`)
+- **Aprangos ir kainos** — `SKINS` masyvas (`js/lota.js`): `level` ir `cost: {b, t}`
+- **Lygiai ir jų atrakinimas** — `LEVELS` ir `Levels.unlocked()` (`js/levels.js`)
+- **Lygių nuotraukos** — `Levels.picToys` / `picFestival` / `picBoss` (`js/levels.js`)
 
 ## Testinis botas
 
@@ -188,4 +245,17 @@ window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
 inspect(15000);              // kas yra trasoje ties nurodyta pozicija
 ```
 
-Progreso išsaugojimas — `localStorage`, raktas `lotago.save.v2`.
+Aprangas galima apžiūrėti dideliu masteliu atskirame puslapyje: `dev/skins.html`.
+
+Kadangi 2–4 lygiuose kol kas nėra kur prisirinkti valiutos, piniginės ir raktai
+pripildomi iš konsolės (žaidimas šių funkcijų niekur nekviečia):
+
+```js
+LotaDev.give(2, 't', 200);   // 200 žaisliukų į 2 lygio piniginę
+LotaDev.key(2);              // viskas, ko reikia 2 lygiui atrakinti
+LotaDev.boss();              // atiduoda boso prizą — abi 4 lygio aprangas
+LotaDev.reset();             // ištrina išsaugojimą
+```
+
+Progreso išsaugojimas — `localStorage`, raktas `lotago.save.v3` (senas `…v2` perkeliamas
+automatiškai: jo skaniukai ir aprangos atitenka pirmam lygiui).

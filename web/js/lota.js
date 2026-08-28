@@ -193,6 +193,12 @@ function drawLota(ctx, px, py, opts) {
     fillEll(ctx, 12, -2, 7, 4.2, F.furnishD);
     if (lift < 3) fillEll(ctx, 22, -2, 7, 4.2, F.furnish);
     else fillEll(ctx, 22 + lift * 0.5, -2 - lift, 6.5, 4.6, F.furnish);
+    /* where a costume hangs a shoe or a glove; the raised one is [0] */
+    rig.paws = [
+      { x: 22 + lift * 0.5, y: -2 - lift, front: true, lift: lift },
+      { x: 12, y: -2, front: true, lift: 0 },
+      { x: -4, y: -4, front: false, lift: 0 }
+    ];
 
     /* head */
     ctx.save();
@@ -261,6 +267,13 @@ function drawLota(ctx, px, py, opts) {
     pawAt(ctx, bhx + 3 + legs.b2x, legs.b2y, F.furnish);
     pawAt(ctx, fhx + legs.f1x, legs.f1y, F.furnishD);
     pawAt(ctx, fhx + 4 + legs.f2x, legs.f2y, F.furnish);
+    /* the near front paw is [0] — a glove or a cane goes there */
+    rig.paws = [
+      { x: fhx + 4 + legs.f2x, y: legs.f2y, front: true, lift: 0 },
+      { x: fhx + legs.f1x, y: legs.f1y, front: true, lift: 0 },
+      { x: bhx + 3 + legs.b2x, y: legs.b2y, front: false, lift: 0 },
+      { x: bhx + legs.b1x, y: legs.b1y, front: false, lift: 0 }
+    ];
 
     /* ---- neck + head ---- */
     ctx.save();
@@ -285,6 +298,7 @@ function drawLota(ctx, px, py, opts) {
 
   rig.bodyX = rig.bodyX || 0;
   if (rig.bodyY == null) { rig.bodyX = 4; rig.bodyY = -34; rig.bodyRX = 19; rig.bodyRY = 22; rig.bodyA = 0; }
+  if (!rig.paws) rig.paws = [];
   rig.skinScale = 1;
 
   /* ---- costume on top ---- */
@@ -489,10 +503,141 @@ function flutter(ctx, x, y, len, amp, col, w, t, seedPhase) {
   ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
 }
 
-const SKINS = [
-  { id: 'classic', name: 'Lota', price: 0, note: 'Tokia, kokia yra', draw: null },
+/* ---------------------------------------------------------------
+   Dressing helpers shared by the later, fancier outfits.
+   Everything here works off `rig`, so a coat sits on her back whether
+   she is running, ducking or sitting on the lobby rug.
+----------------------------------------------------------------*/
 
-  { id: 'pilot', name: 'Pilotė', price: 25, note: 'Skrydis į Londoną',
+/** a slowly-turning rainbow, the signature of the boss prize */
+function rainbowStops(g, t, alpha) {
+  const a = alpha == null ? 1 : alpha;
+  for (let i = 0; i <= 6; i++) {
+    const h = ((i / 6) * 360 + t * 46) % 360;
+    g.addColorStop(i / 6, 'hsla(' + h.toFixed(0) + ',92%,66%,' + a + ')');
+  }
+  return g;
+}
+function rainbowLin(ctx, x0, y0, x1, y1, t, alpha) {
+  return rainbowStops(ctx.createLinearGradient(x0, y0, x1, y1), t, alpha);
+}
+
+/** tiny twinkling stars scattered over an area — reads as "this one shimmers" */
+function sparkle(ctx, n, t, x, y, rx, ry, seed, col) {
+  ctx.save();
+  for (let i = 0; i < n; i++) {
+    const r = makeRng((seed || 7) * 131 + i * 17);
+    const a = Math.sin(t * 3.2 + i * 1.9) * 0.5 + 0.5;
+    if (a < 0.12) continue;
+    const sx = x + (r() * 2 - 1) * rx, sy = y + (r() * 2 - 1) * ry;
+    const s = 1.1 + a * 2.3;
+    ctx.globalAlpha = a * 0.9;
+    ctx.fillStyle = col || '#fff';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - s); ctx.quadraticCurveTo(sx, sy, sx + s, sy);
+    ctx.quadraticCurveTo(sx, sy, sx, sy + s); ctx.quadraticCurveTo(sx, sy, sx - s, sy);
+    ctx.quadraticCurveTo(sx, sy, sx, sy - s);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** a five-pointed star, the punctuation mark of every sparkly outfit */
+function c2star(ctx, x, y, r, ri, col) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * (Math.PI / 5), rad = i % 2 ? ri : r;
+    const px = x + Math.cos(a) * rad, py = y + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+}
+
+/** six-armed snowflake, spinning gently */
+function snowflake(ctx, x, y, r, col, spin) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate((spin || 0) * 0.4);
+  ctx.strokeStyle = col; ctx.lineWidth = Math.max(0.8, r * 0.28); ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const a = i * (Math.PI / 3);
+    ctx.beginPath();
+    ctx.moveTo(-Math.cos(a) * r, -Math.sin(a) * r);
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r * .55, Math.sin(a) * r * .55);
+    ctx.lineTo(Math.cos(a + .8) * r * .85, Math.sin(a + .8) * r * .85);
+    ctx.moveTo(-Math.cos(a) * r * .55, -Math.sin(a) * r * .55);
+    ctx.lineTo(-Math.cos(a + .8) * r * .85, -Math.sin(a + .8) * r * .85);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** a scalloped skirt — tutu, gown, petal dress all come out of this */
+function tulle(c, cx, cy, rx, ry, lobes, col, phase) {
+  c.beginPath();
+  for (let k = 0; k <= 44; k++) {
+    const a = (k / 44) * TAU;
+    const w = 1 + Math.cos(a * lobes + (phase || 0)) * 0.1;
+    const x = cx + Math.cos(a) * rx * w, y = cy + Math.sin(a) * ry * w;
+    if (k === 0) c.moveTo(x, y); else c.lineTo(x, y);
+  }
+  c.closePath(); c.fillStyle = col; c.fill();
+}
+
+/** a faceted gem — the level-3 outfits are built out of these */
+function gem(ctx, x, y, r, col, hi) {
+  ctx.save(); ctx.translate(x, y);
+  poly(ctx, [[0, -r], [r * 0.86, -r * 0.2], [r * 0.55, r], [-r * 0.55, r], [-r * 0.86, -r * 0.2]], col);
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 0.9; ctx.stroke();
+  ctx.globalAlpha = 0.7;
+  poly(ctx, [[0, -r], [r * 0.4, -r * 0.1], [-r * 0.3, r * 0.2]], hi || '#fff');
+  ctx.restore();
+}
+
+/** a bootie on every paw; `col` is the leather, `trim` the sole */
+function shoes(ctx, rig, col, trim, glow) {
+  (rig.paws || []).forEach(p => {
+    ctx.save(); ctx.translate(p.x, p.y);
+    if (glow) { ctx.save(); ctx.globalAlpha = .3; fillEll(ctx, 0.5, 0, 8.5, 5.5, glow); ctx.restore(); }
+    /* low and wrapped round the paw — a paw in a shoe, not a paw in a box */
+    ctx.beginPath();
+    ctx.moveTo(-5.8, -3);
+    ctx.quadraticCurveTo(-6.8, 2, -4.2, 3.4);
+    ctx.quadraticCurveTo(1, 5.2, 5.6, 2.8);
+    ctx.quadraticCurveTo(7.4, 1.4, 6.2, -2.2);
+    ctx.quadraticCurveTo(0.4, -4.8, -5.8, -3);
+    ctx.closePath();
+    ctx.fillStyle = col; ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,30,.28)'; ctx.lineWidth = 1.1; ctx.stroke();
+    fillRR(ctx, -6.2, 2.4, 12.8, 2.6, 1.3, trim);
+    ctx.save(); ctx.globalAlpha = .5; fillEll(ctx, -1.8, -1.8, 2.2, 1.2, '#fff'); ctx.restore();
+    ctx.restore();
+  });
+}
+
+/** one long glove, on the near front paw only */
+function glove(ctx, rig, cuffCol, clothCol, t) {
+  const p = (rig.paws || [])[0];
+  if (!p) return;
+  ctx.save(); ctx.translate(p.x, p.y);
+  /* the sleeve runs back up the leg, then the hand */
+  fillRR(ctx, -3.4, -12.5, 6.8, 11.5, 3, clothCol);
+  fillEll(ctx, 0.4, 0.2, 6.2, 4.4, clothCol);
+  ctx.beginPath(); ctx.ellipse(0.4, 0.2, 6.2, 4.4, 0, 0, TAU);
+  ctx.strokeStyle = 'rgba(20,12,30,.22)'; ctx.lineWidth = 1; ctx.stroke();
+  fillRR(ctx, -4.8, -14.8, 9.6, 3.8, 1.9, cuffCol);
+  ctx.save(); ctx.globalAlpha = .4;
+  line(ctx, -1.6, -10, -1.6, -2, '#fff', 1);
+  ctx.restore();
+  sparkle(ctx, 2, t, 0, -7, 5, 7, 21);
+  ctx.restore();
+}
+
+const SKINS = [
+  { id: 'classic', name: 'Lota', level: 1, cost: { b: 0 }, note: 'Tokia, kokia yra', draw: null },
+
+  { id: 'pilot', name: 'Pilotė', level: 1, cost: { b: 25 }, note: 'Skrydis į Londoną',
     draw(ctx, rig, t) {
       flutter(ctx, rig.bodyX + 12, rig.bodyY - 6, 44, 7, '#f4efe4', 7, t, 0);
       atHead(ctx, rig, c => {
@@ -512,7 +657,7 @@ const SKINS = [
       atBody(ctx, rig, c => { fillRR(c, 6, -4, 16, 12, 5, '#f4efe4'); });
     } },
 
-  { id: 'driver', name: 'Autobuso vairuotoja', price: 30, note: 'Kitas sustojimas — parkas',
+  { id: 'driver', name: 'Autobuso vairuotoja', level: 1, cost: { b: 30 }, note: 'Kitas sustojimas — parkas',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .95;
@@ -529,7 +674,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'cadet', name: 'Kadetė', price: 40, note: 'Pasiruošusi nuotykiui',
+  { id: 'cadet', name: 'Kadetė', level: 1, cost: { b: 40 }, note: 'Pasiruošusi nuotykiui',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(10, -10); c.quadraticCurveTo(20, -2, 10, 8);
@@ -545,7 +690,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'granny', name: 'Senelė', price: 45, note: 'Šiltai ir jaukiai',
+  { id: 'granny', name: 'Senelė', level: 1, cost: { b: 45 }, note: 'Šiltai ir jaukiai',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .96;
@@ -577,7 +722,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'football', name: 'Futbolininkė', price: 55, note: 'Sudėtingas kampas',
+  { id: 'football', name: 'Futbolininkė', level: 1, cost: { b: 55 }, note: 'Sudėtingas kampas',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); ell(c, 0, 0, rig.bodyRX * .85, rig.bodyRY * .9, 0); c.clip();
@@ -595,7 +740,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'detective', name: 'Detektyvė', price: 70, note: 'Londono paslaptys',
+  { id: 'detective', name: 'Detektyvė', level: 1, cost: { b: 70 }, note: 'Londono paslaptys',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(14, -12); c.quadraticCurveTo(-16, -14, -22, 12);
@@ -614,7 +759,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'queen', name: 'Karalienė', price: 85, note: 'God save the Lota',
+  { id: 'queen', name: 'Karalienė', level: 1, cost: { b: 85 }, note: 'God save the Lota',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(12, -12); c.quadraticCurveTo(-18, -16, -26, 14);
@@ -635,7 +780,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'astro', name: 'Astronautė', price: 110, note: 'Iki žvaigždžių',
+  { id: 'astro', name: 'Astronautė', level: 1, cost: { b: 110 }, note: 'Iki žvaigždžių',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .95;
@@ -657,7 +802,7 @@ const SKINS = [
       });
     } },
 
-  { id: 'unicorn', name: 'Vienaragė', price: 140, note: 'Slapta Lotos galia',
+  { id: 'unicorn', name: 'Vienaragė', level: 1, cost: { b: 140 }, note: 'Slapta Lotos galia',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const cols = ['#ff7b8a', '#ffb84d', '#ffe95c', '#7be08a', '#6fc9ff', '#b48bff'];
@@ -679,6 +824,662 @@ const SKINS = [
           circle(c, Math.cos(a) * 20, -18 + Math.sin(a * 1.4) * 8, 1.7, 'rgba(255,255,255,.8)');
         }
       });
+    } },
+
+  /* ============================================================
+     LEVEL 2 — bought with toys. Softer fabrics, more of them, and
+     everything on this shelf moves a little.
+  ============================================================ */
+
+  { id: 'ballerina', name: 'Baletė', level: 2, cost: { t: 20 }, note: 'Kiekvienas šuolis — piruetas',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        const sway = Math.sin(t * 4.2) * 0.06;
+        c.save(); c.rotate(sway);
+        /* three layers of tulle standing out from the waist */
+        c.save(); c.globalAlpha = .5; tulle(c, -7, ry * .2, rx * 1.02, ry * .78, 9, '#ffd7e8', t * 2); c.restore();
+        c.save(); c.globalAlpha = .72; tulle(c, -7, ry * .16, rx * .84, ry * .62, 8, '#ffeaf3', t * 2 + 1); c.restore();
+        c.save(); c.globalAlpha = .9;  tulle(c, -7, ry * .1, rx * .64, ry * .46, 7, '#fff6fa', t * 2 + 2); c.restore();
+        c.restore();
+        /* satin bodice with crossed laces */
+        c.beginPath();
+        c.moveTo(14, -ry * .7); c.quadraticCurveTo(-4, -ry * 1.05, -12, -ry * .2);
+        c.quadraticCurveTo(-2, ry * .5, 14, ry * .35); c.closePath();
+        c.fillStyle = '#e8639a'; c.fill();
+        c.save(); c.globalAlpha = .5;
+        for (let i = 0; i < 4; i++) line(c, 8 - i * 6, -ry * .75 + i * 2, 2 - i * 6, ry * .25, '#ffd7e8', 1.4);
+        c.restore();
+        /* rose at the hip */
+        for (let k = 0; k < 5; k++) circle(c, -6 + Math.cos(k * 1.26) * 3.2, -2 + Math.sin(k * 1.26) * 3.2, 2.6, '#ff8fb8');
+        circle(c, -6, -2, 2.2, '#fff0f5');
+      });
+      atHead(ctx, rig, c => {
+        /* flower crown */
+        const buds = [[-12, -13], [-5, -18], [2, -20], [9, -17], [14, -12]];
+        buds.forEach((b, i) => {
+          for (let k = 0; k < 5; k++)
+            circle(c, b[0] + Math.cos(k * 1.26 + i) * 3, b[1] + Math.sin(k * 1.26 + i) * 3, 2.3,
+              i % 2 ? '#ffd7e8' : '#ff9fc4');
+          circle(c, b[0], b[1], 1.8, '#ffe89a');
+        });
+        /* ribbon streaming back off the crown */
+        flutter(c, -13, -12, 26, 5, '#ff8fb8', 3.2, t, 0.6);
+      });
+      shoes(ctx, rig, '#ff9fc4', '#e8639a');
+    } },
+
+  { id: 'pirate', name: 'Piratė', level: 2, cost: { t: 32 }, note: 'Lobis — po kilimu',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* long red coat, open at the front */
+        c.beginPath();
+        c.moveTo(rx * .5, -ry * .8); c.quadraticCurveTo(-rx * .6, -ry, -rx * 1.05, ry * .8);
+        c.quadraticCurveTo(-rx * .2, ry * .45, rx * .5, ry * .3); c.closePath();
+        c.fillStyle = '#9c2b3a'; c.fill();
+        c.strokeStyle = 'rgba(40,10,16,.45)'; c.lineWidth = 2; c.stroke();
+        c.save(); c.globalAlpha = .85;
+        c.beginPath();
+        c.moveTo(-rx * 1.05, ry * .8); c.quadraticCurveTo(-rx * .5, ry * .3, rx * .2, ry * .16);
+        c.lineTo(rx * .22, ry * .5); c.quadraticCurveTo(-rx * .5, ry * .62, -rx * .95, ry * 1.02);
+        c.closePath(); c.fillStyle = '#e8c15e'; c.fill(); c.restore();
+        /* sash + buttons */
+        c.save(); c.globalAlpha = .95;
+        c.beginPath(); c.moveTo(12, -ry * .6); c.quadraticCurveTo(-2, 0, -8, ry * .9);
+        c.strokeStyle = '#e0a03a'; c.lineWidth = 6; c.stroke(); c.restore();
+        for (let i = 0; i < 3; i++) circle(c, 6 - i * 7, -ry * .45 + i * 5, 2, '#ffd870');
+      });
+      atHead(ctx, rig, c => {
+        /* tricorn */
+        c.beginPath();
+        c.moveTo(-20, -8); c.quadraticCurveTo(-14, -26, 2, -25);
+        c.quadraticCurveTo(17, -24, 20, -8);
+        c.quadraticCurveTo(10, -14, 0, -14); c.quadraticCurveTo(-10, -14, -20, -8);
+        c.closePath(); c.fillStyle = '#20222e'; c.fill();
+        c.strokeStyle = '#e8c15e'; c.lineWidth = 2; c.stroke();
+        fillRR(c, -21, -12, 42, 5, 2.5, '#171825');
+        /* skull-and-bone badge */
+        circle(c, 0, -18, 4.2, '#f2eee4');
+        circle(c, -1.4, -19, 1.1, '#20222e'); circle(c, 1.4, -19, 1.1, '#20222e');
+        line(c, -4, -13.5, 4, -13.5, '#f2eee4', 1.8);
+        /* feather */
+        c.save(); c.translate(16, -20); c.rotate(-0.5 + Math.sin(t * 3) * 0.06);
+        c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(10, -8, 22, -6);
+        c.quadraticCurveTo(11, 0, 0, 3); c.closePath(); c.fillStyle = '#e8637a'; c.fill();
+        c.restore();
+        /* eye patch over the far eye */
+        fillRR(c, -2.5, -9.5, 8.5, 8.5, 2.5, '#171825');
+        line(c, -3, -9, -13, -12, '#171825', 1.8);
+        line(c, 6, -9.5, 12, -13, '#171825', 1.8);
+      });
+      shoes(ctx, rig, '#3a2a20', '#e8c15e');
+    } },
+
+  { id: 'fairy', name: 'Fėja', level: 2, cost: { t: 46 }, note: 'Sparnai iš vaikiškos svajonės',
+    draw(ctx, rig, t) {
+      /* wings first — they belong behind her */
+      atBody(ctx, rig, c => {
+        const flap = Math.sin(t * 9) * 0.22;
+        [[-1, -0.55], [1, 0.35]].forEach((w, i) => {
+          c.save(); c.translate(-6, -6); c.rotate(w[1] + flap * w[0] * -1);
+          c.save(); c.globalAlpha = .48;
+          const g = c.createLinearGradient(0, 0, -34, -20);
+          g.addColorStop(0, '#bff5ff'); g.addColorStop(0.5, '#dcbcff'); g.addColorStop(1, '#ffd0ee');
+          c.beginPath();
+          c.moveTo(0, 0); c.quadraticCurveTo(-26, -26, -36, -12);
+          c.quadraticCurveTo(-40, 2, -18, 6); c.quadraticCurveTo(-6, 6, 0, 0);
+          c.closePath(); c.fillStyle = g; c.fill();
+          c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.4; c.stroke();
+          c.globalAlpha = .3;
+          line(c, -4, -1, -30, -14, '#fff', 1); line(c, -4, 1, -22, 5, '#fff', 1);
+          c.restore(); c.restore();
+        });
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* petal dress */
+        c.save(); c.globalAlpha = .9; tulle(c, -4, ry * .18, rx * .82, ry * .74, 6, '#c8f0d8', t * 1.6); c.restore();
+        c.save(); c.globalAlpha = .95; tulle(c, -4, ry * .1, rx * .6, ry * .52, 5, '#eafff2', t * 1.6 + 1); c.restore();
+        c.beginPath();
+        c.moveTo(13, -ry * .7); c.quadraticCurveTo(-2, -ry, -10, -ry * .1);
+        c.quadraticCurveTo(0, ry * .4, 13, ry * .3); c.closePath();
+        c.fillStyle = '#7fd6a8'; c.fill();
+        sparkle(c, 6, t, -4, 0, rx * .8, ry * .8, 3, '#eafff2');
+      });
+      atHead(ctx, rig, c => {
+        /* dew-drop tiara */
+        c.beginPath(); c.moveTo(-13, -12); c.quadraticCurveTo(0, -23, 13, -12);
+        c.strokeStyle = '#9be8ff'; c.lineWidth = 2.4; c.stroke();
+        [[-9, -15], [0, -19], [9, -15]].forEach((d, i) => {
+          circle(c, d[0], d[1] - Math.abs(Math.sin(t * 2 + i)) * 1.4, 2.8, 'rgba(190,240,255,.85)');
+          circle(c, d[0] - 0.8, d[1] - 1, 1, '#fff');
+        });
+        sparkle(c, 5, t, 0, -16, 16, 8, 9, '#dff8ff');
+      });
+      /* wand in the near front paw */
+      const p = (rig.paws || [])[0];
+      if (p) {
+        ctx.save(); ctx.translate(p.x + 3, p.y - 2); ctx.rotate(-0.85 + Math.sin(t * 3) * 0.08);
+        line(ctx, 0, 0, 0, -22, '#f0e3c4', 2.6);
+        ctx.translate(0, -24);
+        c2star(ctx, 0, 0, 6.2, 2.8, '#ffe36e');
+        sparkle(ctx, 4, t, 0, 0, 9, 9, 5, '#fff6c8');
+        ctx.restore();
+      }
+      shoes(ctx, rig, '#7fd6a8', '#eafff2');
+    } },
+
+  { id: 'popstar', name: 'Roko žvaigždė', level: 2, cost: { t: 62 }, note: 'Lojimas per garsiakalbį',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* studded jacket */
+        c.beginPath();
+        c.moveTo(rx * .55, -ry * .85); c.quadraticCurveTo(-rx * .5, -ry * 1.05, -rx * 1.0, ry * .35);
+        c.quadraticCurveTo(-rx * .3, ry * .55, rx * .5, ry * .35); c.closePath();
+        c.fillStyle = '#2a2733'; c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.2)'; c.lineWidth = 2; c.stroke();
+        /* pink lightning down the back */
+        c.save(); c.globalAlpha = .95;
+        poly(c, [[-6, -ry * .85], [-14, -1], [-8, -1], [-16, ry * .5], [-2, -3], [-8, -3], [-1, -ry * .8]], '#ff4f9a');
+        c.restore();
+        c.save(); c.globalAlpha = .8;
+        for (let i = 0; i < 7; i++) circle(c, rx * .35 - i * 5, -ry * .8 + i * 2.4, 1.5, '#d8d5e2');
+        c.restore();
+        /* spiked collar */
+        c.save(); c.translate(rx * .5, -ry * .55);
+        fillRR(c, -3, -4, 10, 7, 3, '#4a3a52');
+        for (let i = 0; i < 3; i++) poly(c, [[-1 + i * 3.4, -4], [1 + i * 3.4, -4], [i * 3.4, -8]], '#e4e0ee');
+        c.restore();
+      });
+      atHead(ctx, rig, c => {
+        /* magenta crest */
+        c.save();
+        for (let i = -3; i <= 3; i++) {
+          const h = 16 - Math.abs(i) * 2.6;
+          poly(c, [[i * 3.4 - 2, -13], [i * 3.4 + 2, -13], [i * 3.4 + Math.sin(t * 5 + i) * 2, -13 - h]],
+            i % 2 ? '#ff4f9a' : '#b46bff');
+        }
+        c.restore();
+        /* star shades */
+        c.save(); c.globalAlpha = .95;
+        fillRR(c, -3.5, -9.5, 18, 9, 3, '#171825');
+        line(c, -3.5, -6, -13, -8.5, '#171825', 2);
+        c.globalAlpha = .5; fillRR(c, -2, -8.5, 6.5, 3, 1.5, '#8fd8ff');
+        c.restore();
+        c2star(c, 15.5, -12.5, 4.4, 2, '#ffe36e');
+      });
+      shoes(ctx, rig, '#2a2733', '#ff4f9a', '#ff4f9a');
+    } },
+
+  { id: 'snow', name: 'Snieguolė', level: 2, cost: { t: 85 }, note: 'Šerkšnas ant ūsų',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* long ice cape trailing behind */
+        c.save(); c.globalAlpha = .62;
+        const g = c.createLinearGradient(rx * .4, 0, -rx * 1.6, ry);
+        g.addColorStop(0, '#eafaff'); g.addColorStop(1, 'rgba(150,215,255,.15)');
+        c.beginPath();
+        c.moveTo(rx * .45, -ry * .85);
+        c.quadraticCurveTo(-rx * .7, -ry * .9, -rx * 1.55, ry * 1.1 + Math.sin(t * 3) * 3);
+        c.quadraticCurveTo(-rx * .5, ry * .55, rx * .45, ry * .3);
+        c.closePath(); c.fillStyle = g; c.fill(); c.restore();
+        /* frosted gown */
+        c.save(); c.globalAlpha = .93; tulle(c, -5, ry * .16, rx * .86, ry * .7, 8, '#d6f0ff', t * 1.2); c.restore();
+        c.beginPath();
+        c.moveTo(13, -ry * .72); c.quadraticCurveTo(-2, -ry, -11, -ry * .15);
+        c.quadraticCurveTo(0, ry * .4, 13, ry * .3); c.closePath();
+        c.fillStyle = '#8fc8ee'; c.fill();
+        c.save(); c.globalAlpha = .8;
+        for (let i = 0; i < 4; i++) snowflake(c, 6 - i * 8, -ry * .5 + i * 6, 3.2 - i * .3, '#fbffff', t + i);
+        c.restore();
+        sparkle(c, 7, t, -5, 0, rx, ry, 11, '#eafaff');
+      });
+      atHead(ctx, rig, c => {
+        /* snowflake crown */
+        c.beginPath(); c.moveTo(-14, -11); c.quadraticCurveTo(0, -18, 14, -11);
+        c.strokeStyle = '#dff4ff'; c.lineWidth = 2.6; c.stroke();
+        for (let i = -2; i <= 2; i++) {
+          const h = 20 - Math.abs(i) * 3.4;
+          line(c, i * 6, -13, i * 6, -h, '#eafaff', 2);
+          snowflake(c, i * 6, -h - 1, 3 - Math.abs(i) * .4, '#fbffff', t + i);
+        }
+        sparkle(c, 4, t, 0, -18, 15, 7, 13, '#fff');
+      });
+      shoes(ctx, rig, '#8fc8ee', '#eafaff', '#9be8ff');
+    } },
+
+  /* ============================================================
+     LEVEL 3 — paid for in both treats and toys, in different
+     proportions, so no two are earned the same way.
+  ============================================================ */
+
+  { id: 'golden', name: 'Auksinė princesė', level: 3, cost: { b: 30, t: 12 }, note: 'Aukso siūlai, tikri',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        const g = c.createLinearGradient(rx * .6, -ry, -rx, ry);
+        g.addColorStop(0, '#fff2c0'); g.addColorStop(.45, '#f2c34a'); g.addColorStop(1, '#b8801e');
+        c.save(); tulle(c, -6, ry * .18, rx * 1.0, ry * .8, 10, '#b8801e', t * .9); c.restore();
+        c.save(); tulle(c, -6, ry * .08, rx * .84, ry * .64, 9, '#f2c34a', t * .9 + 1); c.restore();
+        c.beginPath();
+        c.moveTo(14, -ry * .75); c.quadraticCurveTo(-2, -ry * 1.05, -12, -ry * .1);
+        c.quadraticCurveTo(0, ry * .45, 14, ry * .32); c.closePath();
+        c.fillStyle = g; c.fill();
+        c.strokeStyle = 'rgba(120,80,10,.4)'; c.lineWidth = 1.6; c.stroke();
+        /* jewelled collar */
+        c.save(); c.translate(12, -ry * .62);
+        for (let i = 0; i < 4; i++) gem(c, -i * 5.6, i * 1.4, 3.2, i % 2 ? '#ff5f7a' : '#7fd8ff');
+        c.restore();
+        sparkle(c, 6, t, -4, 0, rx * .9, ry * .8, 17, '#fff6cc');
+      });
+      atHead(ctx, rig, c => {
+        c.beginPath();
+        c.moveTo(-14, -12); c.lineTo(-14, -25); c.lineTo(-7, -18); c.lineTo(0, -30);
+        c.lineTo(7, -18); c.lineTo(14, -25); c.lineTo(14, -12); c.closePath();
+        const g = c.createLinearGradient(0, -30, 0, -12);
+        g.addColorStop(0, '#fff2c0'); g.addColorStop(1, '#d8a12c');
+        c.fillStyle = g; c.fill(); c.strokeStyle = '#a8720e'; c.lineWidth = 1.5; c.stroke();
+        fillRR(c, -15, -14, 30, 5.5, 2.5, '#e8b93f');
+        gem(c, 0, -27, 3.2, '#ff5f7a'); gem(c, -14, -24, 2.4, '#7fd8ff'); gem(c, 14, -24, 2.4, '#7fd8ff');
+        sparkle(c, 5, t, 0, -20, 16, 9, 19, '#fff6cc');
+      });
+      shoes(ctx, rig, '#f2c34a', '#fff2c0', '#ffd870');
+    } },
+
+  { id: 'mermaid', name: 'Undinė', level: 3, cost: { b: 15, t: 40 }, note: 'Uodega vietoj sijono',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* scaled tail-skirt that sweeps out behind */
+        const g = c.createLinearGradient(rx * .4, -ry, -rx * 1.4, ry);
+        g.addColorStop(0, '#7fe8d8'); g.addColorStop(.5, '#3fa8d8'); g.addColorStop(1, '#8f5fd8');
+        c.beginPath();
+        c.moveTo(rx * .5, -ry * .5);
+        c.quadraticCurveTo(-rx * .5, -ry * .6, -rx * 1.25, ry * .25 + Math.sin(t * 3) * 3);
+        c.quadraticCurveTo(-rx * .9, ry * 1.15, -rx * .2, ry * .85);
+        c.quadraticCurveTo(rx * .3, ry * .6, rx * .5, ry * .3);
+        c.closePath(); c.fillStyle = g; c.fill();
+        /* scales */
+        c.save(); c.globalAlpha = .35;
+        for (let ix = -4; ix <= 1; ix++) for (let iy = -1; iy <= 2; iy++) {
+          const sx = ix * 8 + (iy % 2 ? 4 : 0), sy = iy * 6;
+          c.beginPath(); c.arc(sx, sy, 4, Math.PI, 0); c.strokeStyle = '#eafaff'; c.lineWidth = 1.2; c.stroke();
+        }
+        c.restore();
+        /* tail fin */
+        c.save(); c.translate(-rx * 1.15, ry * .5); c.rotate(Math.sin(t * 3) * .18);
+        c.save(); c.globalAlpha = .8;
+        poly(c, [[0, 0], [-16, -14], [-10, 2], [-17, 13], [0, 5]], '#7fe8d8');
+        c.restore(); c.restore();
+        /* shell bodice + pearls */
+        c.save(); c.translate(10, -ry * .35);
+        [[0, 0], [-9, 3]].forEach(sh => {
+          c.save(); c.translate(sh[0], sh[1]);
+          c.beginPath(); c.arc(0, 2, 6, Math.PI, 0); c.closePath(); c.fillStyle = '#ffc0d8'; c.fill();
+          c.save(); c.globalAlpha = .5;
+          for (let k = -2; k <= 2; k++) line(c, 0, 2, k * 2.4, -3.6, '#ff8fb8', 1);
+          c.restore(); c.restore();
+        });
+        c.restore();
+        c.save(); c.globalAlpha = .9;
+        for (let i = 0; i < 6; i++) circle(c, 12 - i * 4.4, -ry * .62 + i * 1.6, 1.7, '#fff6fa');
+        c.restore();
+        sparkle(c, 6, t, -8, 0, rx, ry, 23, '#dffaff');
+      });
+      atHead(ctx, rig, c => {
+        /* coral crown */
+        c.beginPath(); c.moveTo(-13, -11); c.quadraticCurveTo(0, -17, 13, -11);
+        c.strokeStyle = '#ff8fb8'; c.lineWidth = 2.4; c.stroke();
+        [[-10, -14, 6], [-3, -16, 9], [4, -16, 8], [11, -13, 6]].forEach((b, i) => {
+          c.save(); c.translate(b[0], b[1]);
+          line(c, 0, 0, Math.sin(t + i) * 1.5, -b[2], '#ff9fc4', 2.2);
+          circle(c, Math.sin(t + i) * 1.5, -b[2], 2.4, i % 2 ? '#fff6fa' : '#7fe8d8');
+          c.restore();
+        });
+        /* bubbles drifting up */
+        for (let i = 0; i < 4; i++) {
+          const ph = (t * .5 + i * .27) % 1;
+          c.save(); c.globalAlpha = (1 - ph) * .55;
+          c.beginPath(); c.arc(18 + Math.sin(ph * 7 + i) * 4, 2 - ph * 34, 1.4 + i * .5, 0, TAU);
+          c.strokeStyle = '#eafaff'; c.lineWidth = 1.1; c.stroke(); c.restore();
+        }
+      });
+      shoes(ctx, rig, '#3fa8d8', '#7fe8d8', '#7fe8d8');
+    } },
+
+  { id: 'phoenix', name: 'Ugnies paukštė', level: 3, cost: { b: 55, t: 24 }, note: 'Plunksnos, kurios dega',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* flame plume streaming behind */
+        for (let i = 0; i < 7; i++) {
+          const col = ['#fff0a8', '#ffd34a', '#ff9b2e', '#ff6a2a', '#e8412a', '#ff8f3a', '#ffc23a'][i];
+          c.save(); c.globalAlpha = .82;
+          c.beginPath();
+          c.moveTo(rx * .2 - i * 1.2, -ry * .7 + i * 3.4);
+          c.quadraticCurveTo(-rx * .7, -ry * .8 + i * 4 + Math.sin(t * 7 - i) * 4,
+                             -rx * (1.35 + i * .05), -ry * .1 + i * 3.6 + Math.sin(t * 7 - i * .8) * 5);
+          c.strokeStyle = col; c.lineWidth = 5.2; c.lineCap = 'round'; c.stroke();
+          c.restore();
+        }
+        /* feathered breastplate */
+        const g = c.createLinearGradient(rx * .6, -ry, -rx * .4, ry);
+        g.addColorStop(0, '#ffe17a'); g.addColorStop(.5, '#ff8f2e'); g.addColorStop(1, '#d8331e');
+        c.beginPath();
+        c.moveTo(15, -ry * .75); c.quadraticCurveTo(-2, -ry * 1.05, -12, -ry * .1);
+        c.quadraticCurveTo(0, ry * .5, 15, ry * .34); c.closePath();
+        c.fillStyle = g; c.fill();
+        c.save(); c.globalAlpha = .45;
+        for (let i = 0; i < 4; i++) {
+          c.beginPath(); c.arc(9 - i * 7, -ry * .3 + i * 3, 5.5, Math.PI, 0);
+          c.strokeStyle = '#fff0a8'; c.lineWidth = 1.4; c.stroke();
+        }
+        c.restore();
+        sparkle(c, 7, t, -10, -2, rx, ry, 29, '#ffe9a8');
+      });
+      atHead(ctx, rig, c => {
+        /* flame crest */
+        for (let i = -2; i <= 2; i++) {
+          const h = 22 - Math.abs(i) * 4.5 + Math.sin(t * 8 + i) * 2.5;
+          c.beginPath();
+          c.moveTo(i * 5 - 3, -12); c.quadraticCurveTo(i * 5 + Math.sin(t * 6 + i) * 3, -12 - h * .6, i * 5, -12 - h);
+          c.quadraticCurveTo(i * 5 + 3, -12 - h * .5, i * 5 + 3, -12);
+          c.closePath();
+          c.fillStyle = ['#ff6a2a', '#ff9b2e', '#ffd34a', '#ff9b2e', '#ff6a2a'][i + 2]; c.fill();
+        }
+        /* golden brow band */
+        c.beginPath(); c.moveTo(-14, -10.5); c.quadraticCurveTo(0, -16, 14, -10.5);
+        c.strokeStyle = '#ffd34a'; c.lineWidth = 3; c.stroke();
+        gem(c, 0, -14.5, 3, '#ff4f4a');
+        sparkle(c, 4, t, 0, -20, 14, 10, 31, '#ffe9a8');
+      });
+      shoes(ctx, rig, '#d8331e', '#ffd34a', '#ff8f2e');
+    } },
+
+  { id: 'sorceress', name: 'Žvaigždžių burtininkė', level: 3, cost: { b: 34, t: 66 }, note: 'Naktis, susiūta į apsiaustą',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        const g = c.createLinearGradient(rx * .5, -ry, -rx * 1.3, ry);
+        g.addColorStop(0, '#4a3a9c'); g.addColorStop(.55, '#2b2166'); g.addColorStop(1, '#150f3a');
+        c.beginPath();
+        c.moveTo(rx * .55, -ry * .85);
+        c.quadraticCurveTo(-rx * .6, -ry * 1.0, -rx * 1.35, ry * .95 + Math.sin(t * 2.4) * 3);
+        c.quadraticCurveTo(-rx * .4, ry * .6, rx * .5, ry * .34);
+        c.closePath(); c.fillStyle = g; c.fill();
+        c.strokeStyle = 'rgba(180,160,255,.35)'; c.lineWidth = 1.8; c.stroke();
+        /* constellation stitched into the cloak */
+        const pts = [[-8, -6], [-18, 2], [-27, -4], [-34, 6], [-20, 10], [-11, 6]];
+        c.save(); c.globalAlpha = .55; c.strokeStyle = '#bfa8ff'; c.lineWidth = 1;
+        c.beginPath(); pts.forEach((q, i) => i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1])); c.stroke(); c.restore();
+        pts.forEach((q, i) => c2star(c, q[0], q[1], 2.6 + (i % 2), 1.1,
+          'rgba(255,245,200,' + (0.55 + Math.sin(t * 3 + i) * 0.35) + ')'));
+        /* moon clasp */
+        c.save(); c.translate(12, -ry * .6);
+        circle(c, 0, 0, 4.4, '#ffe9a8');
+        c.globalCompositeOperation = 'destination-out'; circle(c, 2.4, -1.4, 3.8, '#000');
+        c.restore();
+        sparkle(c, 6, t, -14, 0, rx, ry, 37, '#dcc8ff');
+      });
+      atHead(ctx, rig, c => {
+        /* tall pointed hat, curling at the tip */
+        c.beginPath();
+        c.moveTo(-16, -11); c.quadraticCurveTo(-9, -30, -2, -38);
+        c.quadraticCurveTo(6, -44, 10, -37); c.quadraticCurveTo(9, -30, 15, -11);
+        c.closePath();
+        const g = c.createLinearGradient(-16, -40, 16, -11);
+        g.addColorStop(0, '#4a3a9c'); g.addColorStop(1, '#221a52');
+        c.fillStyle = g; c.fill(); c.strokeStyle = 'rgba(180,160,255,.4)'; c.lineWidth = 1.6; c.stroke();
+        fillRR(c, -19, -13, 38, 5.5, 2.6, '#2b2166');
+        c.save(); c.globalAlpha = .9;
+        fillRR(c, -18, -14.5, 36, 3, 1.5, '#bfa8ff'); c.restore();
+        [[-6, -30], [2, -35], [-9, -21], [6, -24]].forEach((q, i) =>
+          c2star(c, q[0], q[1], 2.6, 1.1, 'rgba(255,245,200,' + (0.5 + Math.sin(t * 3 + i * 1.7) * 0.4) + ')'));
+        /* motes orbiting her head */
+        for (let i = 0; i < 4; i++) {
+          const a = t * 1.6 + i * 1.57;
+          c2star(c, Math.cos(a) * 24, -14 + Math.sin(a * 1.3) * 9, 2.2, 1, 'rgba(200,180,255,.85)');
+        }
+      });
+      shoes(ctx, rig, '#2b2166', '#bfa8ff', '#8f7fe8');
+    } },
+
+  { id: 'crystal', name: 'Krištolo šokėja', level: 3, cost: { b: 80, t: 80 }, note: 'Suknelė, iškalta iš šviesos',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* the gown is built out of facets, each catching a different light */
+        c.save(); c.globalAlpha = .9;
+        for (let i = 0; i < 11; i++) {
+          const a = Math.PI * 0.15 + (i / 11) * Math.PI * 1.7;
+          const r1 = rx * .28, r2 = rx * (.95 + Math.sin(i * 1.7) * .1);
+          const hue = (200 + i * 9 + Math.sin(t * 1.6 + i) * 22) % 360;
+          poly(c, [
+            [-5 + Math.cos(a) * r1, ry * .1 + Math.sin(a) * r1 * .8],
+            [-5 + Math.cos(a - .16) * r2, ry * .1 + Math.sin(a - .16) * r2 * .85],
+            [-5 + Math.cos(a + .16) * r2, ry * .1 + Math.sin(a + .16) * r2 * .85]
+          ], 'hsla(' + hue.toFixed(0) + ',72%,' + (72 + (i % 3) * 7) + '%,.85)');
+        }
+        c.restore();
+        c.save(); c.globalAlpha = .55; c.strokeStyle = '#fff'; c.lineWidth = .9;
+        for (let i = 0; i < 11; i++) {
+          const a = Math.PI * 0.15 + (i / 11) * Math.PI * 1.7;
+          line(c, -5, ry * .1, -5 + Math.cos(a) * rx * .95, ry * .1 + Math.sin(a) * rx * .8, '#fff', .9);
+        }
+        c.restore();
+        /* bodice */
+        c.beginPath();
+        c.moveTo(14, -ry * .75); c.quadraticCurveTo(-2, -ry * 1.05, -11, -ry * .12);
+        c.quadraticCurveTo(0, ry * .4, 14, ry * .3); c.closePath();
+        c.fillStyle = 'rgba(235,248,255,.92)'; c.fill();
+        c.strokeStyle = 'rgba(160,210,255,.7)'; c.lineWidth = 1.4; c.stroke();
+        for (let i = 0; i < 4; i++) gem(c, 10 - i * 6, -ry * .55 + i * 3.4, 2.8,
+          ['#9be8ff', '#ffb0e8', '#c8b0ff', '#b0ffd8'][i]);
+        sparkle(c, 9, t, -6, 0, rx, ry, 41, '#fff');
+      });
+      atHead(ctx, rig, c => {
+        /* crystal tiara */
+        for (let i = -2; i <= 2; i++) {
+          const h = 21 - Math.abs(i) * 4;
+          poly(c, [[i * 6 - 3.2, -12], [i * 6 + 3.2, -12], [i * 6, -12 - h]], 'rgba(220,245,255,.9)');
+          c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = .9; c.stroke();
+        }
+        c.beginPath(); c.moveTo(-15, -11); c.quadraticCurveTo(0, -15.5, 15, -11);
+        c.strokeStyle = '#dff4ff'; c.lineWidth = 3; c.stroke();
+        gem(c, 0, -34, 3.6, '#9be8ff');
+        sparkle(c, 7, t, 0, -20, 17, 11, 43, '#fff');
+      });
+      shoes(ctx, rig, 'rgba(226,244,255,.95)', '#9be8ff', '#bfe8ff');
+    } },
+
+  /* ============================================================
+     LEVEL 4 — the boss prize. Not for sale at any price: beating
+     the boss hands both of these over at once, so the player picks
+     the dress or the tailcoat. They share one rainbow.
+  ============================================================ */
+
+  { id: 'rainbow', name: 'Vaivorykštės suknelė', level: 4, cost: null, note: 'Boso prizas',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* the train sweeps out behind her */
+        c.save(); c.globalAlpha = .55;
+        c.beginPath();
+        c.moveTo(rx * .3, -ry * .3);
+        c.quadraticCurveTo(-rx * .6, -ry * .5, -rx * 1.6, ry * .8 + Math.sin(t * 2.6) * 4);
+        c.quadraticCurveTo(-rx * 1.1, ry * 1.7, -rx * .2, ry * 1.4);
+        c.quadraticCurveTo(rx * .2, ry * 1.0, rx * .35, ry * .4);
+        c.closePath();
+        c.fillStyle = rainbowLin(c, rx * .3, -ry, -rx * 1.6, ry, t, .9); c.fill();
+        c.restore();
+        /* the skirt itself, scalloped and shimmering */
+        c.save(); c.globalAlpha = .95;
+        c.beginPath();
+        for (let k = 0; k <= 44; k++) {
+          const a = (k / 44) * TAU;
+          const w = 1 + Math.cos(a * 9 + t * 2) * .09;
+          const x = -6 + Math.cos(a) * rx * .96 * w, y = ry * .78 + Math.sin(a) * ry * .92 * w;
+          if (k === 0) c.moveTo(x, y); else c.lineTo(x, y);
+        }
+        c.closePath();
+        c.fillStyle = rainbowLin(c, -rx, -ry, rx, ry, t + 1.4, 1); c.fill();
+        c.restore();
+        /* a veil of white tulle over it, so the colour stays soft */
+        c.save(); c.globalAlpha = .34;
+        tulle(c, -6, ry * .76, rx * .78, ry * .74, 8, '#fff', t * 2);
+        c.restore();
+        /* pearl bodice, cut close so it does not read as a lump */
+        c.beginPath();
+        c.moveTo(rx * .56, -ry * .68);
+        c.quadraticCurveTo(rx * .02, -ry * .95, -rx * .3, -ry * .1);
+        c.quadraticCurveTo(rx * .05, ry * .3, rx * .5, ry * .22);
+        c.closePath();
+        c.fillStyle = '#fbf7ff'; c.fill();
+        c.strokeStyle = 'rgba(190,175,225,.7)'; c.lineWidth = 1.3; c.stroke();
+        /* rainbow sash across it */
+        c.save(); c.globalAlpha = .95;
+        c.beginPath();
+        c.moveTo(rx * .52, -ry * .55); c.quadraticCurveTo(rx * .1, -ry * .05, -rx * .26, ry * .12);
+        c.strokeStyle = rainbowLin(c, rx * .5, -ry, -rx * .3, ry, t + .8, 1); c.lineWidth = 4.2; c.stroke();
+        c.restore();
+        sparkle(c, 9, t, -6, ry * .6, rx * .95, ry * .85, 51);
+      });
+      atHead(ctx, rig, c => {
+        /* the hat sits on top of the skull — her face stays visible */
+        c.save();
+        /* gauzy veil off the back of the brim, drawn first so it hangs behind */
+        c.save(); c.globalAlpha = .42;
+        c.beginPath();
+        c.moveTo(-19, -15);
+        c.quadraticCurveTo(-31, -9 + Math.sin(t * 3) * 4, -37, 5 + Math.sin(t * 3 + 1) * 5);
+        c.quadraticCurveTo(-26, 1, -17, -10);
+        c.closePath(); c.fillStyle = rainbowLin(c, -37, 5, -17, -15, t + 3, .85); c.fill();
+        c.restore();
+        /* crown */
+        c.beginPath();
+        c.moveTo(-12, -16); c.quadraticCurveTo(-11, -29, -1, -30);
+        c.quadraticCurveTo(10, -31, 11, -16);
+        c.closePath(); c.fillStyle = '#fbf7ff'; c.fill();
+        c.strokeStyle = 'rgba(190,180,220,.6)'; c.lineWidth = 1.3; c.stroke();
+        /* rainbow band round the crown */
+        c.save(); c.beginPath(); rr(c, -12.5, -21, 24, 5, 2.4);
+        c.fillStyle = rainbowLin(c, -12, 0, 12, 0, t + 1, 1); c.fill(); c.restore();
+        /* wide upturned brim */
+        c.beginPath(); c.ellipse(-1, -15, 22, 5.8, -0.06, 0, TAU);
+        c.fillStyle = rainbowLin(c, -23, -15, 21, -15, t + 2, .95); c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.5; c.stroke();
+        c.save(); c.globalAlpha = .32;
+        c.beginPath(); c.ellipse(-1, -16.4, 18, 4, -0.06, 0, TAU); c.fillStyle = '#fff'; c.fill();
+        c.restore();
+        /* the bloom pinned to the band */
+        c.save(); c.translate(-9, -22);
+        for (let k = 0; k < 6; k++) {
+          const a = k * (TAU / 6) + t * .5;
+          fillEll(c, Math.cos(a) * 3.6, Math.sin(a) * 3.6, 3.1, 2.1,
+            'hsla(' + ((k * 60 + t * 46) % 360) + ',90%,74%,.95)', a);
+        }
+        circle(c, 0, 0, 2.3, '#fff6d8');
+        c.restore();
+        c.restore();
+        sparkle(c, 6, t, -1, -22, 22, 11, 53);
+      });
+      /* iridescent booties and one long glove */
+      shoes(ctx, rig, '#fdf9ff', '#ffc4ee', '#ffb0e8');
+      (rig.paws || []).forEach((p, i) => {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = .42;
+        ctx.beginPath();
+        ctx.moveTo(-5.8, -3); ctx.quadraticCurveTo(-6.8, 2, -4.2, 3.4);
+        ctx.quadraticCurveTo(1, 5.2, 5.6, 2.8); ctx.quadraticCurveTo(7.4, 1.4, 6.2, -2.2);
+        ctx.quadraticCurveTo(0.4, -4.8, -5.8, -3); ctx.closePath();
+        ctx.fillStyle = rainbowLin(ctx, -7, 0, 7, 0, t + i * .6, 1); ctx.fill();
+        ctx.restore();
+      });
+      glove(ctx, rig, '#fff', '#fdf9ff', t);
+      const p0 = (rig.paws || [])[0];
+      if (p0) {
+        ctx.save(); ctx.translate(p0.x, p0.y); ctx.globalAlpha = .6;
+        fillRR(ctx, -4.8, -14.8, 9.6, 3.8, 1.9, rainbowLin(ctx, -5, 0, 5, 0, t, 1));
+        ctx.restore();
+      }
+    } },
+
+  { id: 'tailcoat', name: 'Vaivorykštės frakas', level: 4, cost: null, note: 'Boso prizas',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* the two tails, split and flying */
+        [[-0.05, 1.0], [0.12, 0.86]].forEach((tl, i) => {
+          c.save(); c.rotate(tl[0] + Math.sin(t * 3 + i) * .04);
+          c.beginPath();
+          c.moveTo(rx * .3, -ry * .35);
+          c.quadraticCurveTo(-rx * .7, -ry * .5, -rx * 1.4 * tl[1], ry * (.45 + i * .4));
+          c.quadraticCurveTo(-rx * .6, ry * (.75 + i * .15), rx * .3, ry * .3);
+          c.closePath(); c.fillStyle = i ? '#171528' : '#252340'; c.fill();
+          c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = 1.4; c.stroke();
+          c.restore();
+        });
+        /* jacket body */
+        c.beginPath();
+        c.moveTo(rx * .6, -ry * .82); c.quadraticCurveTo(-rx * .5, -ry * 1.02, -rx * .92, ry * .42);
+        c.quadraticCurveTo(-rx * .2, ry * .55, rx * .5, ry * .34); c.closePath();
+        c.fillStyle = '#201e33'; c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.8; c.stroke();
+        /* white shirt front, then the iridescent lapels folded over it */
+        c.beginPath();
+        c.moveTo(rx * .6, -ry * .72); c.quadraticCurveTo(rx * .3, -ry * .1, rx * .26, ry * .3);
+        c.lineTo(rx * .56, ry * .26); c.quadraticCurveTo(rx * .62, -ry * .2, rx * .66, -ry * .66);
+        c.closePath(); c.fillStyle = '#fbf7ff'; c.fill();
+        c.save();
+        c.beginPath();
+        c.moveTo(rx * .58, -ry * .78); c.quadraticCurveTo(rx * .16, -ry * .3, rx * .1, ry * .3);
+        c.lineTo(rx * .3, ry * .28); c.quadraticCurveTo(rx * .38, -ry * .24, rx * .64, -ry * .68);
+        c.closePath();
+        c.fillStyle = rainbowLin(c, rx * .66, -ry, 0, ry, t, .95); c.fill();
+        c.restore();
+        for (let i = 0; i < 3; i++) circle(c, rx * .42 - i * 3, -ry * .05 + i * 4.4, 1.3, '#c8c2dd');
+        sparkle(c, 6, t, 0, 0, rx * .9, ry * .8, 61);
+      });
+      atHead(ctx, rig, c => {
+        /* bow tie, under the beard where a collar would sit */
+        c.save(); c.translate(3, 16);
+        poly(c, [[-1.4, 0], [-9, -5], [-9, 5]], rainbowLin(c, -9, 0, 9, 0, t + .6, 1));
+        poly(c, [[1.4, 0], [9, -5], [9, 5]], rainbowLin(c, -9, 0, 9, 0, t + .6, 1));
+        circle(c, 0, 0, 2.2, '#fbf7ff');
+        c.restore();
+        /* top hat */
+        c.save(); c.translate(-1, -14); c.rotate(-0.05);
+        fillRR(c, -12, -21, 24, 21, 3, '#201e33');
+        c.beginPath(); c.ellipse(0, -21, 12, 3.8, 0, 0, TAU);
+        c.fillStyle = '#2b2842'; c.fill();
+        c.save(); c.globalAlpha = .22; fillRR(c, -9, -19, 3.6, 13, 1.8, '#fff'); c.restore();
+        c.beginPath(); rr(c, -12.4, -7.5, 24.8, 5.6, 2);
+        c.fillStyle = rainbowLin(c, -12, 0, 12, 0, t + 1, 1); c.fill();
+        c.restore();
+        c.beginPath(); c.ellipse(-1, -13.5, 19, 5.4, -0.05, 0, TAU);
+        c.fillStyle = '#191728'; c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.24)'; c.lineWidth = 1.3; c.stroke();
+        sparkle(c, 4, t, -1, -26, 15, 9, 63);
+      });
+      shoes(ctx, rig, '#1d1b2e', '#e8e4f4', '#b0e8ff');
+      (rig.paws || []).forEach((p, i) => {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = .5;
+        fillRR(ctx, -6.2, 2.4, 12.8, 2.6, 1.3, rainbowLin(ctx, -6, 0, 7, 0, t + i * .5, 1));
+        ctx.restore();
+      });
+      /* the cane, tucked into the near front paw */
+      const p = (rig.paws || [])[0];
+      if (p) {
+        ctx.save(); ctx.translate(p.x + 5, p.y - 2); ctx.rotate(0.3 + Math.sin(t * 3) * .05);
+        line(ctx, 0, -19, 0, 12, '#2b2033', 3.2);
+        ctx.save(); ctx.globalAlpha = .45; line(ctx, -1, -15, -1, 8, '#7a6a88', 1.1); ctx.restore();
+        fillRR(ctx, -2.2, 10, 4.6, 3.2, 1.5, '#c8c2dd');
+        circle(ctx, 0, -21, 4, '#fbf7ff');
+        ctx.save(); ctx.globalAlpha = .85;
+        circle(ctx, 0, -21, 3, rainbowLin(ctx, -4, -25, 4, -17, t, 1)); ctx.restore();
+        sparkle(ctx, 3, t, 0, -21, 6, 6, 67);
+        ctx.restore();
+      }
     } }
 ];
 const SKIN_MAP = {};

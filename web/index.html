@@ -33,21 +33,44 @@
     </div>
   </div>
 
-  <!-- ===== LOBBY ===== -->
+  <!-- ===== LOBBY (one page per level, slid sideways) ===== -->
   <div id="screen-lobby" class="layer screen hidden">
     <div class="logo">
       <div class="logo-main">LOTA <span>GO</span></div>
-      <div class="logo-sub">Didysis Lotos nuotykis</div>
+      <div id="lobbySub" class="logo-sub">Didysis Lotos nuotykis</div>
     </div>
     <div class="lobby-spacer"></div>
+    <div id="lobbyLock" class="lock-note hidden"></div>
     <div class="lobby-actions">
       <button id="btnPlay" class="big-btn play">ŽAISTI</button>
       <button id="btnSkins" class="big-btn alt">APRANGOS</button>
     </div>
     <div class="lobby-foot">
-      <div class="wallet"><span class="bone-ico"></span><span id="lobbyBones">0</span></div>
+      <div id="lobbyWallet" class="wallet"></div>
       <div id="lobbyBest" class="best"></div>
       <button id="btnSound" class="icon-btn round" aria-label="Garsas">♪</button>
+    </div>
+    <button id="btnPagePrev" class="page-arrow left" aria-label="Ankstesnis lygis">‹</button>
+    <button id="btnPageNext" class="page-arrow right" aria-label="Kitas lygis">›</button>
+    <div id="lobbyDots" class="page-dots"></div>
+  </div>
+
+  <!-- ===== LEVEL PICTURE (levels with no arena yet) ===== -->
+  <div id="screen-preview" class="layer screen hidden">
+    <div class="preview-head">
+      <button id="btnPreviewBack" class="icon-btn">‹</button>
+      <div class="preview-title">
+        <h2 id="previewName"></h2>
+        <div id="previewSub" class="preview-sub"></div>
+      </div>
+    </div>
+    <div class="lobby-spacer"></div>
+    <div class="preview-note">
+      <div class="preview-tag">NUOTRAUKA</div>
+      <div id="previewNote"></div>
+    </div>
+    <div class="lobby-actions">
+      <button id="btnPreviewSkins" class="big-btn alt">ŠIO LYGIO APRANGOS</button>
     </div>
   </div>
 
@@ -56,8 +79,8 @@
     <div class="sheet">
       <div class="sheet-head">
         <button id="btnSkinsBack" class="icon-btn">‹</button>
-        <h2>Aprangos</h2>
-        <div class="wallet small"><span class="bone-ico"></span><span id="skinsBones">0</span></div>
+        <h2 id="skinsTitle">Aprangos</h2>
+        <div id="skinsWallet" class="wallet small"></div>
       </div>
       <div id="skinGrid" class="skin-grid"></div>
     </div>
@@ -99,6 +122,7 @@
 <script src="js/lota.js"></script>
 <script src="js/props.js"></script>
 <script src="js/zones.js"></script>
+<script src="js/levels.js"></script>
 <script src="js/level.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>

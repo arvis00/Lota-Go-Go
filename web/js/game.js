@@ -12,6 +12,10 @@ const Game = {
   portrait: false,
 
   lota: null,
+  /* the lobby is a strip of four identical rooms, one per level; the view
+     slides sideways between them and the locked ones are drained of colour */
+  lobbyPage: 0, lobbyFrom: 0, lobbySlide: 1, lobbySwapped: true,
+  previewLevel: 2,
   cam: { x: 0, y: 0 },
   input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0 },
   fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0,
@@ -61,7 +65,13 @@ const Game = {
       const k = e.code;
       if (k === 'ArrowUp' || k === 'KeyW' || k === 'Space') { e.preventDefault(); jump(); }
       else if (k === 'ArrowDown' || k === 'KeyS') { e.preventDefault(); duckOn(); }
-      else if (k === 'Escape' || k === 'KeyP') { if (this.state === 'run') UI.pause(); else if (this.state === 'pause') UI.resume(); }
+      else if (k === 'Escape' || k === 'KeyP') {
+        if (this.state === 'run') UI.pause();
+        else if (this.state === 'pause') UI.resume();
+        else if (this.state === 'preview') UI.backFromPreview();
+      }
+      else if (k === 'ArrowLeft') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage - 1); }
+      else if (k === 'ArrowRight') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage + 1); }
     }, { passive: false });
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowDown' || e.code === 'KeyS') duckOff();
@@ -117,6 +127,32 @@ const Game = {
     hold(document.getElementById('btnUp'), jump);
     hold(document.getElementById('btnDown'), () => duckOn(), () => duckOff());
 
+    /* the lobby is a strip of level pages — drag it sideways to see the rest */
+    let lx = 0, ly = 0, lActive = false, lFired = false;
+    const lob = document.getElementById('screen-lobby');
+    const lStart = (x, y, e) => {
+      if (this.state !== 'lobby' || (e.target.closest && e.target.closest('button'))) return;
+      lx = x; ly = y; lActive = true; lFired = false;
+    };
+    const lMove = (x, y) => {
+      if (!lActive || lFired) return;
+      const dx = x - lx, dy = y - ly;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        lFired = true;
+        this.gotoLobbyPage(this.lobbyPage + (dx < 0 ? 1 : -1));
+      }
+    };
+    const lEnd = () => { lActive = false; };
+    if (lob) {
+      lob.addEventListener('touchstart', e => lStart(e.changedTouches[0].clientX, e.changedTouches[0].clientY, e), { passive: true });
+      lob.addEventListener('touchmove', e => lMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY), { passive: true });
+      lob.addEventListener('touchend', lEnd);
+      lob.addEventListener('touchcancel', lEnd);
+      lob.addEventListener('mousedown', e => lStart(e.clientX, e.clientY, e));
+      lob.addEventListener('mousemove', e => { if (lActive) lMove(e.clientX, e.clientY); });
+      window.addEventListener('mouseup', lEnd);
+    }
+
     if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
       document.body.classList.add('touch');
       const tu = document.getElementById('tutUp'), td = document.getElementById('tutDown');
@@ -140,7 +176,28 @@ const Game = {
   lobby() {
     this.state = 'lobby'; this.stateT = 0;
     this.fx.confetti.length = 0;
+    this.lobbyFrom = this.lobbyPage; this.lobbySlide = 1; this.lobbySwapped = true;
     UI.showLobby();
+  },
+
+  /** level number shown on the lobby page currently under the buttons */
+  lobbyLevel() { return this.lobbyPage + 1; },
+
+  gotoLobbyPage(n) {
+    n = clamp(n, 0, LEVELS.length - 1);
+    if (this.state !== 'lobby' || n === this.lobbyPage || this.lobbySlide < 1) return;
+    this.lobbyFrom = this.lobbyPage;
+    this.lobbyPage = n;
+    this.lobbySlide = 0; this.lobbySwapped = false;
+    Sfx.init(); Sfx.resume(); Sfx.swipe();
+    UI.lobbyFade(true);
+  },
+
+  /** the picture standing in for a level that has no arena yet */
+  showPreview(level) {
+    this.previewLevel = level;
+    this.state = 'preview'; this.stateT = 0;
+    UI.showPreview(level);
   },
 
   startRun(fromCheckpoint) {
@@ -158,7 +215,7 @@ const Game = {
     } else {
       this.world.bones.forEach(b => { b.got = false; });
       this.world.warps.forEach(w => { w.used = false; });
-      this.run = { bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
+      this.run = { level: 1, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
                    finished: false, warpTo: null, deaths: 0, banked: false };
       this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZONES[0].name, start: true };
     }
@@ -227,6 +284,12 @@ const Game = {
     if (dt > 0.06) dt = 0.06;
     this.t += dt;
     this.stateT += dt;
+
+    if (this.state === 'lobby' && this.lobbySlide < 1) {
+      this.lobbySlide = Math.min(1, this.lobbySlide + dt * 3.1);
+      if (!this.lobbySwapped && this.lobbySlide > 0.42) { this.lobbySwapped = true; UI.lobbyPageChanged(); }
+      if (this.lobbySlide >= 1) UI.lobbyFade(false);
+    }
 
     if (this.state === 'run') this.step(dt);
     else if (this.state === 'crash') {
@@ -572,6 +635,7 @@ const Game = {
     }
 
     if (this.state === 'lobby') this.renderLobby();
+    else if (this.state === 'preview') this.renderPreview();
     else this.renderWorld();
 
     ctx.restore();
@@ -829,10 +893,58 @@ const Game = {
   },
 
   /* ---------- lobby scene ---------- */
+  /** The strip: the settled page, plus the one sliding past it. Each level
+      has the same room — a locked one is simply the colour taken out of it. */
   renderLobby() {
+    const ctx = this.ctx, VW = this.VW;
+    const k = this.lobbySlide;
+    if (k >= 1) { this.drawLobbyRoom(0, this.lobbyPage); return; }
+    const dir = this.lobbyPage > this.lobbyFrom ? 1 : -1;
+    const e = smooth(k);
+    const oFrom = -e * VW * dir;
+    this.drawLobbyRoom(oFrom, this.lobbyFrom);
+    this.drawLobbyRoom(oFrom + dir * VW, this.lobbyPage);
+    /* a seam of shadow so the two rooms read as separate places */
+    const seam = oFrom + (dir > 0 ? VW : 0);
+    ctx.save(); ctx.globalAlpha = .5;
+    const g = ctx.createLinearGradient(seam - 26, 0, seam + 26, 0);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, 'rgba(0,0,0,.75)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(seam - 26, 0, 52, this.VH); ctx.restore();
+  },
+
+  drawLobbyRoom(ox, page) {
+    const ctx = this.ctx, VW = this.VW, VH = this.VH;
+    if (ox <= -VW || ox >= VW) return;
+    const level = page + 1;
+    const locked = !Levels.unlocked(level);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(ox, 0, VW, VH); ctx.clip();
+    ctx.translate(ox, 0);
+    this.drawRoom(level, locked);
+    ctx.restore();
+
+    if (locked) {
+      /* drain the colour out of just this room, then dim it */
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ox, 0, VW, VH); ctx.clip();
+      ctx.globalCompositeOperation = 'saturation';
+      ctx.fillStyle = 'hsl(0,0%,50%)'; ctx.fillRect(ox, 0, VW, VH);
+      /* lift the blacks a little so it still reads as the same room,
+         only with the colour taken out of it */
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(226,226,236,.13)'; ctx.fillRect(ox, 0, VW, VH);
+      ctx.fillStyle = 'rgba(12,10,20,.20)'; ctx.fillRect(ox, 0, VW, VH);
+      ctx.restore();
+      this.drawBigLock(ox + VW * 0.5, VH * 0.345, level);
+    }
+  },
+
+  /** one home page — the same room every time, so a locked level looks
+      exactly like the one you already know, only shut */
+  drawRoom(level, locked) {
     const ctx = this.ctx, VW = this.VW, VH = this.VH, t = this.t;
     const floorY = VH * 0.56;
-    const pal = { far: '#3a2b56', mid: '#4d3a70', skirt: '#2b1f42', frame: '#c9962c', pic: '#ffd8e6' };
+    const pal = { far: '#3a2b56', mid: '#4d3a70' };
     ctx.fillStyle = pal.far; ctx.fillRect(0, 0, VW, VH);
     ctx.save(); ctx.globalAlpha = .3;
     for (let x = 0; x < VW; x += 56) for (let y = 0; y < floorY; y += 60) {
@@ -859,9 +971,25 @@ const Game = {
     ctx.restore();
     line(ctx, wx + ww / 2, wy + 8, wx + ww / 2, wy + wh - 8, '#c9962c', 6);
 
-    /* a cosy shelf with bones */
+    /* the shelf carries what this level pays out: treats, toys, or both */
     fillRR(ctx, VW * 0.07, VH * 0.24, VW * 0.19, 12, 4, '#8a6440');
-    for (let i = 0; i < 3; i++) this.drawBone(VW * 0.09 + i * 34, VH * 0.24 - 12, 0.72);
+    const picks = Levels.get(level).picks;
+    if (level === 4) {
+      /* nothing is collected on the boss level — the prize sits there instead */
+      for (let i = 0; i < 3; i++) {
+        const a = t * 0.7 + i * 2.1;
+        ctx.save(); ctx.globalAlpha = .9;
+        fillEll(ctx, VW * 0.09 + i * 34, VH * 0.24 - 14 + Math.sin(a) * 3, 8, 5,
+          'hsla(' + ((i * 90 + t * 46) % 360) + ',90%,72%,1)', a * .3);
+        ctx.restore();
+      }
+    } else {
+      for (let i = 0; i < 3; i++) {
+        const x = VW * 0.09 + i * 34, y = VH * 0.24 - 12;
+        const toy = picks === 't' || (picks === 'bt' && i % 2 === 1);
+        if (toy) Levels.toyBall(ctx, x, y - 2, 11, t, i); else this.drawBone(x, y, 0.72);
+      }
+    }
 
     /* floor + rug */
     ctx.fillStyle = '#6b4a2c'; ctx.fillRect(0, floorY, VW, VH - floorY);
@@ -872,28 +1000,69 @@ const Game = {
     fillEll(ctx, VW * 0.5, floorY + 46, VW * 0.3, 40, '#8a4a63');
     ctx.save(); ctx.globalAlpha = .5; fillEll(ctx, VW * 0.5, floorY + 46, VW * 0.24, 30, '#c96f8a'); ctx.restore();
 
-    /* Lota, sitting and being cute */
-    const cycle = (t * 0.5) % 4;
-    drawLota(ctx, VW * 0.5, floorY + 24, {
-      state: 'sit', t: t, skin: Save.data.skin, scale: 1.42,
-      face: 'calm', paw: cycle > 2.4 && cycle < 3.4,
-      tilt: Math.sin(t * 0.8) * 0.13
-    });
+    /* the level's number, painted on the wall above the rug */
+    ctx.save(); ctx.globalAlpha = .12;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '900 ' + Math.round(VH * 0.3) + 'px ' + 'system-ui, sans-serif';
+    ctx.fillText(String(level), VW * 0.5, floorY - VH * 0.13);
+    ctx.restore();
 
-    /* floating hearts now and then */
-    for (let i = 0; i < 3; i++) {
-      const ph = (t * 0.35 + i * 0.33) % 1;
-      ctx.save(); ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.55;
-      const hx = VW * 0.5 + 48 + Math.sin(ph * 6 + i) * 12, hy = floorY - 60 - ph * 130;
-      ctx.translate(hx, hy); ctx.scale(1.1, 1.1);
-      ctx.beginPath();
-      ctx.moveTo(0, 4); ctx.bezierCurveTo(-7, -3, -3, -9, 0, -4);
-      ctx.bezierCurveTo(3, -9, 7, -3, 0, 4); ctx.fillStyle = '#ff8fb0'; ctx.fill();
+    /* Lota, sitting and being cute. A locked room is one she has not been
+       let into yet, so she only sits on the page you actually own. */
+    if (!locked) {
+      const cycle = (t * 0.5) % 4;
+      drawLota(ctx, VW * 0.5, floorY + 24, {
+        state: 'sit', t: t, skin: Save.data.skin, scale: 1.42,
+        face: 'calm', paw: cycle > 2.4 && cycle < 3.4,
+        tilt: Math.sin(t * 0.8) * 0.13
+      });
+      for (let i = 0; i < 3; i++) {
+        const ph = (t * 0.35 + i * 0.33) % 1;
+        ctx.save(); ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.55;
+        const hx = VW * 0.5 + 48 + Math.sin(ph * 6 + i) * 12, hy = floorY - 60 - ph * 130;
+        ctx.translate(hx, hy); ctx.scale(1.1, 1.1);
+        ctx.beginPath();
+        ctx.moveTo(0, 4); ctx.bezierCurveTo(-7, -3, -3, -9, 0, -4);
+        ctx.bezierCurveTo(3, -9, 7, -3, 0, 4); ctx.fillStyle = '#ff8fb0'; ctx.fill();
+        ctx.restore();
+      }
+    } else {
+      /* an empty rug, with her collar left on it */
+      ctx.save(); ctx.globalAlpha = .8;
+      ctx.beginPath(); ctx.ellipse(VW * 0.5, floorY + 40, 26, 9, -0.1, 0, TAU);
+      ctx.strokeStyle = '#8a4a63'; ctx.lineWidth = 7; ctx.stroke();
+      circle(ctx, VW * 0.5 + 2, floorY + 49, 4.4, '#c9962c');
       ctx.restore();
     }
 
     const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.35, VW / 2, VH / 2, VH);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,16,.55)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
+  },
+
+  /** the padlock hanging over a level that has not been earned */
+  drawBigLock(x, y, level) {
+    const ctx = this.ctx;
+    const sw = 1 + Math.sin(this.t * 1.6) * 0.02;
+    ctx.save(); ctx.translate(x, y); ctx.scale(sw, sw);
+    ctx.save(); ctx.globalAlpha = .45;
+    circle(ctx, 0, 6, 64, '#0b0716'); ctx.restore();
+    ctx.strokeStyle = '#ffd870'; ctx.lineWidth = 11; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(0, -14, 21, Math.PI, 0); ctx.stroke();
+    fillRR(ctx, -30, -14, 60, 48, 12, '#ffd870');
+    fillRR(ctx, -26, -10, 52, 40, 9, '#f2b93a');
+    circle(ctx, 0, 6, 7, '#6b4a12');
+    fillRR(ctx, -3, 6, 6, 14, 3, '#6b4a12');
+    ctx.restore();
+  },
+
+  /* ---------- the picture that stands in for a level with no arena ---------- */
+  renderPreview() {
+    Levels.picture(this.previewLevel, this.ctx, this.VW, this.VH, this.t);
+    const ctx = this.ctx;
+    const vg = ctx.createLinearGradient(0, this.VH * 0.55, 0, this.VH);
+    vg.addColorStop(0, 'rgba(8,4,16,0)'); vg.addColorStop(1, 'rgba(8,4,16,.72)');
+    ctx.fillStyle = vg; ctx.fillRect(0, this.VH * 0.55, this.VW, this.VH * 0.45);
   }
+
 };
