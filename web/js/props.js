@@ -699,7 +699,7 @@ const PROPS = {
   },
 
   /* ==================== LONDON UNDERGROUND ==================== */
-  metroSign(ctx, x, y, w, h) {
+  metroSign(ctx, x, y, w, h, t, pal, seed, o) {
     /* the mouth of the stairs: a railing round it with the roundel on a post.
        It is signage, never an obstacle — she runs or jumps straight past. */
     const ry = y + h - 52;
@@ -713,6 +713,53 @@ const PROPS = {
     ctx.fillText('METRO', x + w * 0.5, y + 34);
     ctx.save(); ctx.globalAlpha = .95;
     poly(ctx, [[x + w * 0.5 - 10, y + 62], [x + w * 0.5 + 10, y + 62], [x + w * 0.5, y + 78]], '#f6c93a');
+    ctx.restore();
+    /* while the gate is shut the roundel wears a padlock, so the way in reads
+       as locked from as far off as the sign itself does */
+    if (o && o.locked) {
+      ctx.save(); ctx.translate(x + w * 0.5 + 30, y + 34); ctx.globalAlpha = .95;
+      ctx.beginPath(); ctx.arc(0, -8, 7, Math.PI, 0); ctx.strokeStyle = '#d8d2c4'; ctx.lineWidth = 4; ctx.stroke();
+      fillRR(ctx, -10, -8, 20, 17, 4, '#f6c93a');
+      ctx.strokeStyle = '#a8791c'; ctx.lineWidth = 1.8; ctx.stroke();
+      circle(ctx, 0, 0, 2.6, '#a8791c');
+      ctx.restore();
+    }
+  },
+  /* The bars across the mouth of the metro steps. Shut, they are simply floor:
+     she runs over them. With the key they fold back against the railings and
+     the steps are open. */
+  metroGrate(ctx, x, y, w, h, t, pal, seed, o) {
+    const open = o && o.open;
+    const fy = (o && o.floorY != null) ? o.floorY : y + h;
+    if (open) {
+      ctx.save(); ctx.globalAlpha = .9;
+      [x + 4, x + w - 20].forEach((bx, k) => {
+        fillRR(ctx, bx, fy - 62, 16, 62, 4, '#4a5468');
+        ctx.save(); ctx.globalAlpha = .55;
+        for (let i = 0; i < 5; i++) line(ctx, bx + 2, fy - 56 + i * 11, bx + 14, fy - 56 + i * 11, '#8d94a3', 2);
+        ctx.restore();
+        circle(ctx, bx + 8, fy - 66, 4, '#6fe0a8');
+      });
+      ctx.restore();
+      return;
+    }
+    /* shut: a heavy frame with uprights, sitting in the pavement */
+    fillRR(ctx, x, fy - 16, w, 16, 3, '#4a5468');
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.2; ctx.stroke();
+    fillRR(ctx, x, fy - 62, w, 10, 4, '#5d6878');
+    ctx.save(); ctx.globalAlpha = .95;
+    for (let i = 6; i < w - 8; i += 22) {
+      fillRR(ctx, x + i, fy - 60, 8, 48, 3, '#6f7a8c');
+      ctx.save(); ctx.globalAlpha = .35; fillRR(ctx, x + i + 1.5, fy - 58, 3, 44, 2, '#c9d2e0'); ctx.restore();
+    }
+    ctx.restore();
+    for (let i = 0; i < 2; i++) fillRR(ctx, x + 2, fy - 46 + i * 22, w - 4, 6, 3, '#5d6878');
+    /* the padlock in the middle of it */
+    ctx.save(); ctx.translate(x + w * 0.5, fy - 34);
+    ctx.beginPath(); ctx.arc(0, -9, 8, Math.PI, 0); ctx.strokeStyle = '#c9d2e0'; ctx.lineWidth = 4.5; ctx.stroke();
+    fillRR(ctx, -12, -9, 24, 20, 5, '#f6c93a');
+    ctx.strokeStyle = '#a8791c'; ctx.lineWidth = 2; ctx.stroke();
+    circle(ctx, 0, 0, 3, '#a8791c');
     ctx.restore();
   },
   metroExit(ctx, x, y, w, h) {
@@ -974,6 +1021,120 @@ const PROPS = {
       ctx.bezierCurveTo(hx + 2.5, hy - 8, hx + 6, hy - 3, hx, hy + 3);
       ctx.fillStyle = '#ff8fb0'; ctx.fill();
     }
+    ctx.restore();
+  },
+  /* The bed in the girl's room. It is never an obstacle: running into it only
+     climbs her onto it, and landing on it throws her at the ceiling — that is
+     the way up into the duct, so it is drawn as a springboard, not furniture. */
+  bedBounce(ctx, x, y, w, h) {
+    /* legs and springs under the frame */
+    ctx.save(); ctx.globalAlpha = .9;
+    for (let i = 0; i < 4; i++) {
+      const sx = x + w * (0.18 + i * 0.21);
+      ctx.beginPath();
+      for (let k = 0; k <= 12; k++) {
+        const f = k / 12;
+        ctx.lineTo(sx + Math.sin(f * Math.PI * 3) * 5, y + h * 0.56 + f * h * 0.34);
+      }
+      ctx.strokeStyle = '#b07a8e'; ctx.lineWidth = 2.6; ctx.stroke();
+    }
+    ctx.restore();
+    fillRR(ctx, x + w - 13, y - 16, 13, h + 16, 4, '#b07a8e');
+    fillRR(ctx, x, y + h * 0.5, w, h * 0.5, 6, '#c98fa8');
+    /* the mattress she bounces off */
+    fillRR(ctx, x - 3, y, w + 6, h * 0.52, 10, '#ffd8e6');
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .55;
+    for (let i = 0; i < 5; i++) fillRR(ctx, x + 6 + i * ((w - 12) / 5), y + 5, (w - 12) / 9, h * 0.42, 4, '#ffb0cf');
+    ctx.restore();
+    fillRR(ctx, x + w - 52, y - 12, 40, 20, 8, '#fff6f8');
+    ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+    /* two chevrons over it: this one sends her up */
+    ctx.save(); ctx.globalAlpha = .85;
+    for (let i = 0; i < 2; i++) {
+      const cy = y - 24 - i * 15;
+      poly(ctx, [[x + w * 0.32, cy], [x + w * 0.44, cy - 13], [x + w * 0.56, cy],
+                 [x + w * 0.44, cy - 6]], '#ff8fb0');
+    }
+    ctx.restore();
+  },
+  /* The hatch in the ceiling straight over the bed. It is a length of duct
+     bolted up under the ceiling with its grille swung open, so the way up is
+     something she can see from the far side of the room. */
+  ventMouth(ctx, x, y, w, h) {
+    hangTo(ctx, x, y, w, '#6f7686', 5);
+    /* the duct body */
+    fillRR(ctx, x, y, w, h * 0.46, 6, '#9aa3b5');
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.save(); rr(ctx, x + 4, y + 4, w - 8, h * 0.46 - 8, 4); ctx.clip();
+    ctx.fillStyle = '#7a8394'; ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = .5;
+    for (let i = 0; i < w; i += 19) fillRR(ctx, x + i + 4, y + 4, 9, h, 3, '#aab3c2');
+    ctx.restore();
+    /* the open hatch in its underside */
+    const hx = x + w * 0.22, hw = w * 0.56, hy = y + h * 0.42, hh = h * 0.5;
+    fillRR(ctx, hx - 5, hy, hw + 10, hh, 4, '#5d6470');
+    fillRR(ctx, hx, hy + 3, hw, hh - 6, 3, '#20242e');
+    ctx.save(); rr(ctx, hx, hy + 3, hw, hh - 6, 3); ctx.clip();
+    const g = ctx.createLinearGradient(0, hy, 0, hy + hh);
+    g.addColorStop(0, '#4a5364'); g.addColorStop(1, '#1a1e27');
+    ctx.fillStyle = g; ctx.fillRect(hx, hy, hw, hh);
+    ctx.globalAlpha = .45;
+    for (let i = 0; i < hw; i += 15) line(ctx, hx + i, hy + hh, hx + i + 12, hy, '#8d94a3', 2);
+    ctx.restore();
+    /* the grille, dropped open on its hinge and hanging clear */
+    ctx.save(); ctx.translate(hx + hw + 2, hy + hh - 4); ctx.rotate(0.9);
+    fillRR(ctx, 0, 0, hw * 0.8, 9, 3, '#8d94a3');
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .6;
+    for (let i = 6; i < hw * 0.8; i += 11) line(ctx, i, 2, i, 8, '#5d6470', 2.4);
+    ctx.restore(); ctx.restore();
+    /* light falling out of it, so the eye is pulled up there */
+    ctx.save(); ctx.globalAlpha = .22;
+    poly(ctx, [[hx + 4, hy + hh], [hx + hw - 4, hy + hh],
+               [hx + hw + 30, hy + hh + 78], [hx - 30, hy + hh + 78]], '#ffeec2');
+    ctx.restore();
+  },
+  /* where the duct lets go of her again: the louvres pushed apart from inside */
+  ventSlit(ctx, x, y, w, h) {
+    hangTo(ctx, x, y, w, '#6f7686', 5);
+    fillRR(ctx, x, y, w, h * 0.44, 6, '#9aa3b5');
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let i = 0; i < w; i += 19) fillRR(ctx, x + i + 4, y + 4, 9, h * 0.44 - 8, 3, '#aab3c2');
+    ctx.restore();
+    const sx0 = x + w * 0.18, sw = w * 0.64, sy0 = y + h * 0.4, sh = h * 0.52;
+    fillRR(ctx, sx0 - 5, sy0, sw + 10, sh, 4, '#5d6470');
+    fillRR(ctx, sx0, sy0 + 3, sw, sh - 6, 3, '#20242e');
+    /* the louvres, bent out of the way */
+    ctx.save(); ctx.globalAlpha = .95;
+    for (let i = 0; i < 3; i++) {
+      const ly = sy0 + 6 + i * (sh - 12) / 3, tilt = (i - 1) * 7;
+      fillRR(ctx, sx0 + 3, ly + tilt, sw - 6, 5, 2, '#8d94a3');
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .22;
+    poly(ctx, [[sx0 + 4, sy0 + sh], [sx0 + sw - 4, sy0 + sh],
+               [sx0 + sw + 34, sy0 + sh + 96], [sx0 - 34, sy0 + sh + 96]], '#ffeec2');
+    ctx.restore();
+  },
+  /* the key itself: a metro tag on a gold key, so it is obvious what it opens */
+  keyMetro(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = .3;
+    circle(ctx, x + w * 0.5, y + h * 0.5, w * 0.55, '#ffe7a8'); ctx.restore();
+    /* the shaft */
+    fillRR(ctx, x + w * 0.34, y + h * 0.42, w * 0.52, h * 0.16, 3, '#f6c93a');
+    ctx.strokeStyle = '#a8791c'; ctx.lineWidth = 1.8; ctx.stroke();
+    fillRR(ctx, x + w * 0.66, y + h * 0.56, w * 0.09, h * 0.2, 2, '#f6c93a');
+    fillRR(ctx, x + w * 0.8, y + h * 0.56, w * 0.09, h * 0.16, 2, '#f6c93a');
+    circle(ctx, x + w * 0.26, y + h * 0.5, w * 0.17, '#f6c93a');
+    ctx.strokeStyle = '#a8791c'; ctx.lineWidth = 1.8; ctx.stroke();
+    circle(ctx, x + w * 0.26, y + h * 0.5, w * 0.07, '#a8791c');
+    /* the roundel tag hanging off it */
+    ctx.save(); ctx.globalAlpha = .95;
+    circle(ctx, x + w * 0.26, y + h * 0.08, 8.5, '#c9302c');
+    circle(ctx, x + w * 0.26, y + h * 0.08, 5, '#f2f4f8');
+    fillRR(ctx, x + w * 0.26 - 12, y + h * 0.08 - 3.4, 24, 7, 2, '#1f3b7a');
     ctx.restore();
   },
   plushPile(ctx, x, y, w, h) {

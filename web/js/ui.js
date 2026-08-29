@@ -238,6 +238,9 @@ const UI = {
   resume() { if (Game.state !== 'pause') return; $('screen-pause').classList.add('hidden'); Game.state = 'run'; Game.last = performance.now(); },
 
   setBones(n) { $('hudBones').textContent = n; },
+  /* the metro key rides in the HUD once she has it, so it is never a mystery
+     why the bars in London are open */
+  setKey(on) { $('hudKey').classList.toggle('hidden', !on); },
   setZone(name) { $('hudZone').textContent = name; },
   setProgress(p) { $('hudBarFill').style.width = (p * 100).toFixed(1) + '%'; },
   tut(on) { $('tut').classList.toggle('show', !!on); },

@@ -58,11 +58,17 @@ const BG = {
       if (roofs) { fillRR(ctx, x - 4, base - h - 8, w + 8, 12, 3, shade(c, -.18)); }
       ctx.save(); ctx.globalAlpha = .9;
       const cw = 13, ch = 17;
-      for (let wy = base - h + 22; wy < base - 26; wy += ch + 12)
-        for (let wx = x + 12; wx < x + w - 18; wx += cw + 11) {
-          const on = ((wx * 7 + wy * 13 + i * 31) % 11) > 5;
+      /* which windows are lit is decided by the window's own row and column in
+         its own building, never by where it happens to be on screen — doing it
+         from screen coordinates made every window blink as the street scrolled */
+      let row = 0;
+      for (let wy = base - h + 22; wy < base - 26; wy += ch + 12, row++) {
+        let col = 0;
+        for (let wx = x + 12; wx < x + w - 18; wx += cw + 11, col++) {
+          const on = imod(col * 7 + row * 13 + i * 31, 11) > 5;
           fillRR(ctx, wx, wy, cw, ch, 2, on ? winCol : shade(c, -.22));
         }
+      }
       ctx.restore();
     });
   },
@@ -258,7 +264,7 @@ const ZONES = [
              deco: ['grassTuft', 'flowers', 'pebbles', 'puddleD'] }
   },
   {
-    id: 'home2', exit: 'doorHouse', name: 'Kaimynų namas', sec: 15, diff: 0.16, floor: 'tile',
+    id: 'home2', exit: 'doorHouse', name: 'Kaimynų namas', sec: 18, diff: 0.16, floor: 'tile',
     branch: 'upstairs',
     pal: { far: '#a8d6e6', mid: '#7fbdd6', skirt: '#6f9db5', frame: '#e6dccd', pic: '#ffd8e6',
            floorTop: '#dfe9ef', floorBody: '#9fb4c2', accent: '#6fc9ff' },
@@ -554,7 +560,7 @@ const ZONES = [
              deco: ['aisleStrip'] }
   },
   {
-    id: 'london', name: 'Londonas', sec: 19, diff: 1.0, floor: 'asphalt', last: true,
+    id: 'london', name: 'Londonas', sec: 26, diff: 1.0, floor: 'asphalt', last: true,
     branch: 'metro',
     pal: { sky1: '#7f93b5', sky2: '#cfd8e6', far: '#7a86a0', mid: '#5f6b85',
            floorTop: '#a9a29a', floorBody: '#55505c', accent: '#c9302c', cloud: '#eef2f8', car: '#c9302c' },
@@ -609,7 +615,7 @@ const BRANCHES = {
   /* ---------- Londono metro: down the steps, through the station, one stop
        on the train, back up into the same street ---------- */
   metro: {
-    id: 'metro', drop: -250, enterSec: 2.4, sec: 9.0,
+    id: 'metro', drop: -250, enterSec: 2.4, sec: 6.5, locked: 1,
     sign: 'metroSign', exitSign: 'metroExit',
     rooms: [
       {
@@ -724,7 +730,7 @@ const BRANCHES = {
     sign: 'stairsUpSign', exitProp: 'windowOpen',
     rooms: [
       {
-        id: 'boyroom', name: 'Berniuko kambarys', share: 0.36, floor: 'wood', diff: 0.2,
+        id: 'boyroom', name: 'Berniuko kambarys', share: 0.31, floor: 'wood', diff: 0.2,
         pal: { far: '#9fc4e6', mid: '#7fa8d6', skirt: '#6f8fb5', frame: '#e6dccd', pic: '#cfe6ff',
                floorTop: '#d9a86a', floorBody: '#a87a4a', accent: '#4f8ce2',
                treadTop: '#d9a86a', treadSide: '#a87a4a', rail: '#a8794a', post: '#8a6a45' },
@@ -749,7 +755,7 @@ const BRANCHES = {
                  deco: ['starsDeco', 'rugDeco', 'pawPrints'] }
       },
       {
-        id: 'bathroom', name: 'Vonia', share: 0.28, floor: 'tile', diff: 0.2,
+        id: 'bathroom', name: 'Vonia', share: 0.23, floor: 'tile', diff: 0.2,
         pal: { floorTop: '#e6eef4', floorBody: '#9fb2c6', accent: '#8fd6ff',
                treadTop: '#e6eef4', treadSide: '#9fb2c6' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -789,7 +795,7 @@ const BRANCHES = {
                  deco: ['bathMat', 'tileShine'] }
       },
       {
-        id: 'girlroom', name: 'Mergaitės kambarys', share: 0.36, floor: 'carpet', diff: 0.2,
+        id: 'girlroom', name: 'Mergaitės kambarys', share: 0.46, floor: 'carpet', diff: 0.2,
         pal: { far: '#f0c9dc', mid: '#e0a8c4', skirt: '#c98fa8', frame: '#fff2f6', pic: '#ffe7f0',
                floorTop: '#d9a2bd', floorBody: '#a86f8a', accent: '#ff8fb0',
                treadTop: '#d9a2bd', treadSide: '#a86f8a' },
@@ -825,10 +831,60 @@ const BRANCHES = {
           });
         },
         pools: { hurdle: ['dollhouse', 'vanity', 'plushPile', 'toyboxG'], over: ['bunting'],
-                 ledge: ['shelfH'], step: ['bedGirl', 'dollhouse'],
+                 ledge: ['shelfH'], step: ['dollhouse'],
                  deco: ['heartsDeco', 'rugDeco'] }
       }
-    ]
+    ],
+    /* ---- and the way out of the girl's room that nobody expects ----
+       The bed is a springboard: landing on it throws her through the hatch in
+       the ceiling and into this duct. Nothing up here can hurt her — it is a
+       short dark run with the metro key lying in it, and it drops her back
+       into the same room, at exactly the point she would have reached had she
+       jumped the bed instead. */
+    duct: {
+      id: 'duct', name: 'Ventiliacija', floor: 'metal',
+      pal: { floorTop: '#8d94a3', floorBody: '#454b59', accent: '#ffd870',
+             treadTop: '#8d94a3', treadSide: '#454b59' },
+      bg(ctx, VW, VH, camX, floorY, t, pal) {
+        ctx.fillStyle = '#171a24'; ctx.fillRect(0, 0, VW, VH);
+        /* the far wall of the duct, ribbed every so often */
+        const g = ctx.createLinearGradient(0, floorY - 210, 0, floorY);
+        g.addColorStop(0, '#2b303c'); g.addColorStop(1, '#3d4450');
+        ctx.fillStyle = g; ctx.fillRect(0, floorY - 210, VW, 210);
+        ctx.save(); ctx.globalAlpha = .5;
+        for (let px = -imod(camX * 0.5, 46); px < VW; px += 46)
+          line(ctx, px, floorY - 210, px, floorY, '#232833', 3);
+        ctx.restore();
+        /* the ceiling of it, low over her head */
+        fillRR(ctx, 0, 0, VW, Math.max(0, floorY - 208), 0, '#12151d');
+        fillRR(ctx, 0, Math.max(0, floorY - 214), VW, 8, 0, '#4e5768');
+        tileLayer(camX * 0.6, 240, VW, x => {
+          /* a duct joint, and a cable run stapled along it */
+          fillRR(ctx, x, floorY - 216, 16, 216, 3, '#4e5768');
+          ctx.save(); ctx.globalAlpha = .5;
+          ctx.beginPath(); ctx.moveTo(x - 120, floorY - 196);
+          ctx.quadraticCurveTo(x - 60, floorY - 178, x, floorY - 196);
+          ctx.strokeStyle = '#2f3542'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+        });
+        /* light coming up through the louvres in the floor of the duct */
+        tileLayer(camX * 0.9, 300, VW, x => {
+          ctx.save(); ctx.globalAlpha = .18;
+          poly(ctx, [[x, floorY], [x + 92, floorY], [x + 132, floorY - 150], [x - 40, floorY - 150]], '#ffeec2');
+          ctx.restore();
+          ctx.save(); ctx.globalAlpha = .55;
+          for (let i = 0; i < 5; i++) fillRR(ctx, x + 4 + i * 18, floorY - 5, 12, 5, 2, '#ffeec2');
+          ctx.restore();
+        });
+        /* dust turning over in the draught */
+        ctx.save(); ctx.globalAlpha = .35;
+        for (let i = 0; i < 16; i++) {
+          const r = makeRng(i * 53 + 7);
+          const dx0 = imod(i * 137 - camX * 0.8 - t * (14 + r() * 22), VW + 80) - 40;
+          circle(ctx, dx0, floorY - 30 - r() * 170 + Math.sin(t * 1.4 + i) * 9, 1.6 + r() * 1.6, '#c9d2e0');
+        }
+        ctx.restore();
+      }
+    }
   }
 };
 Object.keys(BRANCHES).forEach(k => {

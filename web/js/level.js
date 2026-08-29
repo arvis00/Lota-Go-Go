@@ -13,6 +13,7 @@
 const PHYS = {
   GRAV: 2650,
   JUMP_V: 1000,
+  BOUNCE_V: 1300,     // off the bed in the girl's room: apex 319, not 188
   V_MIN: 330,
   V_MAX: 730,
   X_FULL: 86000,      // distance over which the speed ramp completes
@@ -37,6 +38,11 @@ const MAX_HURDLE_H = 96;  // a tall obstacle is no less fair: landing on top of
    extra reach she still has on the way back down. */
 const GRAB = 34;          // anything solid: crates, shelves, the lip of a stair
 const GRAB_OVER = 52;     // hanging things: getting on top of one is a real route
+
+/* ---- the duct over the girl's room ----
+   The bed throws her this far above the bedroom floor; the duct floor sits a
+   little under the top of that arc, so the bounce always gets her in. */
+const VENT_RISE = 300;
 
 /* ---- staircases ---- */
 const STAIR_RISE = 42;    // one step
@@ -70,12 +76,12 @@ function buildWorld() {
   assertPropRoles();
   const rng = makeRng(20260827);
   const W = {
-    ground: [], platforms: [], hazards: [], bones: [], deco: [], warps: [], portals: [],
+    ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [],
     zones: [], layers: { main: { id: 'main', base: 0, rooms: [] } },
     finishX: 0, totalX: 0
   };
   const anchors = [];
-  let x = 0, segStart = 0, pendingWarp = null;
+  let x = 0, segStart = 0, pendingWarp = null, metroWarp = null, metroLandX = 0;
   let curZone = ZONES[0];
   let curLayer = 'main', curBase = 0, curRoom = null;
 
@@ -186,7 +192,7 @@ function buildWorld() {
     shortcut(z) {
       const len = dx(rng.range(0.7, 0.95));
       plat(x, LEDGE_TOP, len, LEDGE_TOP - LEDGE_CLEAR, rng.pick(z.pools.ledge), true);
-      const trig = { x: x + len - 26, y: LEDGE_TOP, w: 44, h: 60, zone: z.index, toX: 0, toY: 0 };
+      const trig = stamp({ x: x + len - 26, y: LEDGE_TOP, w: 44, h: 60, zone: z.index, toX: 0, toY: 0 });
       W.warps.push(trig);
       W.deco.push(stamp({ x: x + len - 34, y: LEDGE_TOP, prop: z.pools.tunnel[0], w: 58, h: 62, shortcut: true }));
       anchor(x + len - 70, LEDGE_TOP + 34, 'shortcut', true);
@@ -285,7 +291,12 @@ function buildWorld() {
       const mouthX = x;
       closeGround(x);
       W.deco.push(stamp({ x: x, y: 0, prop: 'stairsDown', w: mouth, h: 128, shaft: true }));
-      W.deco.push(stamp({ x: x - 14, y: 0, prop: br.sign, w: mouth + 28, h: 158, sign: true }));
+      W.deco.push(stamp({ x: x - 14, y: 0, prop: br.sign, w: mouth + 28, h: 158, sign: true, lock: 'metro' }));
+      /* The way down is barred until she has the key. The bars are floor, not
+         an obstacle: with them shut she simply runs over the mouth and never
+         knows it was there — with the key they fold back and the steps open. */
+      W.ground.push(stamp({ x: x - 8, w: mouth + 16, y: 0, lock: 'metro' }));
+      W.deco.push(stamp({ x: x - 8, y: 0, prop: 'metroGrate', w: mouth + 16, h: 70, gate: true, lock: 'metro' }));
       portal(x - 4, mouth + 30, rec.base - 90, -8, 'main', br.id);
       x += mouth;
       openGround(x);
@@ -338,11 +349,59 @@ function buildWorld() {
     W.deco.push(stamp({ x: x + 8, y: rec.base, prop: 'trainDoor', w: 112, h: 196, gateway: true }));
     flight(n, run, rec.base, 1, room.pal);
     rec.exitEndX = x;
+    /* The train went somewhere. Climbing out of it is what actually skips the
+       street: the last treads hand her to a stop far down the line, near the
+       finish — which is the whole point of hunting down the key. Only someone
+       coming up these steps can trigger it; the street above cannot. */
+    metroWarp = stamp({ x: x - run * 1.8, y: -60, w: run * 1.5, h: 210, toX: 0, toY: 0 });
+    W.warps.push(metroWarp);
     portal(x + 8, 200, -70, 220, br.id, 'main');
     const spent = x - x0;
     place(keep.l, keep.b, keep.r); segStart = keep.seg;
     x = x0;
     P.flat(spent / speed());
+  }
+
+  /** The bed in the girl's room and the duct over it.
+
+      The bed is never a hazard: run into it and she climbs it, land on it and
+      it throws her at the ceiling, through the open hatch and into the duct.
+      Up there nothing can hit her — she runs a few seconds in the dark, picks
+      up the metro key, and drops back out of a louvre into the same room. The
+      stretch of bedroom under the duct is left deliberately empty, so taking
+      the duct and jumping the bed come out at exactly the same place. */
+  function buildDuct(br, rec) {
+    const base = rec.base, room = br.duct;
+    const keep = { l: curLayer, b: curBase, r: curRoom, seg: segStart };
+    P.flat(0.45);                       /* a clear run-up to it */
+    const bx = x, bw = Math.round(reachAt(x) * 0.46), bh = 64;
+    plat(bx, bh, bw, bh, 'bedBounce', false, { bounce: 1, soft: true });
+    anchor(bx + bw * 0.5, bh + 78, 'bed', true);
+    x = bx + bw;
+
+    const ventSec = 1.9, dropSec = 1.15;
+    const ventBase = base + VENT_RISE;
+    const vx0 = bx - 30, vx1 = x + dx(ventSec);
+    /* seen from the bedroom: the hatch she goes up through and the louvre she
+       comes back down out of */
+    W.deco.push(stamp({ x: bx + 10, y: ventBase - 86, prop: 'ventMouth', w: bw + 40, h: 86, duct: true }));
+    W.deco.push(stamp({ x: vx1 - 110, y: ventBase - 86, prop: 'ventSlit', w: 150, h: 86, duct: true }));
+    /* the bounce carries her past base+300; nothing she can jump does */
+    portal(bx - 10, bw + 430, base + 262, base + 620, rec.id, 'vent');
+
+    place('vent', ventBase, room);
+    openGround(vx0);
+    W.items.push(stamp({ x: bx + bw + dx(ventSec) * 0.55, y: ventBase + 40, kind: 'metroKey', got: false }));
+    x = vx1;
+    closeGround(x);
+    /* off the end of it she simply falls, and lands back in the bedroom */
+    portal(vx1 + 4, 340, base - 90, ventBase - 30, 'vent', rec.id);
+    W.layers.vent = { id: 'vent', base: ventBase, x0: vx0, x1: vx1 + 340,
+                      rooms: [{ x0: vx0 - 400, x1: vx1 + 400, room: room }] };
+
+    place(keep.l, keep.b, keep.r); segStart = keep.seg;
+    x = vx1;
+    P.flat(dropSec);                    /* clear floor under the drop */
   }
 
   /** The rooms of a branch, laid out across the same span of track the main
@@ -368,6 +427,10 @@ function buildWorld() {
          and she arrives in the first one straight off a flight of stairs */
       P.flat(ri === 0 ? 1.0 : 0.7);
       decorate(room, 1);
+      if (room.id === 'girlroom' && br.duct) {
+        fill(room, Math.max(0.3, (rx1 - x) / speed() * 0.36), { tail: 0.7 });
+        buildDuct(br, rec);
+      }
       fill(room, Math.max(0.3, (rx1 - x) / speed()), { tail: 0.7 });
       if (x < rx1) P.flat((rx1 - x) / speed());
       x = rx1;
@@ -417,6 +480,18 @@ function buildWorld() {
       P.flat(0.9);
       budget -= (x - t1) / speed();
       rec.x1 = x;
+
+      /* The far end of the shortcut. The train has to put her down somewhere
+         the track is deliberately empty — she arrives out of a screen wipe
+         with nothing to read ahead of time — and far enough down the street
+         that the key was worth going after, yet with a real stretch of London
+         still to run: the metro is a shortcut, not the finish line. */
+      const t2 = x, tail = 3.2;
+      fill(z, Math.max(1.2, budget - tail - 1.9), opts);
+      P.flat(0.55);
+      metroLandX = x + dx(0.15);
+      P.flat(1.35);
+      budget -= (x - t2) / speed();
     }
 
     fill(z, budget, opts);
@@ -451,6 +526,15 @@ function buildWorld() {
   closeGround(x + 400);
   W.totalX = x + 400;
   if (pendingWarp) { pendingWarp.trigger.toX = W.finishX - 400; pendingWarp.trigger.toY = 0; }
+
+  /* ---------- where the train lets her out ----------
+     She comes up with about five seconds of London left instead of the
+     twenty-odd she would have had to run — that is what the key buys. */
+  if (metroWarp && metroLandX) {
+    metroWarp.toX = metroLandX;
+    metroWarp.toY = 0;
+    W.metroSkip = { x0: metroWarp.x, x1: metroLandX };
+  }
 
   /* ---------- place the 15 treats ----------
      A place with two routes spends one of its treats on *both* of them, so the
@@ -529,11 +613,31 @@ function buildWorld() {
                    i: p.bone.i, got: false, twin: 1 });
   });
 
+  /* Whatever the train skips past, it also carries a copy of: every treat on
+     the stretch of street the shortcut jumps over is laid out again down in
+     the station or the carriage, so 15 stays 15 whichever way she goes. */
+  if (W.metroSkip && W.layers.metro) {
+    const gap = W.metroSkip;
+    const missed = W.bones.filter(b => b.layer === 'main' && b.x > gap.x0 && b.x < gap.x1);
+    const have = {};
+    W.bones.forEach(b => { if (b.layer === 'metro') have[b.i] = 1; });
+    const cand = anchors.filter(a => a.layer === 'metro' && !a.taken);
+    missed.forEach((b, k) => {
+      if (have[b.i] || !cand.length) return;
+      const a = cand.splice(clamp(Math.floor(cand.length * ((k + 0.5) / missed.length)), 0, cand.length - 1), 1)[0];
+      a.taken = 1; have[b.i] = 1;
+      W.bones.push({ x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: 'metro',
+                     i: b.i, got: false, twin: 1 });
+    });
+  }
+
   /* split ground at zone borders so every stretch gets its own floor style */
   const cuts = W.zones.map(z => z.x0).concat([W.totalX + 1]).sort((a, b) => a - b);
   const split = [], keepG = [];
   W.ground.forEach(g => {
-    if (g.layer !== 'main') { keepG.push(g); return; }
+    /* the bars over the metro are floor too, but floor that comes and goes —
+       splitting them would throw the flag away */
+    if (g.layer !== 'main' || g.lock) { keepG.push(g); return; }
     let x0 = g.x; const x1 = g.x + g.w;
     cuts.forEach(c => {
       if (c > x0 && c < x1) { split.push({ x: x0, w: c - x0, y: 0, layer: 'main' }); x0 = c; }
@@ -560,13 +664,14 @@ function buildIndex(W) {
   const push = (kind, o, x0, x1) => {
     const a = Math.floor(x0 / SZ), b = Math.floor(x1 / SZ);
     for (let i = a; i <= b; i++) {
-      (idx.cells[i] || (idx.cells[i] = { ground: [], platforms: [], hazards: [], bones: [], deco: [], warps: [], portals: [] }))[kind].push(o);
+      (idx.cells[i] || (idx.cells[i] = { ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [] }))[kind].push(o);
     }
   };
   W.ground.forEach(g => push('ground', g, g.x, g.x + g.w));
   W.platforms.forEach(p => push('platforms', p, p.x, p.x + p.w));
   W.hazards.forEach(h => push('hazards', h, h.x, h.x + h.w));
   W.bones.forEach(b => push('bones', b, b.x - 20, b.x + 20));
+  W.items.forEach(it => push('items', it, it.x - 40, it.x + 40));
   W.deco.forEach(d => push('deco', d, d.x, d.x + d.w));
   W.warps.forEach(w => push('warps', w, w.x, w.x + w.w));
   W.portals.forEach(p => push('portals', p, p.x, p.x + p.w));
@@ -575,7 +680,7 @@ function buildIndex(W) {
 let QSTAMP = 0;
 function queryCells(W, x0, x1) {
   QSTAMP++;
-  const SZ = W.index.SZ, out = { ground: [], platforms: [], hazards: [], bones: [], deco: [], warps: [], portals: [] };
+  const SZ = W.index.SZ, out = { ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [] };
   const a = Math.floor(x0 / SZ), b = Math.floor(x1 / SZ);
   for (let i = a; i <= b; i++) {
     const c = W.index.cells[i]; if (!c) continue;

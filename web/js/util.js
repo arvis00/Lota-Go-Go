@@ -191,6 +191,7 @@ const Sfx = {
   land()  { this.tone(150, 0.07, 'sine', 0.25, 110); },
   bone()  { this.tone(880, 0.09, 'triangle', 0.45); this.tone(1320, 0.14, 'triangle', 0.38, null, 0.07); },
   warp()  { this.tone(300, 0.3, 'sawtooth', 0.22, 1200); },
+  boing() { this.tone(240, 0.24, 'sine', 0.5, 900); this.tone(120, 0.18, 'triangle', 0.3, 420, 0.02); },
   crash() { this.tone(260, 0.32, 'square', 0.3, 70); this.tone(150, 0.4, 'triangle', 0.24, 60, 0.05); },
   zone()  { [523, 659, 784].forEach((f, i) => this.tone(f, 0.18, 'triangle', 0.3, null, i * 0.07)); },
   checkpoint() {

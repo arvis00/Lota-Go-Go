@@ -207,6 +207,10 @@ const Game = {
       const kept = new Set(cp.bones);
       this.world.bones.forEach(b => { b.got = kept.has(b.i); });
       this.world.warps.forEach(w => { if (w.x >= cp.x) w.used = false; });
+      /* once found, the key is hers for good; if the checkpoint is from before
+         she found it, it is lying back in the duct waiting to be found again */
+      this.world.items.forEach(it => { it.got = !!cp.key; });
+      this.run.metroKey = !!cp.key;
       this.run.bones = cp.count;
       this.run.zoneIdx = -1;
       this.run.finished = false;
@@ -214,9 +218,10 @@ const Game = {
       this.run.deaths++;
     } else {
       this.world.bones.forEach(b => { b.got = false; });
+      this.world.items.forEach(it => { it.got = false; });
       this.world.warps.forEach(w => { w.used = false; });
       this.run = { level: 1, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
-                   finished: false, warpTo: null, deaths: 0, banked: false };
+                   finished: false, warpTo: null, deaths: 0, banked: false, metroKey: false };
       this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZONES[0].name, start: true };
     }
     const sx = cp ? cp.x : 60;
@@ -232,6 +237,7 @@ const Game = {
     this.state = 'run'; this.stateT = 0;
     UI.showHud();
     UI.setBones(this.run.bones);
+    UI.setKey(this.run.metroKey);
     UI.toast(cp && !cp.start ? cp.name : 'Pirmyn, Lota!', cp && !cp.start ? 'nuo kontrolinio taško' : '');
     if (!cp) { UI.tut(true); setTimeout(() => UI.tut(false), 4200); }
   },
@@ -241,7 +247,7 @@ const Game = {
     this.checkpoint = {
       x: z.x0 + 24, zoneIdx: idx, name: z.zone.name, start: idx === 0,
       bones: this.world.bones.filter(b => b.got).map(b => b.i),
-      count: this.run.bones
+      count: this.run.bones, key: !!this.run.metroKey
     };
     if (idx === 0) return;
     Sfx.checkpoint();
@@ -369,6 +375,8 @@ const Game = {
       /* --- land on surfaces --- */
       const box = this.box(L);
       let bestTop = null;
+      /* the bars over the metro are floor only while they are shut */
+      const solidG = gd => gd.layer === LY && (!gd.lock || !this.run.metroKey);
       const consider = surf => {
         if (surf.x > box.x1 - 3 || surf.x + surf.w < box.x0 + 3) return;
         const top = surf.top;
@@ -377,7 +385,7 @@ const Game = {
           if (bestTop === null || top > bestTop) bestTop = top;
         }
       };
-      near.ground.forEach(gd => { if (gd.layer === LY) consider({ x: gd.x, w: gd.w, top: gd.y }); });
+      near.ground.forEach(gd => { if (solidG(gd)) consider({ x: gd.x, w: gd.w, top: gd.y }); });
       near.platforms.forEach(p => { if (p.layer === LY) consider({ x: p.x, w: p.w, top: p.y }); });
       near.hazards.forEach(hz => { if (hz.layer === LY) consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
       if (bestTop !== null) {
@@ -390,7 +398,7 @@ const Game = {
           if (surf.x > box.x1 - 3 || surf.x + surf.w < box.x0 + 3) return;
           if (Math.abs(surf.top - L.y) < 1.2) sup = true;
         };
-        near.ground.forEach(gd => { if (gd.layer === LY) chk({ x: gd.x, w: gd.w, top: gd.y }); });
+        near.ground.forEach(gd => { if (solidG(gd)) chk({ x: gd.x, w: gd.w, top: gd.y }); });
         near.platforms.forEach(p => { if (p.layer === LY) chk({ x: p.x, w: p.w, top: p.y }); });
         near.hazards.forEach(hz => { if (hz.layer === LY) chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
@@ -402,13 +410,30 @@ const Game = {
       const bs = this.box(L);
       let stairTop = null;
       near.platforms.forEach(p => {
-        if (p.layer !== LY || !p.stair) return;
+        if (p.layer !== LY || (!p.stair && !p.soft)) return;
         if (bs.x1 - 5 <= p.x || bs.x0 + 5 >= p.x + p.w) return;
         if (bs.y1 <= p.y - p.h + 1 || bs.y0 >= p.y) return;
+        /* a bed is not an obstacle: running into it only climbs her onto it,
+           however tall it is. Stairs stay one riser at a time. */
+        const lim = p.soft ? (p.h || 0) + 8 : STAIR_UP;
         const rise = p.y - L.y;
-        if (rise > 0 && rise <= STAIR_UP && (stairTop === null || p.y > stairTop)) stairTop = p.y;
+        if (rise > 0 && rise <= lim && (stairTop === null || p.y > stairTop)) stairTop = p.y;
       });
       if (stairTop !== null) { L.y = stairTop; L.vy = 0; L.grounded = true; L.landY = stairTop; }
+
+      /* --- the bed throws her at the ceiling. However she got on top of it —
+         landed, scrambled, walked into it — standing on it is the bounce, so
+         the way into the duct can never be missed by a whisker. --- */
+      if (L.grounded) {
+        for (let i = 0; i < near.platforms.length; i++) {
+          const p = near.platforms[i];
+          if (!p.bounce || p.layer !== LY) continue;
+          if (L.x < p.x - 8 || L.x > p.x + p.w + 8 || Math.abs(L.y - p.y) > 2) continue;
+          L.vy = PHYS.BOUNCE_V; L.grounded = false; I.coyote = 0; I.jumpBuf = 0;
+          Sfx.boing(); this.puff(L.x, L.y, 7);
+          break;
+        }
+      }
 
       /* --- running into the FACE of something solid: platform walls, the wall
          after a step down, and the side of a ground obstacle. Clipping the very
@@ -420,7 +445,7 @@ const Game = {
         if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; }
       };
       near.platforms.forEach(p => {
-        if (p.layer !== LY || p.oneWay || p.stair) return;
+        if (p.layer !== LY || p.oneWay || p.stair || p.soft) return;
         if (b2.x1 - 5 <= p.x || b2.x0 + 5 >= p.x + p.w) return;
         /* a block is a wall only where its body actually is: a tread hanging
            overhead is something she runs under, not into */
@@ -428,7 +453,7 @@ const Game = {
         face(p.y, GRAB);
       });
       near.ground.forEach(gd => {
-        if (gd.layer !== LY) return;
+        if (!solidG(gd)) return;
         if (b2.x1 - 5 <= gd.x || b2.x0 + 5 >= gd.x + gd.w) return;
         face(gd.y, GRAB);
       });
@@ -470,6 +495,7 @@ const Game = {
       /* --- shortcuts --- */
       near.warps.forEach(wp => {
         if (wp.used || !wp.toX) return;
+        if (wp.layer && wp.layer !== LY) return;
         if (b3.x1 <= wp.x || b3.x0 >= wp.x + wp.w) return;
         if (b3.y1 <= wp.y || b3.y0 >= wp.y + wp.h) return;
         wp.used = true;
@@ -477,7 +503,9 @@ const Game = {
         this.fx.warp = 0.42;
         this.run.warpTo = { x: wp.toX, y: wp.toY };
         Sfx.warp();
-        UI.toast('Trumpinys!');
+        /* the metro is a shortcut of a different order — it is worth saying so */
+        if (wp.layer === 'metro') UI.toast('🚇 Metro!', 'toli į priekį');
+        else UI.toast('Trumpinys!');
       });
 
       /* --- treats. A treat that sits on both routes is one treat: picking up
@@ -494,6 +522,23 @@ const Game = {
           });
           UI.setBones(this.run.bones);
         }
+      });
+
+      /* --- the metro key, lying in the duct over the girl's room --- */
+      near.items.forEach(it => {
+        if (it.got || it.layer !== LY) return;
+        const cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
+        if (Math.abs(it.x - L.x) > 52 || Math.abs(it.y - cy) > 74) return;
+        it.got = true;
+        this.run.metroKey = true;
+        Sfx.unlock();
+        this.fx.flash = 0.45;
+        for (let k = 0; k < 20; k++) this.fx.sparks.push({
+          x: it.x, y: it.y, vx: (Math.random() - .5) * 200, vy: 50 + Math.random() * 200,
+          life: .7, c: k % 2 ? '#f6c93a' : '#fff6d8'
+        });
+        UI.setKey(true);
+        UI.toast('🔑 Metro raktas!', 'Grotos Londone atsirakino');
       });
 
       /* --- safety net. There are no holes to fall down any more, so this only
@@ -703,13 +748,29 @@ const Game = {
       drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y), d.w, d.h, this.t, this.palOf(d), d.x, { role: 'shaft' });
     });
 
+    /* ---- the hatch and the louvre in the bedroom ceiling ---- */
+    near.deco.forEach(d => {
+      if (!d.duct || !mine(d)) return;
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x, { role: 'duct' });
+    });
+
     /* ---- floors ---- */
     near.ground.forEach(g => {
       if (!mine(g)) return;
+      /* the bars are floor only while they are shut — with the key the mouth
+         of the stairs is a hole in the pavement again */
+      if (g.lock && this.run && this.run.metroKey) return;
       const y0 = this.sy(g.y);
       const a = Math.max(this.sx(g.x), -30), b = Math.min(this.sx(g.x + g.w), VW + 30);
       if (b <= a) return;
       paintFloor(ctx, this.floorOf(g), a, y0, b - a, VH - y0 + 320, this.palOf(g), this.t, camX);
+    });
+
+    /* ---- the bars over the metro steps: floor while they are shut ---- */
+    near.deco.forEach(d => {
+      if (!d.gate || !mine(d)) return;
+      drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x,
+               { role: 'gate', open: !!(this.run && this.run.metroKey), floorY: this.sy(d.y) });
     });
 
     /* ---- signage: the metro roundel, the arrow up the stairs. These are the
@@ -719,7 +780,8 @@ const Game = {
     near.deco.forEach(d => {
       if (!d.sign || !mine(d)) return;
       drawProp(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x,
-               { role: 'sign', floorY: this.sy(d.y) });
+               { role: 'sign', floorY: this.sy(d.y),
+                 locked: !!(d.lock && this.run && !this.run.metroKey) });
     });
     ctx.restore();
 
@@ -742,7 +804,7 @@ const Game = {
     /* ---- scenery: flat decals lying on the floor, never anything she can hit ---- */
     ctx.save(); ctx.globalAlpha = 0.55;
     near.deco.forEach(d => {
-      if (d.finish || d.shaft || d.sign || d.gateway || !mine(d)) return;
+      if (d.finish || d.shaft || d.sign || d.gateway || d.gate || d.duct || !mine(d)) return;
       drawPropTiled(ctx, d.prop, this.sx(d.x), this.sy(d.y + d.h), d.w, d.h, this.t, this.palOf(d), d.x);
     });
     ctx.restore();
@@ -778,6 +840,13 @@ const Game = {
     near.bones.forEach(b => {
       if (b.got || !mine(b)) return;
       this.drawBone(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5);
+    });
+
+    /* ---- the key ---- */
+    near.items.forEach(it => {
+      if (it.got || !mine(it)) return;
+      const bob = Math.sin(this.t * 2.6) * 6;
+      drawProp(ctx, 'keyMetro', this.sx(it.x) - 27, this.sy(it.y) - 18 + bob, 54, 36, this.t, {}, it.x);
     });
 
     /* ---- dust ---- */

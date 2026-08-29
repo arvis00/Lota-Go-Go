@@ -7,7 +7,11 @@
 
   function topsAt(x) {
     const c = queryCells(W(), x, x), out = [], ly = LY();
-    c.ground.forEach(g => { if (g.layer === ly && x >= g.x && x <= g.x + g.w) out.push(g.y); });
+    /* the bars over the metro stop being floor the moment she has the key */
+    c.ground.forEach(g => {
+      if (g.lock && Game.run.metroKey) return;
+      if (g.layer === ly && x >= g.x && x <= g.x + g.w) out.push(g.y);
+    });
     c.platforms.forEach(p => { if (p.layer === ly && x >= p.x && x <= p.x + p.w) out.push(p.y); });
     /* every obstacle top is standable now, hanging ones included */
     c.hazards.forEach(h => { if (h.layer === ly && x >= h.x && x <= h.x + h.w) out.push(h.y + h.h); });
@@ -48,8 +52,10 @@
       });
     }
 
-    /* the mouth of the stairs down: doing nothing takes them, jumping stays up */
-    if (!take.metro && L.grounded) {
+    /* the mouth of the stairs down: with the key in hand doing nothing takes
+       them, jumping stays up. Only ever on the street — off the end of the
+       duct there is nothing to decide, she is meant to fall. */
+    if (!take.metro && L.grounded && ly === 'main') {
       let edge = null;
       for (let dxp = 6; dxp < v * 0.5 + 200; dxp += 6) {
         const x = L.x + dxp;
@@ -77,6 +83,8 @@
       if (frame % every === 0) decide();
       frame++;
       Game.step(dt);
+      Game.stepFx(dt);      /* the wipe lives here — without it no shortcut ever
+                               actually teleports and the bot runs the long way */
       t += dt;
       seen[Game.lota.layer] = (seen[Game.lota.layer] || 0) + 1;
     }

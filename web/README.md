@@ -98,7 +98,8 @@ Trasa yra **viena, fiksuota ir vienoda kiekvieną kartą** (deterministinis seed
 `Lotos namai → Kiemas → Kaimynų namas → Rudens kiemas → Senelės namas → Miesto gatvė →
 Parkas → Vakaro gatvė → Prekybos centras → Autobusas → Oro uostas → Lėktuvas → Londonas`
 
-Pilnas nubėgimas trunka **~3 min**; greitis auga nuo 330 iki 730 px/s.
+Pilnas nubėgimas gatve trunka **~3 min 15 s**; radus metro raktą ir įlipus į traukinį —
+**~2 min 57 s**. Greitis auga nuo 330 iki 730 px/s.
 
 **Trasoje nėra nė vienos skylės.** Duobių, angų grindyse ir pralaimėjimo dėl kritimo
 nebėra — jos visos pašalintos. Ten, kur anksčiau buvo skylė, dabar arba paprasta kliūtis,
@@ -121,6 +122,10 @@ objektas apskritai turi piešinį.
 
 Vienintelė išimtis — **ženklai** (metro rodyklė, rodyklė į laiptus). Jie piešiami blankiau
 ir atitraukti į foną, o Lota per juos tiesiog prabėga.
+
+**Fono langai nemirksi.** Kuris pastato langas dega, sprendžia to lango eilutė ir stulpelis
+pačiame pastate (`BG.buildings`, `js/zones.js`), o ne jo vieta ekrane — anksčiau buvo
+atvirkščiai, todėl slenkant gatvei visi langai be perstojo mirgėjo.
 
 **Kiekvienas daiktas piešiamas tokio dydžio, koks jis iš tikrųjų yra.** Anksčiau kliūties
 plotis ir aukštis buvo atsitiktiniai, todėl karutis susitraukdavo į dėmę, o šiukšlių dėžė
@@ -146,20 +151,14 @@ Kadangi iš kliūties viršaus tenka dar nukristi, generatorius prie tarpo po ki
 
 ## Du keliai
 
-Dviejose vietose trasa turi **antrą kelią**. Jis nutiestas virš to paties trasos ruožo tik
-kitame aukštyje, todėl **abu keliai trunka lygiai tiek pat** ir baigiasi toje pačioje vietoje.
-Sujungia juos tikri laiptai: jais ne šokinėjama, o *bėgama* — pakopa yra pakopa, ant laiptų
+Trasa trijose vietose šakojasi. Du iš tų kelių — kaimynų antras aukštas ir ventiliacija virš
+mergaitės kambario — nutiesti virš to paties trasos ruožo, tik kitame aukštyje, todėl
+**trunka lygiai tiek pat** ir baigiasi toje pačioje vietoje. Trečias, Londono metro, yra
+**trumpinys**: jis trasos ruožą ne pakartoja, o praleidžia, ir todėl užrakintas, kol
+nerandamas raktas.
+
+Aukštus jungia tikri laiptai: jais ne šokinėjama, o *bėgama* — pakopa yra pakopa, ant laiptų
 mirti neįmanoma. Bėgant laiptais aukštyn ar žemyn kamera juda kartu, Lota visada matoma.
-
-**Londono metro.** Netoli Londono pradžios šaligatvyje yra laiptų anga su METRO ženklu.
-
-- **Peršoki** — bėgi gatve toliau, tarsi nieko nebūtų.
-- **Nieko nedarai** — Lota nubėga laiptais žemyn į metro stotį, prabėga peroną, įlipa į
-  traukinį, truputį pavažiuoja ir kitais laiptais išlenda atgal į tą pačią gatvę.
-
-Išėjimas yra dar toli iki finišo (~8 s Londono lieka po jo). Prie išėjimo laiptų gatvėje
-stovi tik turėklas — jei peršokai pirmuosius laiptus, čia į metro nebepateksi, Lota tiesiog
-bėga toliau. Metro yra **tik** Londone.
 
 **Kaimynų namo antras aukštas.** Koridoriuje virš galvos prasideda laiptai.
 
@@ -167,6 +166,38 @@ bėga toliau. Metro yra **tik** Londone.
 - **Užšoki ant apatinės pakopos** — Lota užbėga į viršų: berniuko miegamasis (raketų
   plakatai, žaislai), paskui vonia, paskui mergaitės kambarys. Jo gale pro **atvirą langą**
   ji iššoka ir nusileidžia jau kieme — lygiai ten, kur išeitų pro duris bėgusi apačia.
+
+**Mergaitės kambario lova ir ventiliacija.** Kambario viduryje stovi lova. Ji **nėra
+kliūtis** — ant jos mirti neįmanoma: įbėgusi Lota tiesiog užsiropščia ant jos, o užšokusi
+**atšoka nuo jos daug aukščiau** nei šoktų pati (1300 vietoj 1000 px/s) ir įlekia pro
+atvirą liuką lubose į **ventiliacijos vamzdį**.
+
+- **Peršoki lovą** — bėgi kambariu toliau.
+- **Užšoki ant jos** — atsimuši, atsidursi vamzdyje.
+
+Vamzdyje **nėra jokių kliūčių**: tamsu, po grotelėmis prasišviečia kambarys, ir Lota tiesiog
+bėga ~2 s. Viduryje guli **metro raktas**. Vamzdžio gale grindų nebelieka, ji iškrenta pro
+groteles ir nusileidžia **tame pačiame kambaryje** — lygiai ten, kur būtų nubėgusi peršokusi
+lovą (ruožas po vamzdžiu specialiai paliktas tuščias). Paėmus raktą ekrane parodoma
+**🔑 Metro raktas!**, o raktas nuo tol matomas HUD'e ir išlieka po kontrolinio taško.
+
+**Londono metro — trumpinys, o ne antras kelias.** Netoli Londono pradžios šaligatvyje yra
+laiptų anga su METRO ženklu.
+
+- **Be rakto** anga **užrakinta grotomis**: ant ženklo kabo spyna, grotos yra tiesiog
+  grindys — Lota per jas prabėga ir į metro nepatenka niekaip.
+- **Su raktu** grotos atsilenkia į šonus, anga atsiveria. Peršoki ją — bėgi gatve toliau;
+  nieko nedarai — nukrenti laiptais žemyn.
+
+Metro viduje kliūčių yra kaip ir visur: peronas su turniketais, bilietų automatais, žemėlapiu
+virš galvos ir suoliukais, paskui traukinio vagonas su lagaminais ir turėklais. Bet
+**kelionė trunka žymiai trumpiau už gatvę**: išlipusi ir užbėgusi laiptais Lota atsiduria
+daug toliau — nuo metro angos iki finišo gatve ~24,8 s, o metro ~15,6 s. Išlipimo vieta
+specialiai palikta tuščia (į ją įkrentama po ekrano perėjimo, todėl reaguoti nespėtum), ir
+po jos dar lieka ~5,7 s Londono su kliūtimis: **metro nėra finišas**.
+
+Metro yra **tik** Londone. Prie išėjimo laiptų gatvėje stovi tik turėklas — atgal į metro
+ten nepateksi.
 
 ## Kontroliniai taškai
 
@@ -188,8 +219,9 @@ rizikuoti.
 
 **Nesvarbu, kurį kelią pasirinksi.** Ten, kur trasa šakojasi, tos vietos kaulas padėtas
 **abiejuose** keliuose — tai tas pats kaulas, pasiimtas bet kurioje pusėje jis užsiskaito
-vieną kartą. Likę tos vietos kaulai dedami tik ten, kur eina abu keliai. Todėl surinkti
-visus 15 galima ir viršumi, ir apačia, ir per metro.
+vieną kartą. Likę tos vietos kaulai dedami tik ten, kur eina abu keliai. Tas pat galioja ir
+trumpiniui: viskas, ką traukinys prašoka, dar kartą padedama stotyje arba vagone. Todėl
+surinkti visus 15 galima ir viršumi, ir apačia, ir per ventiliaciją, ir per metro.
 
 - surinkti < 15 → gauni tiek, kiek surinkai
 - surinkti visi 15 → **dvigubai** (15 → 30)
@@ -204,7 +236,7 @@ Visa tai keliauja į **pirmo lygio** piniginę ir kitiems lygiams netinka.
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + 10 aprangų |
 | `js/props.js` | ~130 kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
-| `js/zones.js` | 13 vietų + `BRANCHES` (metro ir antras aukštas): paletės, fonai, grindys, kliūčių rinkiniai |
+| `js/zones.js` | 13 vietų + `BRANCHES` (metro, antras aukštas ir ventiliacija): paletės, fonai, grindys, kliūčių rinkiniai |
 | `js/levels.js` | keturi lygiai: atrakinimo taisyklės, piniginės, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
@@ -220,6 +252,10 @@ Dažniausiai keičiami dalykai:
 - **Antri keliai** — `BRANCHES` (`js/zones.js`): `enterSec` (kur prasideda), `sec` (kiek trunka),
   `drop` / `rise` (kiek žemyn ar aukštyn veda laiptai), `rooms` (patalpos ir jų kliūtys)
 - **Laiptai** — `STAIR_RISE`, `STAIR_UP`, `STAIR_FIRST` (`js/level.js`)
+- **Lova ir ventiliacija** — `PHYS.BOUNCE_V`, `VENT_RISE` ir `buildDuct()` (`js/level.js`),
+  vamzdžio vaizdas — `BRANCHES.upstairs.duct` (`js/zones.js`)
+- **Kiek metro sutrumpina trasą** — `tail` funkcijoje `buildWorld()` (`js/level.js`): kiek
+  sekundžių Londono lieka po išlipimo
 - **Greitis** — `PHYS.V_MIN`, `PHYS.V_MAX`, `PHYS.X_FULL` (`js/level.js`)
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį ir tarpus
 - **Šuolis** — `PHYS.JUMP_V`, `PHYS.GRAV`
@@ -240,6 +276,8 @@ runBot(400);                 // idealios reakcijos — turi grąžinti state:"wi
 window.BOT_EVERY = 12; runBot(400);   // ~100 ms vėlavimas — vis dar įveikia
 
 // kurį kelią rinktis ten, kur trasa šakojasi (numatyta: metro taip, viršus ne)
+// `upstairs: true` reiškia ir lovą su ventiliacija, t. y. raktą; be jo `metro` nieko
+// nekeičia, nes anga užrakinta
 window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
 
 inspect(15000);              // kas yra trasoje ties nurodyta pozicija
