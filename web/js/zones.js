@@ -155,8 +155,12 @@ const BG = {
 };
 
 /* ---------------- floor painting ---------------- */
+/* Later levels bring their own floors — sand, planks, sea bed, cave stone.
+   They register here rather than growing the switch below. */
+const FLOOR_EXT = {};
 function paintFloor(ctx, style, x, y, w, h, pal, t, camX) {
-  switch (style) {
+  if (FLOOR_EXT[style]) FLOOR_EXT[style](ctx, x, y, w, h, pal, t, camX);
+  else switch (style) {
     case 'wood':
       ctx.fillStyle = pal.floorBody; ctx.fillRect(x, y, w, h);
       fillRR(ctx, x, y, w, 8, 0, pal.floorTop);
@@ -615,8 +619,8 @@ const BRANCHES = {
   /* ---------- Londono metro: down the steps, through the station, one stop
        on the train, back up into the same street ---------- */
   metro: {
-    id: 'metro', drop: -250, enterSec: 2.4, sec: 6.5, locked: 1,
-    sign: 'metroSign', exitSign: 'metroExit',
+    id: 'metro', drop: -250, enterSec: 2.4, sec: 6.5, locked: 1, shortcut: 1,
+    shaft: 'stairsDown', sign: 'metroSign', exitSign: 'metroExit', roomGate: 'trainDoor',
     rooms: [
       {
         id: 'station', name: 'Metro', share: 0.5, floor: 'tile', diff: 0.82,
@@ -727,7 +731,7 @@ const BRANCHES = {
        the bathroom and the girl's room, then out of the open window ---------- */
   upstairs: {
     id: 'upstairs', rise: 330, enterSec: 2.6, sec: 6.2,
-    sign: 'stairsUpSign', exitProp: 'windowOpen',
+    sign: 'stairsUpSign', exitProp: 'windowOpen', roomGate: 'doorHouse', ductRoom: 'girlroom',
     rooms: [
       {
         id: 'boyroom', name: 'Berniuko kambarys', share: 0.31, floor: 'wood', diff: 0.2,

@@ -7,7 +7,8 @@ const Game = {
   cw: 0, ch: 0, VW: 960, VH: 540, scale: 1, ox: 0, oy: 0, dpr: 1,
   groundY: 410,
   state: 'boot',          // boot | lobby | run | crash | over | win | pause
-  world: null,
+  world: null, worlds: {},
+  trail: [], foxes: [],
   t: 0, last: 0, stateT: 0,
   portrait: false,
 
@@ -18,7 +19,8 @@ const Game = {
   previewLevel: 2,
   cam: { x: 0, y: 0 },
   input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0 },
-  fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0,
+  fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0, spin: 0,
+        warpFull: 0.42, warpCol: '#12203a',
         layerFade: 0, fromLayer: 'main', fromX: 0 },
   run: null,
 
@@ -30,7 +32,7 @@ const Game = {
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
     this.bindInput();
-    this.world = buildWorld();
+    this.world = this.worldFor(1);
     this.lobby();
     this.last = performance.now();
     requestAnimationFrame(ts => this.frame(ts));
@@ -173,6 +175,14 @@ const Game = {
   },
 
   /* ================= run lifecycle ================= */
+  /** Each level is its own track, built the first time it is played and kept
+      afterwards — the generator is deterministic, so a rebuilt world would be
+      identical anyway, but building it twice is wasted work. */
+  worldFor(level) {
+    if (!this.worlds[level]) this.worlds[level] = buildWorld(Levels.track(level));
+    return this.worlds[level];
+  },
+
   lobby() {
     this.state = 'lobby'; this.stateT = 0;
     this.fx.confetti.length = 0;
@@ -200,8 +210,12 @@ const Game = {
     UI.showPreview(level);
   },
 
-  startRun(fromCheckpoint) {
+  startRun(fromCheckpoint, level) {
     const cp = fromCheckpoint && this.checkpoint ? this.checkpoint : null;
+    level = level || (cp && this.run ? this.run.level : this.lobbyLevel());
+    if (!cp || !this.world || this.world.level !== level) this.world = this.worldFor(level);
+    useSpeed(this.world.phys);
+    const ZL = this.world.zoneList;
     if (cp) {
       /* keep the treats picked up before the checkpoint, hand back the rest */
       const kept = new Set(cp.bones);
@@ -220,10 +234,13 @@ const Game = {
       this.world.bones.forEach(b => { b.got = false; });
       this.world.items.forEach(it => { it.got = false; });
       this.world.warps.forEach(w => { w.used = false; });
-      this.run = { level: 1, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
+      this.run = { level: level, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
                    finished: false, warpTo: null, deaths: 0, banked: false, metroKey: false };
-      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZONES[0].name, start: true };
+      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZL[0].name, start: true };
     }
+    this.run.diving = null;
+    this.world.spins.forEach(sp => { sp.used = false; });
+    this.trail.length = 0; this.foxes.length = 0;
     const sx = cp ? cp.x : 60;
     this.lota = {
       x: sx, y: 0, vy: 0, grounded: true, duck: false, runPhase: 0,
@@ -232,7 +249,7 @@ const Game = {
     this.cam.x = sx - this.VW * 0.30; this.cam.y = 0;
     this.input.jumpBuf = 0; this.input.duckHeld = false; this.input.duckTimer = 0; this.input.coyote = 0;
     this.fx.dust.length = 0; this.fx.confetti.length = 0; this.fx.sparks.length = 0;
-    this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0;
+    this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0; this.fx.spin = 0;
     this.fx.layerFade = 0; this.fx.fromLayer = 'main'; this.fx.fromX = sx;
     this.state = 'run'; this.stateT = 0;
     UI.showHud();
@@ -358,7 +375,9 @@ const Game = {
       L.x += v * h;
       const g = PHYS.GRAV * ((!L.grounded && (I.duckHeld || I.duckTimer > 0) && L.vy < 60) ? 1.85 : 1);
       const prevY = L.y;
-      if (!L.grounded) { L.vy -= g * h; L.y += L.vy * h; }
+      /* nothing moves vertically while a wipe is covering the screen — she is
+         already on her way somewhere else */
+      if (!L.grounded && !this.run.warpTo) { L.vy -= g * h; L.y += L.vy * h; }
 
       /* --- which route is she on? The stairs hand her over. --- */
       const pb = this.box(L);
@@ -387,7 +406,9 @@ const Game = {
       };
       near.ground.forEach(gd => { if (solidG(gd)) consider({ x: gd.x, w: gd.w, top: gd.y }); });
       near.platforms.forEach(p => { if (p.layer === LY) consider({ x: p.x, w: p.w, top: p.y }); });
-      near.hazards.forEach(hz => { if (hz.layer === LY) consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
+      /* a bird has no top to it: she can never land on a gull, only duck it or
+         clear it */
+      near.hazards.forEach(hz => { if (hz.layer === LY && hz.kind !== 'bird') consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
       if (bestTop !== null) {
         if (!L.grounded && L.vy < -180) { Sfx.land(); this.puff(L.x - 6, bestTop, 4); }
         L.y = bestTop; L.vy = 0; L.grounded = true; L.landY = bestTop;
@@ -400,7 +421,7 @@ const Game = {
         };
         near.ground.forEach(gd => { if (solidG(gd)) chk({ x: gd.x, w: gd.w, top: gd.y }); });
         near.platforms.forEach(p => { if (p.layer === LY) chk({ x: p.x, w: p.w, top: p.y }); });
-        near.hazards.forEach(hz => { if (hz.layer === LY) chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
+        near.hazards.forEach(hz => { if (hz.layer === LY && hz.kind !== 'bird') chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
       }
 
@@ -458,7 +479,7 @@ const Game = {
         face(gd.y, GRAB);
       });
       near.hazards.forEach(hz => {
-        if (hz.layer !== LY) return;
+        if (hz.layer !== LY || hz.kind === 'bird') return;
         if (b2.x1 - 6 <= hz.x || b2.x0 + 6 >= hz.x + hz.w) return;
         const top = hz.y + hz.h;
         if (hz.kind !== 'over') { face(top, GRAB); return; }
@@ -485,7 +506,7 @@ const Game = {
       const b3 = this.box(L);
       let hit = null;
       near.hazards.forEach(hz => {
-        if (hit || hz.kind !== 'over' || hz.layer !== LY) return;
+        if (hit || (hz.kind !== 'over' && hz.kind !== 'bird') || hz.layer !== LY) return;
         if (b3.x1 - 7 <= hz.x || b3.x0 + 7 >= hz.x + hz.w) return;
         if (b3.y1 - 5 <= hz.y || b3.y0 + 4 >= hz.y + hz.h) return;
         hit = hz;
@@ -500,7 +521,7 @@ const Game = {
         if (b3.y1 <= wp.y || b3.y0 >= wp.y + wp.h) return;
         wp.used = true;
         this.run.shortcuts++;
-        this.fx.warp = 0.42;
+        this.fx.warp = 0.42; this.fx.warpFull = 0.42; this.fx.warpCol = '#12203a';
         this.run.warpTo = { x: wp.toX, y: wp.toY };
         Sfx.warp();
         /* the metro is a shortcut of a different order — it is worth saying so */
@@ -541,9 +562,43 @@ const Game = {
         UI.toast('🔑 Metro raktas!', 'Grotos Londone atsirakino');
       });
 
+      /* --- the one place the view swings round: she comes off the beach and
+         turns right onto the pier --- */
+      for (let i = 0; i < W.spins.length; i++) {
+        const sp = W.spins[i];
+        if (sp.used || LY !== 'main' || L.x < sp.x) continue;
+        sp.used = true; this.fx.spin = 1;
+        Sfx.swipe();
+        UI.toast('↱ Į tiltą!', 'Lota pasuka į dešinę');
+      }
+
+      /* --- off the end of the pier ---
+         The deck stops and she leaps. This is the only place on any track
+         where the floor runs out, and it is not a hole: falling here is the
+         point, and the sea catches her. --- */
+      if (!this.run.diving) {
+        for (let i = 0; i < W.dives.length; i++) {
+          const d = W.dives[i];
+          if (LY !== 'main' || L.x < d.x0 || L.x > d.x1) continue;
+          this.run.diving = d;
+          if (L.grounded) { L.vy = PHYS.JUMP_V * 0.62; L.grounded = false; I.coyote = 0; }
+          Sfx.jump(); this.puff(L.x - 10, L.y, 6);
+          break;
+        }
+      } else if (!this.run.warpTo) {
+        const d = this.run.diving;
+        if (L.y < -150 || L.x > d.x1) {
+          this.run.diving = null;
+          this.splash(L.x, L.y);
+          this.fx.warp = 0.5; this.fx.warpFull = 0.5; this.fx.warpCol = '#0e4a68';
+          this.run.warpTo = { x: d.toX, y: 0 };
+          UI.toast('🌊 Į vandenį!', 'toliau — jūros dugnu');
+        }
+      }
+
       /* --- safety net. There are no holes to fall down any more, so this only
          ever fires if the world itself went wrong. --- */
-      if (L.y < this.layerBase(LY) - 460) { this.crash('fall'); return; }
+      if (!this.run.warpTo && !this.run.diving && L.y < this.layerBase(LY) - 460) { this.crash('fall'); return; }
 
       /* --- finish --- */
       if (L.x >= W.finishX) { this.finish(); return; }
@@ -560,11 +615,40 @@ const Game = {
     /* animation state */
     L.runPhase += dt * (12 + speedAt(L.x) * 0.019);
     L.state = !L.grounded ? (L.vy > 0 ? 'jump' : 'fall') : (L.duck ? 'duck' : 'run');
+    this.stepFoxes(dt);
 
     this.updateCam(dt);
     this.updateZone();
     this.run.dist = L.x;
     UI.setProgress(clamp(L.x / this.world.finishX, 0, 1));
+  },
+
+  /** How many friends are running behind her right now: the fox cave is the
+      only place with any, and they follow the exact path she took rather than
+      a guess at it — up onto a ledge, under an arch, all of it. */
+  foxCount() {
+    const l = this.world.layers[this.lota.layer];
+    return (l && l.br && l.br.foxes) || 0;
+  },
+  stepFoxes(dt) {
+    const L = this.lota, n = this.foxCount();
+    if (!n) { if (this.trail.length) this.trail.length = 0; this.foxes.length = 0; return; }
+    const tr = this.trail;
+    if (!tr.length || L.x - tr[tr.length - 1].x > 7) tr.push({ x: L.x, y: L.y, g: L.grounded });
+    while (tr.length && tr[0].x < L.x - 620) tr.shift();
+    this.foxes.length = n;
+    for (let i = 0; i < n; i++) {
+      const want = L.x - (86 + i * 70);
+      let k = tr.length - 1;
+      while (k > 0 && tr[k].x > want) k--;
+      const p = tr[k];
+      const f = this.foxes[i] || (this.foxes[i] = { x: want, y: 0, run: 0, hop: i * 1.3 });
+      f.x = p ? p.x : want;
+      f.y = p ? p.y : 0;
+      f.run += dt * (11 + speedAt(L.x) * 0.02);
+      f.hop += dt * (1.4 + i * 0.23);
+      f.air = p ? !p.g : false;
+    }
   },
 
   stepDeath(dt) {
@@ -630,6 +714,21 @@ const Game = {
   },
 
   /* ---------- particles ---------- */
+  /** hitting the water off the end of the pier */
+  splash(x, y) {
+    Sfx.splash();
+    this.fx.flash = 0.35;
+    for (let i = 0; i < 34; i++) this.fx.sparks.push({
+      x: x + (Math.random() - .5) * 60, y: y,
+      vx: (Math.random() - .5) * 320, vy: 120 + Math.random() * 320,
+      life: .75, c: i % 3 ? '#eaf9ff' : '#8fd6ff'
+    });
+    for (let i = 0; i < 16; i++) this.fx.dust.push({
+      x: x + (Math.random() - .5) * 90, y: y,
+      vx: (Math.random() - .5) * 140, vy: 60 + Math.random() * 150,
+      r: 5 + Math.random() * 12, life: 0.6
+    });
+  },
   puff(x, y, n) {
     for (let i = 0; i < n; i++) this.fx.dust.push({
       x: x, y: y, vx: -40 - Math.random() * 90, vy: 20 + Math.random() * 70,
@@ -651,6 +750,7 @@ const Game = {
       if (c.y > this.VH + 40) f.confetti.splice(i, 1);
     }
     f.layerFade = Math.max(0, f.layerFade - dt * 2.4);
+    f.spin = Math.max(0, f.spin - dt * 1.15);
     f.shake = Math.max(0, f.shake - dt * 1.6);
     f.flash = Math.max(0, f.flash - dt * 2.2);
     f.warp = Math.max(0, f.warp - dt);
@@ -678,6 +778,15 @@ const Game = {
       const s = this.fx.shake * 9;
       ctx.translate((Math.random() - .5) * s, (Math.random() - .5) * s);
     }
+    /* the view swinging round as she turns onto the pier. It has to zoom in
+       while it turns, or the corners of the rotated picture show through. */
+    if (this.fx.spin > 0 && this.state !== 'lobby') {
+      const k = Math.sin((1 - this.fx.spin) * Math.PI);
+      const a = k * 0.17, sc = 1 + k * 0.32;
+      ctx.translate(this.VW / 2, this.VH / 2);
+      ctx.rotate(a); ctx.scale(sc, sc);
+      ctx.translate(-this.VW / 2, -this.VH / 2);
+    }
 
     if (this.state === 'lobby') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
@@ -689,8 +798,8 @@ const Game = {
 
   /* which palette and floor an object belongs to: a room on a branch carries
      its own, everything else takes them from its zone */
-  palOf(o) { return o.pal || (ZONES[o.zone] || ZONES[0]).pal; },
-  floorOf(o) { return o.floor || (ZONES[o.zone] || ZONES[0]).floor; },
+  palOf(o) { const Z = this.world.zoneList; return o.pal || (Z[o.zone] || Z[0]).pal; },
+  floorOf(o) { const Z = this.world.zoneList; return o.floor || (Z[o.zone] || Z[0]).floor; },
 
   /** The place behind her: a zone on the street, or a room on a branch. */
   drawPlaceBg(layerId, atX) {
@@ -822,7 +931,13 @@ const Game = {
       if (!mine(hz)) return;
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
       const floorY = this.sy(this.layerBase(hz.layer));
-      if (hz.kind !== 'over') {
+      if (hz.kind === 'bird') {
+        /* a gull's shadow belongs on the ground below it, which is also the
+           cue that something is coming */
+        ctx.save(); ctx.globalAlpha = .22;
+        fillEll(ctx, x0 + hz.w / 2, floorY + 3, hz.w * 0.4, 5, '#1a1226');
+        ctx.restore();
+      } else if (hz.kind !== 'over') {
         ctx.save(); ctx.globalAlpha = .3;
         fillEll(ctx, x0 + hz.w / 2, this.sy(hz.y) + 3, hz.w * 0.56, 7, '#1a1226');
         ctx.restore();
@@ -839,7 +954,7 @@ const Game = {
     /* ---- treats ---- */
     near.bones.forEach(b => {
       if (b.got || !mine(b)) return;
-      this.drawBone(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5);
+      this.drawTreat(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5);
     });
 
     /* ---- the key ---- */
@@ -854,6 +969,16 @@ const Game = {
       ctx.save(); ctx.globalAlpha = clamp(p.life * 2, 0, .5);
       circle(ctx, this.sx(p.x), this.sy(p.y), p.r, '#fff'); ctx.restore();
     });
+
+    /* ---- the foxes, tumbling along behind her ---- */
+    if (this.foxes.length) {
+      this.foxes.forEach((f, i) => {
+        const fx = this.sx(f.x);
+        if (fx < -90 || fx > VW + 90) return;
+        drawFox(ctx, fx, this.sy(f.y), 0.78 - i * 0.045, f.run,
+                f.air ? 'jump' : 'run', Math.sin(f.hop) * 0.1, this.t + i);
+      });
+    }
 
     /* ---- Lota ---- */
     if (L) {
@@ -876,8 +1001,18 @@ const Game = {
       circle(ctx, this.sx(p.x), this.sy(p.y), 3.4, p.c); ctx.restore();
     });
 
-    /* ---- speed streaks when she is really flying ---- */
-    const spd = inv(speedAt(L ? L.x : 0), 520, PHYS.V_MAX);
+    /* ---- what a place puts in FRONT of everything: under water that is the
+       blue of it, the bubbles and the light ---- */
+    if (LY === 'main') {
+      const zf = this.zoneAt(L ? L.x : 0).zone;
+      if (zf.fg) { ctx.save(); zf.fg(ctx, VW, VH, camX, this.sy(0), this.t, zf.pal); ctx.restore(); }
+    }
+
+    /* ---- speed streaks when she is really flying. A calm place — under
+       water, deep in the wood — says no to them: there the bubbles and the
+       trees flying past already say how fast she is going. ---- */
+    const calm = LY !== 'main' || this.zoneAt(L ? L.x : 0).zone.calm;
+    const spd = calm ? 0 : inv(speedAt(L ? L.x : 0), 520, SPEED.V_MAX);
     if (spd > 0.05) {
       ctx.save(); ctx.globalAlpha = spd * 0.3;
       for (let i = 0; i < 7; i++) {
@@ -896,10 +1031,10 @@ const Game = {
 
     /* ---- shortcut wipe ---- */
     if (this.fx.warp > 0) {
-      const a = this.fx.warp / 0.42;
+      const a = this.fx.warp / (this.fx.warpFull || 0.42);
       const k = a > 0.5 ? (1 - a) * 2 : a * 2;
       ctx.save(); ctx.globalAlpha = clamp(1 - k, 0, 1);
-      ctx.fillStyle = '#12203a'; ctx.fillRect(0, 0, VW, VH);
+      ctx.fillStyle = this.fx.warpCol || '#12203a'; ctx.fillRect(0, 0, VW, VH);
       ctx.restore();
     }
 
@@ -944,6 +1079,28 @@ const Game = {
     ctx.strokeStyle = lit ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)';
     ctx.lineWidth = 1.6; ctx.stroke();
     ctx.restore();
+    ctx.restore();
+  },
+
+  /** the thing this level's track is littered with: a bone on level 1, one of
+      her squeaky balls on level 2 */
+  drawTreat(x, y) {
+    if (!this.world || this.world.currency !== 't') { this.drawBone(x, y); return; }
+    const ctx = this.ctx, r = 15;
+    ctx.save(); ctx.translate(x, y);
+    ctx.save(); ctx.globalAlpha = .35 + Math.sin(this.t * 4) * .12;
+    circle(ctx, 0, 0, 22, '#ffd8a8'); ctx.restore();
+    circle(ctx, 0, 0, r, '#ff6b7a');
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+    ctx.fillStyle = '#4fc3ea';
+    ctx.beginPath(); ctx.moveTo(-r, -r * .1);
+    ctx.quadraticCurveTo(0, -r * .7, r, -r * .1);
+    ctx.lineTo(r, r * .35); ctx.quadraticCurveTo(0, -r * .18, -r, r * .35);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = 'rgba(60,20,30,.4)'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .55;
+    fillEll(ctx, -r * .36, -r * .42, r * .3, r * .18, '#fff', -0.5); ctx.restore();
     ctx.restore();
   },
 

@@ -29,7 +29,9 @@
     near.hazards.forEach(h => {
       if (h.layer !== ly) return;
       const d = h.x - front;
-      if (h.kind === 'over') {
+      /* a gull is ducked exactly like anything else hanging in her lane —
+         she just cannot land on top of this one */
+      if (h.kind === 'over' || h.kind === 'bird') {
         if (d < v * 0.34 && L.x < h.x + h.w + 20) { duck = true; if (d < 10) overhead = true; }
       } else {
         if (d > -h.w && d < react && h.y <= L.y + 40 && h.y + h.h > L.y) jump = true;
@@ -55,7 +57,9 @@
     /* the mouth of the stairs down: with the key in hand doing nothing takes
        them, jumping stays up. Only ever on the street — off the end of the
        duct there is nothing to decide, she is meant to fall. */
-    if (!take.metro && L.grounded && ly === 'main') {
+    /* the mouth of a way down: doing nothing takes it, jumping stays up */
+    const takeDown = take.down !== undefined ? take.down : take.metro;
+    if (!takeDown && L.grounded && ly === 'main' && !inDive(L.x)) {
       let edge = null;
       for (let dxp = 6; dxp < v * 0.5 + 200; dxp += 6) {
         const x = L.x + dxp;
@@ -69,13 +73,21 @@
     if (jump && !duck) Game.input.jumpBuf = 0.15;   // jump buffer fires it on landing
   }
 
+  /* off the end of the pier the deck genuinely stops, and that is the point:
+     the bot must not treat it as an edge to jump */
+  function inDive(x) {
+    const d = W().dives || [];
+    for (let i = 0; i < d.length; i++) if (x > d[i].x0 - 900 && x < d[i].x1) return true;
+    return false;
+  }
+
   window.botDecide = decide;
 
   window.runBot = function (maxSec) {
     const setP = UI.setProgress, setB = UI.setBones, setZ = UI.setZone, tst = UI.toast, tut = UI.tut;
     UI.setProgress = UI.setBones = UI.setZone = UI.toast = UI.tut = function () {};
     const soundWas = Sfx.on; Sfx.on = false;
-    Game.startRun();
+    Game.startRun(false, window.BOT_LEVEL || 1);
     const dt = 1 / 120; let t = 0, frame = 0;
     const every = window.BOT_EVERY || 1;
     const seen = {};
@@ -91,7 +103,8 @@
     const out = {
       state: Game.state, x: Math.round(Game.lota.x), finishX: Math.round(Game.world.finishX),
       pct: (Game.lota.x / Game.world.finishX * 100).toFixed(1) + '%',
-      bones: Game.run.bones, reason: Game.crashReason || null,
+      level: Game.run.level, treats: Game.run.bones + ' / ' + Game.world.treats,
+      reason: Game.state === 'crash' || Game.state === 'over' ? (Game.crashReason || 'hit') : null,
       zone: Game.zoneAt(Game.lota.x).zone.name, layer: Game.lota.layer,
       routes: Object.keys(seen).map(k => k + ':' + (seen[k] / 120).toFixed(1) + 's').join(' '),
       seconds: Math.round(t)

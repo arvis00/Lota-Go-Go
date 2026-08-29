@@ -33,7 +33,7 @@ const UI = {
     $('btnSkinsBack').onclick = () => { Sfx.click(); this.showLobby(); };
     $('btnRetry').onclick   = () => { Sfx.click(); Game.startRun(true); };
     $('btnLobby').onclick   = () => { Sfx.click(); this.bank(false); Game.lobby(); };
-    $('btnWinAgain').onclick = () => { Sfx.click(); Game.startRun(); };
+    $('btnWinAgain').onclick = () => { Sfx.click(); Game.startRun(false, Game.run.level); };
     $('btnWinLobby').onclick = () => { Sfx.click(); Game.lobby(); };
     $('btnPause').onclick   = () => { Sfx.click(); this.pause(); };
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
@@ -86,7 +86,6 @@ const UI = {
   lobbyPageChanged() {
     const level = Game.lobbyLevel(), L = Levels.get(level);
     const open = Levels.unlocked(level);
-    const d = Save.data;
 
     $('lobbySub').textContent = L.sub;
     $('lobbyWallet').innerHTML = walletHtml(level);
@@ -104,10 +103,15 @@ const UI = {
       note.classList.add('hidden');
     }
 
-    if (level === 1) {
-      $('lobbyBest').innerHTML = Save.clears(1)
-        ? 'Finišas pasiektas ×' + Save.clears(1) + '<br>Rekordas: ' + d.bestBones + ' 🦴'
-        : (d.bestZone ? 'Toliausiai: ' + d.bestZone : 'Pirmyn į Londoną!');
+    if (open && L.playable) {
+      const ico = L.picks.indexOf('t') >= 0 ? ' 🧸' : ' 🦴';
+      const shop = Levels.shop(level);
+      const own = shop.filter(s => Save.owns(s.id)).length;
+      const head = Save.clears(level)
+        ? 'Finišas ×' + Save.clears(level) + ' · rekordas ' + Save.best(level) + ico
+        : (Save.far(level) ? 'Toliausiai: ' + Save.far(level)
+          : (level === 1 ? 'Pirmyn į Londoną!' : 'Pirmyn prie jūros!'));
+      $('lobbyBest').innerHTML = head + (shop.length ? '<br>Aprangos: ' + own + ' / ' + shop.length : '');
     } else if (open) {
       const shop = Levels.shop(level);
       const own = shop.filter(s => Save.owns(s.id)).length;
@@ -135,7 +139,7 @@ const UI = {
     const level = Game.lobbyLevel(), L = Levels.get(level);
     if (!Levels.unlocked(level)) return this.refuse(level);
     Sfx.click();
-    if (L.playable) Game.startRun();
+    if (L.playable) Game.startRun(false, level);
     else Game.showPreview(level);
   },
   openSkins() {
@@ -176,6 +180,11 @@ const UI = {
   showHud() {
     this.hideAll();
     $('hud').classList.remove('hidden');
+    /* the HUD counts whatever this level collects, and says how many of them
+       there are — level 1 hides bones, level 2 hides toys */
+    const W = Game.world;
+    $('hudIco').className = W.currency === 't' ? 'toy-ico' : 'bone-ico';
+    $('hudTotal').textContent = '/' + W.treats;
     this.setBones(0); this.setProgress(0);
   },
 
@@ -186,52 +195,59 @@ const UI = {
     const r = Game.run;
     if (!r || r.banked) return 0;
     r.banked = true;
-    const base = r.bones === 15 ? 30 : r.bones;
+    const W = Game.world;
+    const base = r.bones === W.treats ? W.treats * 2 : r.bones;
     const earned = base + (finished ? 10 : 0);
-    Save.earn(r.level || 1, 'b', earned);
-    if (earned > Save.data.bestBones) Save.data.bestBones = earned;
+    Save.earn(r.level || 1, W.currency, earned);
+    Save.best(r.level || 1, earned);
     Save.write();
     return earned;
   },
 
   showOver() {
-    const r = Game.run;
-    const cp = Game.checkpoint || { start: true, name: ZONES[0].name };
+    const r = Game.run, W = Game.world;
+    const cp = Game.checkpoint || { start: true, name: W.zoneList[0].name };
     const zoneName = Game.zoneAt(Game.lota.x).zone.name;
-    Save.data.bestZone = zoneName; Save.write();
-    const pending = (r.bones === 15 ? 30 : r.bones);
+    const ico = W.currency === 't' ? '🧸' : '🦴';
+    const what = W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai';
+    Save.far(r.level || 1, zoneName);
+    const pending = (r.bones === W.treats ? W.treats * 2 : r.bones);
 
     this.hideAll();
     $('screen-over').classList.remove('hidden');
     $('overSub').textContent = 'Lota sustojo: ' + zoneName + ' · nubėgta ' +
-      Math.round(clamp(Game.lota.x / Game.world.finishX, 0, 1) * 100) + '%';
+      Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
     $('overStats').innerHTML =
-      row('Surinkti skaniukai', r.bones + ' / 15') +
+      row(what, r.bones + ' / ' + W.treats) +
       row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true);
     $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
-    $('btnLobby').textContent = pending ? 'Baigti · +' + pending + ' 🦴' : 'Grįžti į Lobby';
+    $('btnLobby').textContent = pending ? 'Baigti · +' + pending + ' ' + ico : 'Grįžti į Lobby';
   },
 
   showWin() {
     this.winShown = true;
-    const r = Game.run;
-    const base = r.bones === 15 ? 30 : r.bones;
+    const r = Game.run, W = Game.world;
+    const all = W.treats, ico = W.currency === 't' ? '🧸' : '🦴';
+    const what = W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai';
+    const base = r.bones === all ? all * 2 : r.bones;
     const earned = this.bank(true);
+    const last = W.zoneList[W.zoneList.length - 1].name;
     Save.markCleared(r.level || 1);
-    Save.data.bestZone = 'Londonas — finišas!';
+    Save.far(r.level || 1, last + ' — finišas!');
     Save.write();
 
     this.hideAll();
     $('screen-win').classList.remove('hidden');
     const mins = Math.floor(r.time / 60), secs = Math.round(r.time % 60);
-    $('winSub').textContent = 'Nuo namų iki Londono per ' + mins + ':' + String(secs).padStart(2, '0') +
+    const trip = (r.level || 1) === 1 ? 'Nuo namų iki Londono per ' : 'Nuo viešbučio iki miško per ';
+    $('winSub').textContent = trip + mins + ':' + String(secs).padStart(2, '0') +
       (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
       (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
     $('winStats').innerHTML =
-      row('Surinkti skaniukai', r.bones + ' / 15') +
-      (r.bones === 15 ? row('Visi 15 — dvigubai!', r.bones + ' → ' + base) : '') +
+      row(what, r.bones + ' / ' + all) +
+      (r.bones === all ? row('Visi ' + all + ' — dvigubai!', r.bones + ' → ' + base) : '') +
       row('Už finišą', '+10') +
-      row('Iš viso', '+' + earned + ' 🦴', true);
+      row('Iš viso', '+' + earned + ' ' + ico, true);
   },
 
   pause() { if (Game.state !== 'run') return; Game.state = 'pause'; $('screen-pause').classList.remove('hidden'); },

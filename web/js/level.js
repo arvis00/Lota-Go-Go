@@ -20,8 +20,13 @@ const PHYS = {
   get AIRTIME() { return (2 * this.JUMP_V) / this.GRAV; },   // 0.755 s
   get APEX()    { return (this.JUMP_V * this.JUMP_V) / (2 * this.GRAV); } // 188 px
 };
+/* Every level runs at its own pace. `SPEED` is the profile currently in
+   force — the generator sets it while it lays a track out, and the engine
+   sets it when a run starts, so the two never disagree. */
+let SPEED = PHYS;
+function useSpeed(p) { SPEED = p || PHYS; }
 function speedAt(x) {
-  return PHYS.V_MIN + (PHYS.V_MAX - PHYS.V_MIN) * Math.pow(clamp(x / PHYS.X_FULL, 0, 1), 0.85);
+  return SPEED.V_MIN + (SPEED.V_MAX - SPEED.V_MIN) * Math.pow(clamp(x / SPEED.X_FULL, 0, 1), 0.85);
 }
 /* how far she flies in one jump at this point of the track */
 function reachAt(x) { return speedAt(x) * PHYS.AIRTIME; }
@@ -39,6 +44,14 @@ const MAX_HURDLE_H = 96;  // a tall obstacle is no less fair: landing on top of
 const GRAB = 34;          // anything solid: crates, shelves, the lip of a stair
 const GRAB_OVER = 52;     // hanging things: getting on top of one is a real route
 
+/* ---- birds ----
+   A seagull is the one thing on the track with no top and no bottom to it:
+   she cannot stand on it and she cannot barge through it. The band it flies
+   in leaves 50 px of headroom to duck under (she is 30 ducked) and stops
+   well below the top of a jump (apex 188), so both ways out stay open. */
+const BIRD_BOTTOM = 50;
+const BIRD_H = 66;
+
 /* ---- the duct over the girl's room ----
    The bed throws her this far above the bedroom floor; the duct floor sits a
    little under the top of that arc, so the bounce always gets her in. */
@@ -53,36 +66,46 @@ const STAIR_FIRST = 112;  // first tread of a flight that starts inside a room �
 
 /* An object must have exactly one meaning: either Lota can hit it, or it is
    scenery. Sharing an id between the two makes the track unreadable. */
-function assertPropRoles() {
-  const hits = new Set(), all = [];
-  const scan = (id, pools) => {
-    ['hurdle', 'over', 'tunnel', 'ledge', 'step'].forEach(k => (pools[k] || []).forEach(p => { hits.add(p); all.push([id, p]); }));
-    (pools.deco || []).forEach(p => all.push([id, p]));
-  };
-  ZONES.forEach(z => scan(z.id, z.pools));
-  Object.keys(BRANCHES).forEach(b => BRANCHES[b].rooms.forEach(r => scan(r.id, r.pools)));
+function assertPropRoles(track) {
+  const hits = new Set(), all = [], rooms = [];
+  track.zones.forEach(z => { rooms.push(z); if (z.gulls) all.push([z.id, 'gull']); });
+  const brs = track.branches || {};
+  Object.keys(brs).forEach(b => brs[b].rooms.forEach(r => rooms.push(r)));
+  rooms.forEach(r => {
+    ['hurdle', 'over', 'tunnel', 'ledge', 'step'].forEach(k =>
+      (r.pools[k] || []).forEach(p => { hits.add(p); all.push([r.id, p]); }));
+    (r.pools.deco || []).forEach(p => all.push([r.id, p]));
+  });
 
   const clash = [];
-  const scanDeco = (id, pools) => (pools.deco || []).forEach(p => { if (hits.has(p)) clash.push(id + ':' + p); });
-  ZONES.forEach(z => scanDeco(z.id, z.pools));
-  Object.keys(BRANCHES).forEach(b => BRANCHES[b].rooms.forEach(r => scanDeco(r.id, r.pools)));
+  rooms.forEach(r => (r.pools.deco || []).forEach(p => { if (hits.has(p)) clash.push(r.id + ':' + p); }));
   if (clash.length) console.error('Lota Go: prop is both scenery and hazard — ' + clash.join(', '));
 
   const missing = all.filter(p => !PROPS[p[1]]).map(p => p.join(':'));
   if (missing.length) console.error('Lota Go: no drawing for — ' + missing.join(', '));
 }
 
-function buildWorld() {
-  assertPropRoles();
-  const rng = makeRng(20260827);
+/** Build one level's track. The `track` says which places it runs through,
+    what it collects, how fast it goes and how tight the gaps are. */
+function buildWorld(track) {
+  track = track || TRACKS[1];
+  useSpeed(track.phys);
+  assertPropRoles(track);
+  const ZL = track.zones, BR = track.branches || {};
+  const MIN_REST = track.minRest == null ? 0.46 : track.minRest;
+  const REST = track.rest || [0.95, 0.55];
+  const rng = makeRng(track.seed);
   const W = {
     ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [],
+    spins: [], dives: [],
     zones: [], layers: { main: { id: 'main', base: 0, rooms: [] } },
+    level: track.level, currency: track.currency, treats: track.treats,
+    phys: track.phys, zoneList: ZL, branches: BR,
     finishX: 0, totalX: 0
   };
   const anchors = [];
   let x = 0, segStart = 0, pendingWarp = null, metroWarp = null, metroLandX = 0;
-  let curZone = ZONES[0];
+  let curZone = ZL[0];
   let curLayer = 'main', curBase = 0, curRoom = null;
 
   const speed = () => speedAt(x);
@@ -150,6 +173,14 @@ function buildWorld() {
         hz(z, p2, x + g2, 0, w2, h2);
         x += g2 + w2;
       }
+    },
+
+    /* a seagull, hanging in her lane: duck under it or jump it */
+    bird(z) {
+      const w = Math.round(propSize('gull')[0] * rng.range(1.0, 1.14));
+      hz(z, 'gull', x, BIRD_BOTTOM, w, BIRD_H, 'bird');
+      anchor(x + w / 2, BIRD_BOTTOM + BIRD_H + 34, 'bird', true);
+      x += w;
     },
 
     over(z) {
@@ -243,10 +274,17 @@ function buildWorld() {
   function fill(pl, sec, opts) {
     let budget = sec, used = '';
     const o = opts || {};
+    /* the gulls are not left to chance: a place that says it has four of them
+       gets four, spread evenly down its length */
+    const gulls = o.gulls || 0;
+    let gullsDone = 0;
     while (budget > (o.tail == null ? 1.6 : o.tail)) {
       const x0 = x;
       let name;
-      if (o.shortcut && !o.shortcutDone && budget < sec * 0.62) { name = 'shortcut'; o.shortcutDone = true; }
+      if (gulls && gullsDone < gulls && (sec - budget) >= sec * ((gullsDone + 0.7) / (gulls + 1))) {
+        name = 'bird'; gullsDone++;
+      }
+      else if (o.shortcut && !o.shortcutDone && budget < sec * 0.62) { name = 'shortcut'; o.shortcutDone = true; }
       else name = pickPattern(pl, rng, used);
 
       if (name === 'hurdle') P.hurdle(pl, false);
@@ -255,6 +293,7 @@ function buildWorld() {
       else if (name === 'tunnel') P.tunnel(pl);
       else if (name === 'step') P.step(pl);
       else if (name === 'ledge') P.ledge(pl, rng.chance(0.4));
+      else if (name === 'bird') P.bird(pl);
       else if (name === 'shortcut') P.shortcut(pl);
       used = name;
 
@@ -262,9 +301,9 @@ function buildWorld() {
          She may leave a pattern from up on top of it, so add the time it takes
          to fall back down: the reaction budget must hold on every route. */
       const exitH = { ledge: LEDGE_TOP, shortcut: LEDGE_TOP, step: MAX_STEP_H,
-                      hurdle: MAX_HURDLE_H, double: MAX_HURDLE_H }[name] || 0;
+                      hurdle: MAX_HURDLE_H, double: MAX_HURDLE_H, bird: PHYS.APEX }[name] || 0;
       const fallSec = Math.sqrt((2 * exitH) / PHYS.GRAV);
-      const restSec = Math.max(0.46, lerp(0.95, 0.55, pl.diff) + rng.range(-0.06, 0.22)) + fallSec;
+      const restSec = Math.max(MIN_REST, lerp(REST[0], REST[1], pl.diff) + rng.range(-0.06, 0.22)) + fallSec;
       P.flat(restSec);
       if (rng.chance(0.5)) decorate(pl, 1);
       budget -= (x - x0) / speed();
@@ -277,32 +316,35 @@ function buildWorld() {
       way in, and later the way out. `rec` carries the span the branch body
       then has to fill. */
   function openBranch(z) {
-    const br = BRANCHES[z.branch];
+    const br = BR[z.branch];
     const rec = { br: br, id: br.id, x0: x, base: 0, entryEndX: 0, overlap: 0 };
     const keep = { l: curLayer, b: curBase, r: curRoom, seg: segStart };
 
-    if (br.id === 'metro') {
-      /* the mouth of the steps is a gap in the pavement she can jump clean
+    if (br.drop) {
+      /* the mouth of the steps is an opening in the floor she can jump clean
          over — or drop into, which simply puts her on the steps */
       const mouth = Math.round(reachAt(x) * 0.40);
-      const n = Math.ceil(250 / STAIR_RISE);
+      const n = Math.ceil(-br.drop / STAIR_RISE);
       const run = Math.max(100, reachAt(x) * 0.22);
       rec.base = -n * STAIR_RISE;
       const mouthX = x;
       closeGround(x);
-      W.deco.push(stamp({ x: x, y: 0, prop: 'stairsDown', w: mouth, h: 128, shaft: true }));
-      W.deco.push(stamp({ x: x - 14, y: 0, prop: br.sign, w: mouth + 28, h: 158, sign: true, lock: 'metro' }));
-      /* The way down is barred until she has the key. The bars are floor, not
-         an obstacle: with them shut she simply runs over the mouth and never
-         knows it was there — with the key they fold back and the steps open. */
-      W.ground.push(stamp({ x: x - 8, w: mouth + 16, y: 0, lock: 'metro' }));
-      W.deco.push(stamp({ x: x - 8, y: 0, prop: 'metroGrate', w: mouth + 16, h: 70, gate: true, lock: 'metro' }));
+      W.deco.push(stamp({ x: x, y: 0, prop: br.shaft, w: mouth, h: 128, shaft: true }));
+      W.deco.push(stamp({ x: x - 14, y: 0, prop: br.sign, w: mouth + 28, h: 158, sign: true,
+                          lock: br.locked ? br.id : 0 }));
+      if (br.locked) {
+        /* The way down is barred until she has the key. The bars are floor, not
+           an obstacle: with them shut she simply runs over the mouth and never
+           knows it was there — with the key they fold back and the steps open. */
+        W.ground.push(stamp({ x: x - 8, w: mouth + 16, y: 0, lock: br.id }));
+        W.deco.push(stamp({ x: x - 8, y: 0, prop: 'metroGrate', w: mouth + 16, h: 70, gate: true, lock: br.id }));
+      }
       portal(x - 4, mouth + 30, rec.base - 90, -8, 'main', br.id);
       x += mouth;
       openGround(x);
-      keep.seg = x;          // the pavement now resumes past the mouth, not before it
-      /* the steps themselves belong to the metro: from the street you see the
-         drawing above, from down here you run on these */
+      keep.seg = x;          // the floor now resumes past the mouth, not before it
+      /* the steps themselves belong to the branch: from above you see the
+         drawing, from down here you run on these */
       place(br.id, 0, br.rooms[0]);
       x = mouthX;
       flight(n, run, 0, -1, br.rooms[0].pal);
@@ -335,10 +377,11 @@ function buildWorld() {
     return rec;
   }
 
-  /** The way back up out of the metro, into the same street she left. */
-  function closeMetro(z, rec) {
-    /* she gets off the train back onto a platform, and climbs out from there —
-       so the way up is dressed as the station, not as the carriage */
+  /** The way back up out of a branch that went down, into the same place she
+      left it. */
+  function closeDown(z, rec) {
+    /* she comes back into the first room of the branch and climbs out of that,
+       so the way up is dressed as the place the steps belong to */
     const br = rec.br, room = br.rooms[0];
     const n = Math.ceil(-rec.base / STAIR_RISE);
     const run = Math.max(76, reachAt(x) * 0.15);
@@ -346,15 +389,17 @@ function buildWorld() {
     rec.exitStartX = x;
     W.deco.push(stamp({ x: x - 24, y: 0, prop: br.exitSign, w: n * run + 48, h: 104, sign: true }));
     place(br.id, 0, room);
-    W.deco.push(stamp({ x: x + 8, y: rec.base, prop: 'trainDoor', w: 112, h: 196, gateway: true }));
+    W.deco.push(stamp({ x: x + 8, y: rec.base, prop: br.roomGate, w: 112, h: 196, gateway: true }));
     flight(n, run, rec.base, 1, room.pal);
     rec.exitEndX = x;
-    /* The train went somewhere. Climbing out of it is what actually skips the
-       street: the last treads hand her to a stop far down the line, near the
-       finish — which is the whole point of hunting down the key. Only someone
-       coming up these steps can trigger it; the street above cannot. */
-    metroWarp = stamp({ x: x - run * 1.8, y: -60, w: run * 1.5, h: 210, toX: 0, toY: 0 });
-    W.warps.push(metroWarp);
+    if (br.shortcut) {
+      /* The train went somewhere. Climbing out of it is what actually skips the
+         street: the last treads hand her to a stop far down the line, near the
+         finish — which is the whole point of hunting down the key. Only someone
+         coming up these steps can trigger it; the street above cannot. */
+      metroWarp = stamp({ x: x - run * 1.8, y: -60, w: run * 1.5, h: 210, toX: 0, toY: 0 });
+      W.warps.push(metroWarp);
+    }
     portal(x + 8, 200, -70, 220, br.id, 'main');
     const spent = x - x0;
     place(keep.l, keep.b, keep.r); segStart = keep.seg;
@@ -409,7 +454,7 @@ function buildWorld() {
   function buildBranch(z, rec) {
     const br = rec.br;
     const a2 = rec.entryEndX;
-    const b2 = br.id === 'metro' ? rec.exitStartX : rec.x1;
+    const b2 = br.drop ? rec.exitStartX : rec.x1;
     const span = Math.max(500, b2 - a2);
     const keepSeg = segStart;
     let cx = a2;
@@ -421,13 +466,13 @@ function buildWorld() {
       W.layers[rec.id].rooms.push({ x0: cx - (ri === 0 ? rec.overlap : 0), x1: rx1, room: room });
       if (ri > 0) {
         W.deco.push(stamp({ x: x + 12, y: rec.base, w: 112, h: 196, gateway: true,
-                            prop: br.id === 'metro' ? 'trainDoor' : 'doorHouse' }));
+                            prop: br.roomGate }));
       }
       /* a room has to read before it is dangerous, the same as a zone does —
          and she arrives in the first one straight off a flight of stairs */
       P.flat(ri === 0 ? 1.0 : 0.7);
       decorate(room, 1);
-      if (room.id === 'girlroom' && br.duct) {
+      if (br.duct && room.id === br.ductRoom) {
         fill(room, Math.max(0.3, (rx1 - x) / speed() * 0.36), { tail: 0.7 });
         buildDuct(br, rec);
       }
@@ -437,11 +482,11 @@ function buildWorld() {
       closeGround(x);
       cx = rx1;
     });
-    if (br.id === 'metro') {
-      /* the climb back out is platform again, not carriage */
+    if (br.drop) {
+      /* the climb back out is dressed as the first room again, not the last */
       W.layers[rec.id].rooms.push({ x0: rec.exitStartX, x1: rec.exitEndX + 200, room: br.rooms[0] });
     }
-    if (br.id === 'upstairs') {
+    if (br.exitProp) {
       /* the way back down is the open window: she leaps out of it and lands in
          the yard, exactly where the ground-floor route comes out */
       W.deco.push(stamp({ x: b2 - 168, y: rec.base + 24, prop: br.exitProp, w: 128, h: 158, gateway: true }));
@@ -452,16 +497,20 @@ function buildWorld() {
 
   /* ---------- walk the whole track ---------- */
   openGround(0);
-  ZONES.forEach((z, zi) => {
+  ZL.forEach((z, zi) => {
     curZone = z;
     place('main', 0, null);
     const zx0 = x;
     /* calm entry so the new place reads before it is dangerous */
     P.flat(zi === 0 ? 2.6 : 1.15);
+    /* the one place the view swings round: she comes off the beach, turns
+       right and the pier is suddenly ahead of her */
+    if (z.turn) W.spins.push({ x: zx0 + dx(0.3) });
     decorate(z, 1);
 
-    const br = z.branch ? BRANCHES[z.branch] : null;
-    const opts = { shortcut: ['yard1', 'park', 'mall', 'airport'].indexOf(z.id) >= 0, shortcutDone: false };
+    const br = z.branch ? BR[z.branch] : null;
+    const opts = { shortcut: (track.shortcuts || []).indexOf(z.id) >= 0, shortcutDone: false,
+                   gulls: z.gulls || 0 };
     let rec = null, budget = z.sec;
 
     if (br) {
@@ -472,26 +521,28 @@ function buildWorld() {
       P.flat(0.9);            /* and room to react after choosing to skip them */
       budget -= (x - t0) / speed();
     }
-    if (br && br.id === 'metro') {
+    if (br && br.drop) {
       const t1 = x;
       fill(z, br.sec, { tail: 1.2 });
       P.flat(0.55);
-      closeMetro(z, rec);
+      closeDown(z, rec);
       P.flat(0.9);
       budget -= (x - t1) / speed();
       rec.x1 = x;
 
-      /* The far end of the shortcut. The train has to put her down somewhere
-         the track is deliberately empty — she arrives out of a screen wipe
-         with nothing to read ahead of time — and far enough down the street
-         that the key was worth going after, yet with a real stretch of London
-         still to run: the metro is a shortcut, not the finish line. */
-      const t2 = x, tail = 3.2;
-      fill(z, Math.max(1.2, budget - tail - 1.9), opts);
-      P.flat(0.55);
-      metroLandX = x + dx(0.15);
-      P.flat(1.35);
-      budget -= (x - t2) / speed();
+      if (br.shortcut) {
+        /* The far end of the shortcut. The train has to put her down somewhere
+           the track is deliberately empty — she arrives out of a screen wipe
+           with nothing to read ahead of time — and far enough down the street
+           that the key was worth going after, yet with a real stretch of London
+           still to run: the metro is a shortcut, not the finish line. */
+        const t2 = x, tail = 3.2;
+        fill(z, Math.max(1.2, budget - tail - 1.9), opts);
+        P.flat(0.55);
+        metroLandX = x + dx(0.15);
+        P.flat(1.35);
+        budget -= (x - t2) / speed();
+      }
     }
 
     fill(z, budget, opts);
@@ -502,7 +553,25 @@ function buildWorld() {
       W.deco.push(stamp({ x: x - gw - 40, y: 0, prop: z.exit, w: gw, h: gh, gateway: true }));
       P.flat(0.55);
     }
-    if (br && br.id === 'upstairs') rec.x1 = x;
+    /* ---- off the end of the pier ----
+       The deck simply stops. There is no hole to fall down anywhere on this
+       track; this is a dive, and it is scripted: she leaps, the sea takes her,
+       and she comes up running on the bottom. */
+    if (z.dive) {
+      P.flat(0.45);
+      const lip = x;
+      z.deckEnd = lip;      /* the background stops laying deck here too */
+      closeGround(lip);
+      W.deco.push(stamp({ x: lip - 118, y: 0, prop: 'pierEnd', w: 130, h: 150, gateway: true }));
+      const gap = dx(1.7);
+      x = lip + gap;
+      openGround(x);
+      /* the region ends just short of the new floor, so coming back from a
+         checkpoint down there never re-triggers the leap */
+      W.dives.push({ x0: lip - 26, x1: x - 6, toX: x + dx(0.55), lip: lip });
+    }
+    if (br && !br.drop) rec.x1 = x;
+    z.span = { x0: zx0, x1: x };
     W.zones.push({ zone: z, x0: zx0, x1: x });
 
     /* ---- and now the other way through, over exactly the same span ---- */
@@ -518,7 +587,7 @@ function buildWorld() {
 
   /* ---------- finish line ---------- */
   place('main', 0, null);
-  curZone = ZONES[ZONES.length - 1];
+  curZone = ZL[ZL.length - 1];
   P.flat(1.6);
   W.finishX = x + 120;
   W.deco.push(stamp({ x: x, y: 0, prop: 'finish', w: 190, h: 210, finish: true }));
@@ -539,7 +608,8 @@ function buildWorld() {
   /* ---------- place the 15 treats ----------
      A place with two routes spends one of its treats on *both* of them, so the
      count is the same whichever way she goes: 15 either way, 15 in total. */
-  const perZone = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2];  // = 15
+  const perZone = track.perZone;
+  const TREATS = W.treats;
   const pairs = [];
   function takeBone(a, extra) {
     a.taken = 1;
@@ -548,12 +618,12 @@ function buildWorld() {
     W.bones.push(b);
     return b;
   }
-  ZONES.forEach((z, zi) => {
+  ZL.forEach((z, zi) => {
     const mine = anchors.filter(a => a.zone === zi && a.layer === 'main');
     if (!mine.length) return;
     let want = perZone[zi] || 1;
 
-    const L = z.branch ? W.layers[BRANCHES[z.branch].id] : null;
+    const L = z.branch ? W.layers[BR[z.branch].id] : null;
     if (L) {
       const inside = mine.filter(a => !a.taken && a.x > L.x0 && a.x < L.x1);
       const pool0 = inside.filter(a => a.special).length ? inside.filter(a => a.special) : inside;
@@ -581,18 +651,19 @@ function buildWorld() {
       takeBone(a);
     }
   });
-  /* keep them apart and exactly 15 */
+  /* keep them apart, and exactly as many as the level promises */
+  const SPACE = Math.min(2200, (W.totalX * 0.9) / TREATS);
   W.bones.sort((a, b) => a.x - b.x);
   for (let i = 1; i < W.bones.length; i++)
-    if (!W.bones[i].fixed && W.bones[i].x - W.bones[i - 1].x < 2200) W.bones[i].x = W.bones[i - 1].x + 2200;
-  while (W.bones.length > 15) {
+    if (!W.bones[i].fixed && W.bones[i].x - W.bones[i - 1].x < SPACE) W.bones[i].x = W.bones[i - 1].x + SPACE;
+  while (W.bones.length > TREATS) {
     let k = W.bones.length - 1;
     while (k > 0 && W.bones[k].fixed) k--;
     W.bones.splice(k, 1);
   }
   const branchSpans = Object.keys(W.layers).filter(k => k !== 'main').map(k => W.layers[k]);
   const shared = a => branchSpans.every(L => a.x <= L.x0 || a.x >= L.x1);
-  while (W.bones.length < 15) {
+  while (W.bones.length < TREATS) {
     const all = anchors.filter(a => !a.taken && a.layer === 'main');
     const free = all.filter(shared).length ? all.filter(shared) : all;
     if (!free.length) break;
@@ -635,8 +706,8 @@ function buildWorld() {
   const cuts = W.zones.map(z => z.x0).concat([W.totalX + 1]).sort((a, b) => a - b);
   const split = [], keepG = [];
   W.ground.forEach(g => {
-    /* the bars over the metro are floor too, but floor that comes and goes —
-       splitting them would throw the flag away */
+    /* barred floor comes and goes with the key — splitting it would throw the
+       flag away */
     if (g.layer !== 'main' || g.lock) { keepG.push(g); return; }
     let x0 = g.x; const x1 = g.x + g.w;
     cuts.forEach(c => {

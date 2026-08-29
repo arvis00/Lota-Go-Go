@@ -95,6 +95,7 @@ const Save = {
     cleared: { 1: 0, 2: 0, 3: 0, 4: 0 },
     keys: {},
     owned: ['classic'], skin: 'classic',
+    best: {}, far: {},
     bestBones: 0, bestZone: 0, sound: 1
   },
   load() {
@@ -130,6 +131,12 @@ const Save = {
       d.cleared[n] = (+d.cleared[n]) || 0;
     }
     if (!d.keys || typeof d.keys !== 'object') d.keys = {};
+    /* a record and a furthest-reached place, per level — the old single pair
+       of them only ever knew about level 1, so that is where they land */
+    if (!d.best || typeof d.best !== 'object') d.best = {};
+    if (!d.far || typeof d.far !== 'object') d.far = {};
+    if (!d.best[1] && d.bestBones) d.best[1] = d.bestBones;
+    if (!d.far[1] && d.bestZone) d.far[1] = d.bestZone;
     if (!Array.isArray(d.owned) || !d.owned.length) d.owned = ['classic'];
     if (d.owned.indexOf('classic') < 0) d.owned.unshift('classic');
   },
@@ -152,6 +159,22 @@ const Save = {
   canAfford(level, cost) {
     const w = this.purse(level);
     return w.b >= (cost.b || 0) && w.t >= (cost.t || 0);
+  },
+  /** best haul on a level; called with a number, it records a new one */
+  best(level, n) {
+    const d = this.data;
+    if (n == null) return d.best[level] || 0;
+    if (n > (d.best[level] || 0)) { d.best[level] = n; this.write(); }
+    if (level === 1 && n > d.bestBones) d.bestBones = n;
+    return d.best[level] || 0;
+  },
+  /** the furthest place she has reached on a level */
+  far(level, name) {
+    const d = this.data;
+    if (name == null) return d.far[level] || 0;
+    d.far[level] = name;
+    if (level === 1) d.bestZone = name;
+    this.write();
   },
   clears(level) { return this.data.cleared[level] || 0; },
   markCleared(level) { this.data.cleared[level] = this.clears(level) + 1; this.write(); },
@@ -202,5 +225,12 @@ const Sfx = {
   click() { this.tone(600, 0.06, 'triangle', 0.3); },
   locked() { this.tone(200, 0.13, 'square', 0.26, 130); this.tone(150, 0.16, 'square', 0.2, 100, 0.08); },
   unlock() { [392, 523, 659, 880, 1046].forEach((f, i) => this.tone(f, 0.3, 'triangle', 0.42, null, i * 0.1)); },
-  swipe()  { this.tone(520, 0.09, 'sine', 0.22, 760); }
+  swipe()  { this.tone(520, 0.09, 'sine', 0.22, 760); },
+  /* off the end of the pier and into the sea */
+  splash() {
+    this.tone(900, 0.22, 'sine', 0.3, 180);
+    this.tone(260, 0.4, 'triangle', 0.26, 90, 0.03);
+    this.tone(1600, 0.18, 'sawtooth', 0.1, 400, 0.01);
+  },
+  yip()    { this.tone(760, 0.08, 'triangle', 0.22, 1050); }
 };

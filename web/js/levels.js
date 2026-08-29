@@ -15,9 +15,9 @@ const LEVELS = [
     picks: 'b', playable: true,
     collect: 'Skaniukai — 15 kaulų visoje trasoje.' },
 
-  { n: 2, name: 'Žaislų kiemas', sub: '2 lygis · žaisliukų medžioklė',
-    picks: 't', playable: false,
-    collect: 'Čia renkami ne skaniukai, o žaisliukai.' },
+  { n: 2, name: 'Nuo viešbučio iki miško', sub: '2 lygis · žaisliukų medžioklė',
+    picks: 't', playable: true,
+    collect: 'Žaisliukai — 20 visoje trasoje.' },
 
   { n: 3, name: 'Šviesų šventė', sub: '3 lygis · skaniukai ir žaisliukai',
     picks: 'bt', playable: false,
@@ -29,6 +29,33 @@ const LEVELS = [
 ];
 const LEVEL_MAP = {};
 LEVELS.forEach(l => { LEVEL_MAP[l.n] = l; });
+
+/* ---------------------------------------------------------------
+   A *track* is everything the generator needs to lay one level out:
+   the places in order, the second routes through them, how many
+   things are hidden on it, what those things are, how fast she runs
+   and how little breathing room the gaps are allowed to shrink to.
+
+   Level 2 is deliberately the harder one: it starts faster than
+   level 1 ever gets, tops out 150 px/s above it, and gives 60 ms
+   less reaction time at the tightest.
+----------------------------------------------------------------*/
+const TRACKS = {
+  1: {
+    level: 1, seed: 20260827, zones: ZONES, branches: BRANCHES,
+    treats: 15, currency: 'b', minRest: 0.46, rest: [0.95, 0.55],
+    perZone: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2],          // = 15
+    shortcuts: ['yard1', 'park', 'mall', 'airport'],
+    phys: PHYS
+  },
+  2: {
+    level: 2, seed: 20260901, zones: ZONES2, branches: BRANCHES2,
+    treats: 20, currency: 't', minRest: 0.40, rest: [0.80, 0.42],
+    perZone: [1, 1, 2, 1, 1, 2, 2, 1, 2, 1, 1, 1, 1, 2, 1],    // = 20
+    shortcuts: [],
+    phys: { V_MIN: 400, V_MAX: 880, X_FULL: 96000 }
+  }
+};
 
 /** the treat, drawn free of the engine so the pictures can use it too */
 function boneIcon(ctx, x, y, s, t) {
@@ -46,6 +73,9 @@ function boneIcon(ctx, x, y, s, t) {
 
 const Levels = {
   get(n) { return LEVEL_MAP[n] || LEVELS[0]; },
+
+  /** the track a level runs on, or null while it is still a picture */
+  track(n) { return TRACKS[n] || null; },
 
   /** the outfits sold on level n's home page (level 4 sells nothing) */
   shop(n) { return SKINS.filter(s => (s.level || 1) === n && s.cost); },
