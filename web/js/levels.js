@@ -10,21 +10,25 @@
    `playable: false` for the real start call.
 ----------------------------------------------------------------*/
 
+/* `bonus` is what reaching the finish is worth, and it is the whole reason to
+   turn the checkpoints off: `cp` is what a run with them pays, `raw` is what
+   the same finish pays when one mistake sends her back to the very start. The
+   boss level is not offered the choice — it is always played with them. */
 const LEVELS = [
   { n: 1, name: 'Kelias į Londoną', sub: 'Didysis Lotos nuotykis',
-    picks: 'b', playable: true,
+    picks: 'b', playable: true, bonus: { cp: 10, raw: 50 },
     collect: 'Skaniukai — 15 kaulų visoje trasoje.' },
 
   { n: 2, name: 'Nuo viešbučio iki miško', sub: '2 lygis · žaisliukų medžioklė',
-    picks: 't', playable: true,
+    picks: 't', playable: true, bonus: { cp: 30, raw: 100 },
     collect: 'Žaisliukai — 20 visoje trasoje.' },
 
   { n: 3, name: 'Šviesų šventė', sub: '3 lygis · skaniukai ir žaisliukai',
-    picks: 'bt', playable: false,
+    picks: 'bt', playable: false, bonus: { cp: 50, raw: 200 },
     collect: 'Renkami ir skaniukai, ir žaisliukai — aprangoms reikia abiejų.' },
 
   { n: 4, name: 'Bosas: Didysis Siurblys', sub: '4 lygis · boso kova',
-    picks: '', playable: false,
+    picks: '', playable: false, choose: false, bonus: { cp: 0, raw: 0 },
     collect: 'Nieko rinkti nereikia. Nugalėk bosą — abi aprangos tavo.' }
 ];
 const LEVEL_MAP = {};
@@ -76,6 +80,27 @@ const Levels = {
 
   /** the track a level runs on, or null while it is still a picture */
   track(n) { return TRACKS[n] || null; },
+
+  /* -------------------------------------------------------------
+     Checkpoints, and what turning them off is worth.
+
+     Every level except the boss is played one of two ways, chosen once
+     and then remembered. With the flags on, a crash sends her back to
+     the start of the place she is in. With them off, a crash is the end
+     of the run — and the finish pays several times as much.
+  --------------------------------------------------------------*/
+  /** is this level's mode the player's to pick? the boss's is not */
+  chooses(n) { return this.get(n).choose !== false; },
+  /** how it is being played: 'cp', 'raw', or null if never asked */
+  mode(n) { return this.chooses(n) ? Save.mode(n) : 'cp'; },
+  /** what crossing the finish line is worth, the way it is being played */
+  bonus(n, mode) {
+    const b = this.get(n).bonus || { cp: 0, raw: 0 };
+    return b[mode === 'raw' ? 'raw' : 'cp'] || 0;
+  },
+  /** the name of a mode, for buttons and badges */
+  modeName(mode) { return mode === 'raw' ? 'Be kontrolinių taškų' : 'Su kontroliniais taškais'; },
+  modeShort(mode) { return mode === 'raw' ? 'BE K.T.' : 'SU K.T.'; },
 
   /** the outfits sold on level n's home page (level 4 sells nothing) */
   shop(n) { return SKINS.filter(s => (s.level || 1) === n && s.cost); },

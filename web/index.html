@@ -19,6 +19,7 @@
     <div class="hud-top">
       <div class="hud-bones"><span id="hudIco" class="bone-ico"></span><span id="hudBones">0</span><span id="hudTotal" class="hud-sub">/15</span></div>
       <div id="hudKey" class="hud-key hidden">🔑</div>
+      <div id="hudMode" class="hud-mode"></div>
       <div class="hud-zone"><div id="hudZone">Namai</div>
         <div class="hud-bar"><div id="hudBarFill"></div></div>
       </div>
@@ -42,6 +43,7 @@
     </div>
     <div class="lobby-spacer"></div>
     <div id="lobbyLock" class="lock-note hidden"></div>
+    <button id="lobbyMode" class="mode-chip hidden"></button>
     <div class="lobby-actions">
       <button id="btnPlay" class="big-btn play">ŽAISTI</button>
       <button id="btnSkins" class="big-btn alt">APRANGOS</button>
@@ -72,6 +74,25 @@
     </div>
     <div class="lobby-actions">
       <button id="btnPreviewSkins" class="big-btn alt">ŠIO LYGIO APRANGOS</button>
+    </div>
+  </div>
+
+  <!-- ===== HOW THIS LEVEL IS PLAYED (asked once, the first time) ===== -->
+  <div id="screen-mode" class="layer screen dim hidden">
+    <div class="panel">
+      <div class="panel-title small">KAIP ŽAISI?</div>
+      <div id="modeSub" class="panel-sub"></div>
+      <button id="btnModeCp" class="mode-card">
+        <b>Su kontroliniais taškais</b>
+        <i>Atsitrenkusi grįžti į tos vietos pradžią</i>
+        <u id="modeCpPay"></u>
+      </button>
+      <button id="btnModeRaw" class="mode-card hot">
+        <b>Be kontrolinių taškų</b>
+        <i>Atsitrenkei — viskas iš naujo, nuo pat pradžios</i>
+        <u id="modeRawPay"></u>
+      </button>
+      <button id="btnModeBack" class="link-btn">‹ Atgal</button>
     </div>
   </div>
 

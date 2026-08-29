@@ -13,7 +13,8 @@
 const PHYS = {
   GRAV: 2650,
   JUMP_V: 1000,
-  BOUNCE_V: 1300,     // off the bed in the girl's room: apex 319, not 188
+  BOUNCE_V: 1140,     // off the bed in the girl's room: apex 245 from the
+                      // mattress at 140, so the top of the arc is still 385
   V_MIN: 330,
   V_MAX: 730,
   X_FULL: 86000,      // distance over which the speed ramp completes
@@ -56,6 +57,15 @@ const BIRD_H = 66;
    The bed throws her this far above the bedroom floor; the duct floor sits a
    little under the top of that arc, so the bounce always gets her in. */
 const VENT_RISE = 300;
+/* The bed itself is a loft bed: the mattress is up at BED_TOP with BED_BODY of
+   frame hanging under it, which leaves 94 px of air below — she is 62 standing,
+   so running straight under it costs nothing and is what happens if the player
+   does nothing at all. Getting *on* it is the skill: it is a one-way platform,
+   so she has to already be coming down when she arrives over it, which means
+   the jump has to start about half a second early. The duct, the key and the
+   metro behind it are the prize for knowing that. */
+const BED_TOP = 140;
+const BED_BODY = 46;
 
 /* ---- staircases ---- */
 const STAIR_RISE = 42;    // one step
@@ -409,19 +419,24 @@ function buildWorld(track) {
 
   /** The bed in the girl's room and the duct over it.
 
-      The bed is never a hazard: run into it and she climbs it, land on it and
-      it throws her at the ceiling, through the open hatch and into the duct.
-      Up there nothing can hit her — she runs a few seconds in the dark, picks
-      up the metro key, and drops back out of a louvre into the same room. The
-      stretch of bedroom under the duct is left deliberately empty, so taking
-      the duct and jumping the bed come out at exactly the same place. */
+      The bed is never a hazard — but it is not a gift either. It is a loft
+      bed: a one-way platform up at BED_TOP with clear air underneath, so
+      running under it is free and is exactly what doing nothing gets you.
+      Landing on top of it is the whole trick, and landing on it throws her at
+      the ceiling, through the open hatch and into the duct. Up there nothing
+      can hit her — she runs a few seconds in the dark, picks up the metro key,
+      and drops back out of a louvre into the same room. The stretch of bedroom
+      under the duct is left deliberately empty, so taking the duct and running
+      past the bed come out at exactly the same place. */
   function buildDuct(br, rec) {
     const base = rec.base, room = br.duct;
     const keep = { l: curLayer, b: curBase, r: curRoom, seg: segStart };
-    P.flat(0.45);                       /* a clear run-up to it */
-    const bx = x, bw = Math.round(reachAt(x) * 0.46), bh = 64;
-    plat(bx, bh, bw, bh, 'bedBounce', false, { bounce: 1, soft: true });
-    anchor(bx + bw * 0.5, bh + 78, 'bed', true);
+    /* she has to jump well before the bed to come down on it, so the run-up
+       has to be long enough that the jump starts on clear floor */
+    P.flat(1.1);
+    const bx = x, bw = Math.round(reachAt(x) * 0.42), bh = BED_TOP;
+    plat(bx, bh, bw, BED_BODY, 'bedBounce', true, { bounce: 1 });
+    anchor(bx + bw * 0.5, bh + 34, 'bed', true);
     x = bx + bw;
 
     const ventSec = 1.9, dropSec = 1.15;

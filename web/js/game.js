@@ -6,7 +6,7 @@ const Game = {
   cv: null, ctx: null,
   cw: 0, ch: 0, VW: 960, VH: 540, scale: 1, ox: 0, oy: 0, dpr: 1,
   groundY: 410,
-  state: 'boot',          // boot | lobby | run | crash | over | win | pause
+  state: 'boot',          // boot | lobby | mode | preview | run | crash | over | win | pause
   world: null, worlds: {},
   trail: [], foxes: [],
   t: 0, last: 0, stateT: 0,
@@ -71,6 +71,7 @@ const Game = {
         if (this.state === 'run') UI.pause();
         else if (this.state === 'pause') UI.resume();
         else if (this.state === 'preview') UI.backFromPreview();
+        else if (this.state === 'mode') UI.showLobby();
       }
       else if (k === 'ArrowLeft') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage - 1); }
       else if (k === 'ArrowRight') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage + 1); }
@@ -210,7 +211,8 @@ const Game = {
     UI.showPreview(level);
   },
 
-  startRun(fromCheckpoint, level) {
+  /** `mode` is 'cp' or 'raw'; left out, the level's remembered answer stands */
+  startRun(fromCheckpoint, level, mode) {
     const cp = fromCheckpoint && this.checkpoint ? this.checkpoint : null;
     level = level || (cp && this.run ? this.run.level : this.lobbyLevel());
     if (!cp || !this.world || this.world.level !== level) this.world = this.worldFor(level);
@@ -235,7 +237,8 @@ const Game = {
       this.world.items.forEach(it => { it.got = false; });
       this.world.warps.forEach(w => { w.used = false; });
       this.run = { level: level, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
-                   finished: false, warpTo: null, deaths: 0, banked: false, metroKey: false };
+                   finished: false, warpTo: null, deaths: 0, banked: false, metroKey: false,
+                   mode: mode || Levels.mode(level) || 'cp' };
       this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZL[0].name, start: true };
     }
     this.run.diving = null;
@@ -260,6 +263,9 @@ const Game = {
   },
 
   setCheckpoint(idx) {
+    /* played without them, the only checkpoint there has ever been is the
+       start line: one mistake and the whole run goes again */
+    if (idx > 0 && this.run.mode === 'raw') return;
     const z = this.world.zones[idx];
     this.checkpoint = {
       x: z.x0 + 24, zoneIdx: idx, name: z.zone.name, start: idx === 0,
@@ -431,20 +437,17 @@ const Game = {
       const bs = this.box(L);
       let stairTop = null;
       near.platforms.forEach(p => {
-        if (p.layer !== LY || (!p.stair && !p.soft)) return;
+        if (p.layer !== LY || !p.stair) return;
         if (bs.x1 - 5 <= p.x || bs.x0 + 5 >= p.x + p.w) return;
         if (bs.y1 <= p.y - p.h + 1 || bs.y0 >= p.y) return;
-        /* a bed is not an obstacle: running into it only climbs her onto it,
-           however tall it is. Stairs stay one riser at a time. */
-        const lim = p.soft ? (p.h || 0) + 8 : STAIR_UP;
         const rise = p.y - L.y;
-        if (rise > 0 && rise <= lim && (stairTop === null || p.y > stairTop)) stairTop = p.y;
+        if (rise > 0 && rise <= STAIR_UP && (stairTop === null || p.y > stairTop)) stairTop = p.y;
       });
       if (stairTop !== null) { L.y = stairTop; L.vy = 0; L.grounded = true; L.landY = stairTop; }
 
-      /* --- the bed throws her at the ceiling. However she got on top of it —
-         landed, scrambled, walked into it — standing on it is the bounce, so
-         the way into the duct can never be missed by a whisker. --- */
+      /* --- the bed throws her at the ceiling. Getting up there is the hard
+         part — she has to come down onto a one-way mattress with air under it;
+         once she is standing on it the bounce is automatic. --- */
       if (L.grounded) {
         for (let i = 0; i < near.platforms.length; i++) {
           const p = near.platforms[i];
@@ -466,7 +469,7 @@ const Game = {
         if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; }
       };
       near.platforms.forEach(p => {
-        if (p.layer !== LY || p.oneWay || p.stair || p.soft) return;
+        if (p.layer !== LY || p.oneWay || p.stair) return;
         if (b2.x1 - 5 <= p.x || b2.x0 + 5 >= p.x + p.w) return;
         /* a block is a wall only where its body actually is: a tread hanging
            overhead is something she runs under, not into */
@@ -698,7 +701,7 @@ const Game = {
       this.run.zoneIdx = idx;
       UI.setZone(zs[idx].zone.name);
       /* only a place she has never reached before plants a new checkpoint */
-      if (idx > this.checkpoint.zoneIdx) {
+      if (idx > this.checkpoint.zoneIdx && this.run.mode !== 'raw') {
         this.setCheckpoint(idx);
         if (idx > 0) UI.toast(zs[idx].zone.name, '✓ KONTROLINIS TAŠKAS');
       } else if (!resumed && idx > 0) {
@@ -788,7 +791,7 @@ const Game = {
       ctx.translate(-this.VW / 2, -this.VH / 2);
     }
 
-    if (this.state === 'lobby') this.renderLobby();
+    if (this.state === 'lobby' || this.state === 'mode') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
     else this.renderWorld();
 
@@ -919,7 +922,7 @@ const Game = {
     ctx.restore();
 
     /* ---- checkpoint flags at the mouth of every place ---- */
-    if (LY === 'main') W.zones.forEach(zz => {
+    if (LY === 'main' && this.run && this.run.mode !== 'raw') W.zones.forEach(zz => {
       const fx = this.sx(zz.x0 + 24);
       if (fx < -70 || fx > VW + 70 || zz.zone.index === 0) return;
       this.drawFlag(fx, this.sy(0), this.checkpoint && this.checkpoint.zoneIdx >= zz.zone.index);

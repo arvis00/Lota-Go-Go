@@ -53,12 +53,12 @@ užrašytas lygio numeris.
 mygtukų uždedama spyna, o po logotipu parašoma, ko dar trūksta. Lotos tame kambaryje nėra —
 ant kilimo guli tik jos antkaklis.
 
-| Lygis | Vieta | Kas renkama | Kaip atrakinamas |
-|---|---|---|---|
-| 1 | Kelias į Londoną | skaniukai 🦴 (15) | atviras nuo pradžios |
-| 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | pereiti 1 lygį **ir** atrakinti visas 1 lygio aprangas |
-| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | pereiti 2 lygį **ir** atrakinti visas 2 lygio aprangas |
-| 4 | Bosas: Didysis Siurblys | nieko | pereiti 3 lygį **ir** atrakinti visas 3 lygio aprangas |
+| Lygis | Vieta | Kas renkama | Už finišą (su K.T. / be jų) | Kaip atrakinamas |
+|---|---|---|---|---|
+| 1 | Kelias į Londoną | skaniukai 🦴 (15) | +10 / +50 | atviras nuo pradžios |
+| 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | +30 / +100 | pereiti 1 lygį **ir** atrakinti visas 1 lygio aprangas |
+| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | +50 / +200 | pereiti 2 lygį **ir** atrakinti visas 2 lygio aprangas |
+| 4 | Bosas: Didysis Siurblys | nieko | visada su K.T. | pereiti 3 lygį **ir** atrakinti visas 3 lygio aprangas |
 
 Kai raktas uždirbamas, visos to lygio spynos atsirakina iš karto ir ekrane vieną kartą
 parodoma `🔑 N lygio raktas!`.
@@ -207,13 +207,26 @@ mirti neįmanoma. Bėgant laiptais aukštyn ar žemyn kamera juda kartu, Lota vi
   plakatai, žaislai), paskui vonia, paskui mergaitės kambarys. Jo gale pro **atvirą langą**
   ji iššoka ir nusileidžia jau kieme — lygiai ten, kur išeitų pro duris bėgusi apačia.
 
-**Mergaitės kambario lova ir ventiliacija.** Kambario viduryje stovi lova. Ji **nėra
-kliūtis** — ant jos mirti neįmanoma: įbėgusi Lota tiesiog užsiropščia ant jos, o užšokusi
-**atšoka nuo jos daug aukščiau** nei šoktų pati (1300 vietoj 1000 px/s) ir įlekia pro
-atvirą liuką lubose į **ventiliacijos vamzdį**.
+**Mergaitės kambario lova ir ventiliacija.** Kambario viduryje stovi **antresolinė lova** —
+čiužinys aukštai (140 px), o po juo 94 px oro. Ji **nėra kliūtis**: ant jos mirti
+neįmanoma, ir pro ją nieko nereikia daryti. Užšokusi ant čiužinio Lota **atšoka daug
+aukščiau** nei šoktų pati (1140 vietoj 1000 px/s — nuo 140 px lankas kyla iki 385) ir įlekia
+pro atvirą liuką lubose į **ventiliacijos vamzdį**.
 
-- **Peršoki lovą** — bėgi kambariu toliau.
-- **Užšoki ant jos** — atsimuši, atsidursi vamzdyje.
+**Užšokti ant jos sunkiau, negu pro ją prabėgti — taip ir turi būti.** Raktas yra
+privilegija, o ne dovana tam, kas nieko nespaudė. Anksčiau būdavo atvirkščiai: lova stovėjo
+ant grindų ir buvo *soft* — įbėgusi Lota automatiškai užsiropšdavo ant jos, tad nieko
+nedarant vamzdys atitekdavo pats.
+
+- **Nieko nedarai** — tiesiog pralendi po lova ir bėgi kambariu toliau. Nemokama.
+- **Šoki per vėlai arba per anksti** — čiužinys yra **vienpusė platforma**, tad kildama
+  Lota pro jį pralekia ir nusileidžia už lovos. Irgi nieko neatsitinka.
+- **Šoki laiku** — nusileidi ant čiužinio, atsimuši ir atsiduri vamzdyje.
+
+Kad nusileistum ant lovos, reikia atsispirti **prieš ją**, o ne prie jos: šuolio lankas
+grįžta į 140 px praėjęs 0,57 s, tad šokti reikia maždaug 105–270 px prieš lovos kraštą.
+Langas — apie **0,38 s**. Palyginimui, paprastą kliūtį šokant reakcijos paliekama bent
+0,46 s ir šokama *prie jos*.
 
 Vamzdyje **nėra jokių kliūčių**: tamsu, po grotelėmis prasišviečia kambarys, ir Lota tiesiog
 bėga ~2 s. Viduryje guli **metro raktas**. Vamzdžio gale grindų nebelieka, ji iškrenta pro
@@ -260,17 +273,44 @@ viršuje (sunkumas 0,30 ir 0,34 vietoj 0,88).
 jos keliu: variklis įsimena, kur ji buvo, ir kiekviena lapė bėga tuo pačiu taku 86, 156,
 226 ir 296 px atsilikusi — jei Lota šoka, po akimirkos šoka ir jos.
 
-## Kontroliniai taškai
+## Kontroliniai taškai — su jais arba be jų
 
-Kiekvienos vietos pradžioje stovi languota vėliavėlė. Pirmą kartą ją pasiekus ji užsidega,
-pasigirsta garsas ir ekrane trumpam pasirodo **✓ KONTROLINIS TAŠKAS**. Atsitrenkusi Lota
-grįžta ne į patį pradžią, o į paskutinės pasiektos vietos pradžią — mygtukas ekrane rodo,
-nuo kurios vietos tęsiama (pvz. *Tęsti nuo Parkas*).
+Kiekvieną lygį galima bėgti dviem būdais, ir **žaidėjas pasirenka pats**. Klausimas
+užduodamas **vieną kartą** — pirmą kartą paspaudus *ŽAISTI* tame lygyje. Atsakymas
+įsimenamas, ir nuo tol *ŽAISTI* iš karto paleidžia bėgimą.
+
+**Kaina yra finišas.** Be kontrolinių taškų vienas prisilietimas prie kliūties baigia visą
+bėgimą — bet už finišą mokama kelis kartus daugiau:
+
+| Lygis | Su kontroliniais taškais | Be jų |
+|---|---|---|
+| 1 · Kelias į Londoną | +10 🦴 | **+50 🦴** |
+| 2 · Nuo viešbučio iki miško | +30 🧸 | **+100 🧸** |
+| 3 · Šviesų šventė | +50 🦴 ir 🧸 | **+200 🦴 ir 🧸** |
+| 4 · Bosas | visada su jais | — |
+
+Boso lygyje pasirinkimo nėra: jis visada žaidžiamas su kontroliniais taškais. Trečiame
+lygyje renkami abu dalykai, tad ir premija už finišą įskaitoma į abi to lygio pinigines.
+
+**Kur pasirinkimas matomas.** Bėgant — **ekrano viršuje**, HUD'e, greta skaniukų:
+`SU K.T. +10` arba `BE K.T. +50`. Pradžios ekrane — juostelė virš mygtukų; bakstelėjus ją
+klausimas užduodamas iš naujo, tad apsigalvoti galima bet kada.
+
+**Su kontroliniais taškais.** Kiekvienos vietos pradžioje stovi languota vėliavėlė. Pirmą
+kartą ją pasiekus ji užsidega, pasigirsta garsas ir ekrane trumpam pasirodo
+**✓ KONTROLINIS TAŠKAS**. Atsitrenkusi Lota grįžta ne į patį pradžią, o į paskutinės
+pasiektos vietos pradžią — mygtukas ekrane rodo, nuo kurios vietos tęsiama (pvz.
+*Tęsti nuo Parkas*).
 
 Skaniukai, surinkti iki kontrolinio taško, išlieka; tos vietos skaniukai atstatomi, nes
 per ją bėgama iš naujo. Surinkti skaniukai **atiduodami tik pasibaigus bėgimui** — pasiekus
 finišą arba paspaudus *Baigti*. Todėl žūtis prie kontrolinio taško nieko neduoda ir nieko
 neatima.
+
+**Be kontrolinių taškų.** Vėliavėlių trasoje išvis nėra — jos nepiešiamos, nes jų nėra.
+Vienintelis kontrolinis taškas yra starto linija, tad atsitrenkus prarandama viskas:
+ir kelias, ir tame bėgime surinkti skaniukai. *Baigti* mygtukas ir tada atiduoda tai, kas
+buvo surinkta iki žūties — premija už finišą yra tai, ko negaunama.
 
 ## Skanėstai ir žaisliukai
 
@@ -286,7 +326,8 @@ surinkti visus 15 galima ir viršumi, ir apačia, ir per ventiliaciją, ir per m
 
 - surinkti ne visi → gauni tiek, kiek surinkai
 - surinkti visi → **dvigubai** (1 lygis 15 → 30, 2 lygis 20 → 40)
-- pasiekus finišą → **+10**
+- pasiekus finišą → premija, priklausanti nuo to, ar bėgta su kontroliniais taškais
+  (1 lygis +10 arba +50, 2 lygis +30 arba +100 — žr. „Kontroliniai taškai")
 
 Visa tai keliauja į **to lygio** piniginę ir kitiems lygiams netinka: pirmas lygis moka
 skaniukais, antras — žaisliukais.
@@ -301,7 +342,7 @@ skaniukais, antras — žaisliukais.
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
 | `js/zones.js` | 1 lygio 13 vietų + `BRANCHES` (metro, antras aukštas, ventiliacija); `BG` ir grindų piešimas |
 | `js/zones2.js` | 2 lygio 15 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
-| `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, lygių nuotraukos |
+| `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
 | `js/ui.js` | ekranai, HUD, aprangų parduotuvė |
@@ -319,8 +360,14 @@ Dažniausiai keičiami dalykai:
 - **Antri keliai** — `BRANCHES` (`js/zones.js`): `enterSec` (kur prasideda), `sec` (kiek trunka),
   `drop` / `rise` (kiek žemyn ar aukštyn veda laiptai), `rooms` (patalpos ir jų kliūtys)
 - **Laiptai** — `STAIR_RISE`, `STAIR_UP`, `STAIR_FIRST` (`js/level.js`)
-- **Lova ir ventiliacija** — `PHYS.BOUNCE_V`, `VENT_RISE` ir `buildDuct()` (`js/level.js`),
-  vamzdžio vaizdas — `BRANCHES.upstairs.duct` (`js/zones.js`)
+- **Lova ir ventiliacija** — `BED_TOP`, `BED_BODY`, `PHYS.BOUNCE_V`, `VENT_RISE` ir
+  `buildDuct()` (`js/level.js`), vamzdžio vaizdas — `BRANCHES.upstairs.duct` (`js/zones.js`).
+  Lovos plotis (`bw`) valdo, koks platus yra nusileidimo langas; `BED_TOP` — kiek anksti
+  reikia atsispirti
+- **Kontroliniai taškai ir premijos už finišą** — `bonus: { cp, raw }` lygio įraše `LEVELS`
+  ir `Levels.bonus()` (`js/levels.js`); `choose: false` reiškia, kad lygis pasirinkimo
+  nesiūlo. Kas įsimenama — `Save.mode()` (`js/util.js`), klausimo ekranas — `UI.showMode()`
+  (`js/ui.js`)
 - **Kiek metro sutrumpina trasą** — `tail` funkcijoje `buildWorld()` (`js/level.js`): kiek
   sekundžių Londono lieka po išlipimo
 - **Lapių urvas** — `BRANCHES2.foxcave` (`js/zones2.js`): `sec`, `drop`, `foxes`;
@@ -353,8 +400,9 @@ window.BOT_EVERY = 12; runBot(400);   // ~100 ms vėlavimas — vis dar įveikia
 window.BOT_LEVEL = 2; runBot(400);    // antras lygis
 
 // kurį kelią rinktis ten, kur trasa šakojasi (numatyta: žemyn taip, viršus ne)
-// `upstairs: true` reiškia ir lovą su ventiliacija, t. y. raktą; be jo `metro` nieko
-// nekeičia, nes anga užrakinta. `down: false` — nesileisti nei į metro, nei į urvą.
+// `upstairs: true` reiškia ir lovą su ventiliacija, t. y. raktą; botas pats išsiskaičiuoja,
+// kada atsispirti, kad nusileistų ant čiužinio. Be rakto `metro` nieko nekeičia, nes anga
+// užrakinta. `down: false` — nesileisti nei į metro, nei į urvą.
 window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
 window.BOT_TAKE = { down: false }; runBot(400);
 

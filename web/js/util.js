@@ -94,6 +94,9 @@ const Save = {
     wallet: { 1: { b: 0, t: 0 }, 2: { b: 0, t: 0 }, 3: { b: 0, t: 0 }, 4: { b: 0, t: 0 } },
     cleared: { 1: 0, 2: 0, 3: 0, 4: 0 },
     keys: {},
+    /* 'cp' or 'raw' per level — how she is playing it. Nothing is stored until
+       the player has actually been asked, and being asked happens once. */
+    mode: {},
     owned: ['classic'], skin: 'classic',
     best: {}, far: {},
     bestBones: 0, bestZone: 0, sound: 1
@@ -131,6 +134,7 @@ const Save = {
       d.cleared[n] = (+d.cleared[n]) || 0;
     }
     if (!d.keys || typeof d.keys !== 'object') d.keys = {};
+    if (!d.mode || typeof d.mode !== 'object') d.mode = {};
     /* a record and a furthest-reached place, per level — the old single pair
        of them only ever knew about level 1, so that is where they land */
     if (!d.best || typeof d.best !== 'object') d.best = {};
@@ -144,6 +148,14 @@ const Save = {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) {}
   },
   purse(level) { return this.data.wallet[level] || { b: 0, t: 0 }; },
+  /** How this level is being played: 'cp' with checkpoints, 'raw' without.
+      null means the question has never been put, which is the one time the
+      game asks it. Called with a value, it remembers the answer. */
+  mode(level, v) {
+    if (v == null) return this.data.mode[level] || null;
+    this.data.mode[level] = v; this.write();
+    return v;
+  },
   /** kind is 'b' (treats) or 't' (toys) */
   earn(level, kind, n) {
     const w = this.purse(level);

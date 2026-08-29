@@ -24,8 +24,15 @@ function walletHtml(level) {
   return out.join('');
 }
 
+/** the icons a level's finish bonus is paid in — level 3 pays in both */
+function payHtml(level, n) {
+  const picks = Levels.get(level).picks || 'b';
+  return picks.split('').map(k =>
+    '+' + n + '<span class="' + (k === 't' ? 'toy-ico' : 'bone-ico') + '"></span>').join(' ');
+}
+
 const UI = {
-  winShown: false, toastT: null, skinsLevel: 1,
+  winShown: false, toastT: null, skinsLevel: 1, modeLevel: 1,
 
   init() {
     $('btnPlay').onclick    = () => { Sfx.init(); Sfx.resume(); this.play(); };
@@ -39,6 +46,10 @@ const UI = {
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
     $('btnPauseLobby').onclick = () => { Sfx.click(); this.bank(false); Game.lobby(); };
     $('btnPreviewBack').onclick = () => { Sfx.click(); this.backFromPreview(); };
+    $('btnModeCp').onclick  = () => { Sfx.click(); this.pickMode('cp'); };
+    $('btnModeRaw').onclick = () => { Sfx.click(); this.pickMode('raw'); };
+    $('btnModeBack').onclick = () => { Sfx.click(); this.showLobby(); };
+    $('lobbyMode').onclick  = () => { Sfx.init(); Sfx.resume(); Sfx.click(); this.showMode(Game.lobbyLevel()); };
     $('btnPreviewSkins').onclick = () => { Sfx.click(); this.showSkins(Game.previewLevel); };
     $('btnPagePrev').onclick = () => Game.gotoLobbyPage(Game.lobbyPage - 1);
     $('btnPageNext').onclick = () => Game.gotoLobbyPage(Game.lobbyPage + 1);
@@ -65,7 +76,8 @@ const UI = {
   syncSound() { $('btnSound').textContent = Save.data.sound ? '♪' : '✕'; $('btnSound').style.opacity = Save.data.sound ? 1 : .5; },
 
   hideAll() {
-    ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview']
+    ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview',
+     'screen-mode']
       .forEach(id => $(id).classList.add('hidden'));
   },
 
@@ -101,6 +113,16 @@ const UI = {
       note.innerHTML = '<b>' + level + ' lygio raktas</b><br>Reikia: ' + Levels.blockedBy(level) + '.';
     } else {
       note.classList.add('hidden');
+    }
+
+    /* Once the question has been answered it is never asked again — from then
+       on the answer just sits above the buttons, and tapping it changes it. */
+    const chip = $('lobbyMode'), m = open && L.playable ? Levels.mode(level) : null;
+    chip.classList.toggle('hidden', !m || !Levels.chooses(level));
+    if (m) {
+      chip.classList.toggle('raw', m === 'raw');
+      chip.innerHTML = Levels.modeName(m) + ' · <b>už finišą ' + payHtml(level, Levels.bonus(level, m)) +
+        '</b><span>BAKSTELĖK, KAD PAKEISTUM</span>';
     }
 
     if (open && L.playable) {
@@ -139,8 +161,30 @@ const UI = {
     const level = Game.lobbyLevel(), L = Levels.get(level);
     if (!Levels.unlocked(level)) return this.refuse(level);
     Sfx.click();
-    if (L.playable) Game.startRun(false, level);
-    else Game.showPreview(level);
+    if (!L.playable) return Game.showPreview(level);
+    /* the choice is put once, the first time this level is played; after that
+       PLAY starts straight away with whatever was answered */
+    if (Levels.chooses(level) && !Save.mode(level)) return this.showMode(level);
+    Game.startRun(false, level);
+  },
+
+  /* ---------------- with or without checkpoints ---------------- */
+  showMode(level) {
+    this.modeLevel = level;
+    const L = Levels.get(level);
+    /* the room keeps showing behind it, but the pages stop sliding: the answer
+       belongs to the level that was under the button when it was asked */
+    Game.state = 'mode';
+    this.hideAll();
+    $('screen-mode').classList.remove('hidden');
+    $('modeSub').textContent = L.name + ' — kaip norėtum ją bėgti?';
+    $('modeCpPay').innerHTML = 'Už finišą ' + payHtml(level, Levels.bonus(level, 'cp'));
+    $('modeRawPay').innerHTML = 'Už finišą ' + payHtml(level, Levels.bonus(level, 'raw'));
+  },
+  pickMode(mode) {
+    const level = this.modeLevel;
+    Save.mode(level, mode);
+    Game.startRun(false, level, mode);
   },
   openSkins() {
     const level = Game.lobbyLevel();
@@ -185,23 +229,36 @@ const UI = {
     const W = Game.world;
     $('hudIco').className = W.currency === 't' ? 'toy-ico' : 'bone-ico';
     $('hudTotal').textContent = '/' + W.treats;
+    /* the question is only ever asked once, so the answer rides in the HUD:
+       which way this run is being played, and what the finish is worth */
+    const m = (Game.run && Game.run.mode) || 'cp', badge = $('hudMode');
+    badge.classList.toggle('raw', m === 'raw');
+    badge.innerHTML = Levels.modeShort(m) +
+      '<span class="pay">' + payHtml(Game.run.level || 1, Levels.bonus(Game.run.level || 1, m)) + '</span>';
     this.setBones(0); this.setProgress(0);
   },
 
   /** Treats are paid out once, when the run actually ends — otherwise every
       death at a checkpoint would pay again. They land in the purse of the
-      level they were found on. */
+      level they were found on.
+
+      Crossing the finish line is what the mode is worth: several times as much
+      with the checkpoints turned off. On a level that collects both currencies
+      that bonus is paid into both purses, since the outfits there want both. */
   bank(finished) {
     const r = Game.run;
     if (!r || r.banked) return 0;
     r.banked = true;
-    const W = Game.world;
+    const W = Game.world, level = r.level || 1;
     const base = r.bones === W.treats ? W.treats * 2 : r.bones;
-    const earned = base + (finished ? 10 : 0);
-    Save.earn(r.level || 1, W.currency, earned);
-    Save.best(r.level || 1, earned);
+    const bonus = finished ? Levels.bonus(level, r.mode) : 0;
+    Save.earn(level, W.currency, base + bonus);
+    (Levels.get(level).picks || '').split('').forEach(k => {
+      if (k !== W.currency && bonus) Save.earn(level, k, bonus);
+    });
+    Save.best(level, base + bonus);
     Save.write();
-    return earned;
+    return base + bonus;
   },
 
   showOver() {
@@ -217,9 +274,11 @@ const UI = {
     $('screen-over').classList.remove('hidden');
     $('overSub').textContent = 'Lota sustojo: ' + zoneName + ' · nubėgta ' +
       Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
+    const raw = r.mode === 'raw';
     $('overStats').innerHTML =
       row(what, r.bones + ' / ' + W.treats) +
-      row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true);
+      (raw ? row('Be kontrolinių taškų', 'viskas iš naujo', true)
+           : row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true));
     $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
     $('btnLobby').textContent = pending ? 'Baigti · +' + pending + ' ' + ico : 'Grįžti į Lobby';
   },
@@ -230,6 +289,7 @@ const UI = {
     const all = W.treats, ico = W.currency === 't' ? '🧸' : '🦴';
     const what = W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai';
     const base = r.bones === all ? all * 2 : r.bones;
+    const bonus = Levels.bonus(r.level || 1, r.mode);
     const earned = this.bank(true);
     const last = W.zoneList[W.zoneList.length - 1].name;
     Save.markCleared(r.level || 1);
@@ -241,12 +301,13 @@ const UI = {
     const mins = Math.floor(r.time / 60), secs = Math.round(r.time % 60);
     const trip = (r.level || 1) === 1 ? 'Nuo namų iki Londono per ' : 'Nuo viešbučio iki miško per ';
     $('winSub').textContent = trip + mins + ':' + String(secs).padStart(2, '0') +
+      (r.mode === 'raw' ? ' · be kontrolinių taškų' : '') +
       (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
       (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
     $('winStats').innerHTML =
       row(what, r.bones + ' / ' + all) +
       (r.bones === all ? row('Visi ' + all + ' — dvigubai!', r.bones + ' → ' + base) : '') +
-      row('Už finišą', '+10') +
+      row('Už finišą ' + (r.mode === 'raw' ? 'be kontrolinių taškų' : 'su kontroliniais taškais'), '+' + bonus) +
       row('Iš viso', '+' + earned + ' ' + ico, true);
   },
 

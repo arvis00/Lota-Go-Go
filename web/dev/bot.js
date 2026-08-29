@@ -52,6 +52,18 @@
         const d = p.x - front;
         if (p.y - L.y > 60 && d > 90 && d < 210) jump = true;
       });
+      /* the bed in the girl's room: a one-way mattress with air under it, so
+         running at it does nothing at all — she has to already be on the way
+         down when she arrives over it. Work out how far she travels before the
+         arc drops back to mattress height, and start the jump that far out. */
+      near.platforms.forEach(p => {
+        if (p.layer !== ly || !p.bounce) return;
+        const rise = p.y - L.y, disc = PHYS.JUMP_V * PHYS.JUMP_V - 2 * PHYS.GRAV * rise;
+        if (disc <= 0) return;
+        const fall = (PHYS.JUMP_V + Math.sqrt(disc)) / PHYS.GRAV;   // s until she is back at p.y
+        const reach = v * fall, d = p.x - front;
+        if (d > reach - p.w + 22 && d < reach - 8) jump = true;
+      });
     }
 
     /* the mouth of the stairs down: with the key in hand doing nothing takes

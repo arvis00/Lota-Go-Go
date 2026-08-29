@@ -1023,36 +1023,49 @@ const PROPS = {
     }
     ctx.restore();
   },
-  /* The bed in the girl's room. It is never an obstacle: running into it only
-     climbs her onto it, and landing on it throws her at the ceiling — that is
-     the way up into the duct, so it is drawn as a springboard, not furniture. */
-  bedBounce(ctx, x, y, w, h) {
-    /* legs and springs under the frame */
-    ctx.save(); ctx.globalAlpha = .9;
-    for (let i = 0; i < 4; i++) {
-      const sx = x + w * (0.18 + i * 0.21);
-      ctx.beginPath();
-      for (let k = 0; k <= 12; k++) {
-        const f = k / 12;
-        ctx.lineTo(sx + Math.sin(f * Math.PI * 3) * 5, y + h * 0.56 + f * h * 0.34);
-      }
-      ctx.strokeStyle = '#b07a8e'; ctx.lineWidth = 2.6; ctx.stroke();
+  /* The bed in the girl's room — a loft bed, up on four posts with the whole
+     gap under it left open. That gap is the point: running under it is free,
+     and it is what happens if the player does nothing. The mattress up top is
+     the only way into the duct, and it is a one-way platform, so she has to be
+     coming down on it. It is drawn as a springboard rather than furniture, with
+     the posts dimmed and pushed behind her so the way through stays obvious. */
+  bedBounce(ctx, x, y, w, h, t, pal, seed, o) {
+    /* four posts to the floor, so a bed this high off the ground reads as
+       something held up rather than something floating */
+    legsTo(ctx, x, y, w, o, '#b07a8e', 12, 7);
+    legsTo(ctx, x + w * 0.3, y, w * 0.4, o, '#b07a8e', 9, 0);
+    const fy = o && o.floorY;
+    if (fy != null && fy > y + h) {
+      /* a rug under it, flat on the floor: the gap is a place to run, not a
+         place to stop */
+      ctx.save(); ctx.globalAlpha = .5;
+      fillRR(ctx, x + 4, fy - 7, w - 8, 7, 3, '#e8b8cc'); ctx.restore();
     }
+    /* the frame rail slung under the mattress */
+    fillRR(ctx, x, y + h * 0.42, w, h * 0.5, 5, '#c98fa8');
+    ctx.save(); ctx.globalAlpha = .45;
+    for (let i = 0; i < w - 8; i += 22) fillRR(ctx, x + 6 + i, y + h * 0.5, 11, h * 0.34, 3, '#a86f86');
     ctx.restore();
-    fillRR(ctx, x + w - 13, y - 16, 13, h + 16, 4, '#b07a8e');
-    fillRR(ctx, x, y + h * 0.5, w, h * 0.5, 6, '#c98fa8');
+    /* headboard at the far end, and a low guard rail along the front so the
+       top of it reads as a place she can stand */
+    fillRR(ctx, x + w - 13, y - 30, 13, h + 30, 4, '#b07a8e');
+    ctx.save(); ctx.globalAlpha = .8;
+    fillRR(ctx, x + 2, y - 15, 7, 17, 3, '#b07a8e');
+    fillRR(ctx, x + 2, y - 17, w * 0.42, 6, 3, '#b07a8e');
+    ctx.restore();
     /* the mattress she bounces off */
-    fillRR(ctx, x - 3, y, w + 6, h * 0.52, 10, '#ffd8e6');
+    fillRR(ctx, x - 3, y, w + 6, h * 0.5, 10, '#ffd8e6');
     ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
     ctx.save(); ctx.globalAlpha = .55;
-    for (let i = 0; i < 5; i++) fillRR(ctx, x + 6 + i * ((w - 12) / 5), y + 5, (w - 12) / 9, h * 0.42, 4, '#ffb0cf');
+    for (let i = 0; i < 5; i++) fillRR(ctx, x + 6 + i * ((w - 12) / 5), y + 4, (w - 12) / 9, h * 0.36, 4, '#ffb0cf');
     ctx.restore();
-    fillRR(ctx, x + w - 52, y - 12, 40, 20, 8, '#fff6f8');
+    /* the pillow, tucked against the headboard */
+    fillRR(ctx, x + w - 50, y - 11, 38, 18, 8, '#fff6f8');
     ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
     /* two chevrons over it: this one sends her up */
     ctx.save(); ctx.globalAlpha = .85;
     for (let i = 0; i < 2; i++) {
-      const cy = y - 24 - i * 15;
+      const cy = y - 40 - i * 15;
       poly(ctx, [[x + w * 0.32, cy], [x + w * 0.44, cy - 13], [x + w * 0.56, cy],
                  [x + w * 0.44, cy - 6]], '#ff8fb0');
     }
