@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="lt"><head><meta charset="utf-8"><title>Lota Go — fonai</title>
+<style>
+ body{background:#14101f;color:#e8e2f4;font:13px/1.4 system-ui,sans-serif;margin:0;padding:12px}
+ h2{font-size:15px;margin:18px 0 6px;color:#ffd870}
+ .row{display:flex;gap:6px;flex-wrap:wrap}
+ canvas{background:#000;border-radius:6px}
+ .lab{font-size:11px;opacity:.6}
+</style></head><body>
+<div id="out"></div>
+<script src="../js/util.js"></script>
+<script src="../js/lota.js"></script>
+<script src="../js/props.js"></script>
+<script src="../js/props2.js"></script>
+<script src="../js/zones.js"></script>
+<script src="../js/zones2.js"></script>
+<script src="../js/level.js"></script>
+<script src="../js/levels.js"></script>
+<script>
+/* draws every place's background at several points along it, so a background
+   that simply repeats is obvious at a glance */
+/* the same viewport the game uses, drawn at half scale so several fit */
+const VW = 960, VH = 540, FLOOR = 410, Z = 0.44;
+const params = new URLSearchParams(location.search);
+const only = params.get('only');
+const shots = +(params.get('n') || 4);
+const step = +(params.get('step') || 900);
+const out = document.getElementById('out');
+
+function draw(name, place, baseY) {
+  if (only && name.indexOf(only) < 0) return;
+  const h = document.createElement('h2'); h.textContent = name; out.appendChild(h);
+  const row = document.createElement('div'); row.className = 'row';
+  for (let k = 0; k < shots; k++) {
+    const c = document.createElement('canvas');
+    c.width = Math.round(VW * Z); c.height = Math.round(VH * Z);
+    const ctx = c.getContext('2d');
+    ctx.scale(Z, Z);
+    const camX = 400 + k * step;
+    try {
+      place.span = { x0: 0, x1: shots * step + 1200 };
+      place.bg(ctx, VW, VH, camX, FLOOR, 2.2, place.pal || {}, baseY || 0);
+      if (place.fg) place.fg(ctx, VW, VH, camX, FLOOR, 2.2, baseY || 0);
+    } catch (e) { ctx.fillStyle = '#f66'; ctx.fillText(String(e), 8, 20); console.error(name, e); }
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.beginPath();
+    ctx.moveTo(0, FLOOR); ctx.lineTo(VW, FLOOR); ctx.stroke();
+    row.appendChild(c);
+  }
+  out.appendChild(row);
+}
+ZONES.forEach(z => draw('1 · ' + z.id + ' — ' + z.name, z));
+Object.keys(BRANCHES).forEach(b => {
+  BRANCHES[b].rooms.forEach(r => draw('1 · ' + b + '/' + r.id + ' — ' + r.name, r));
+  if (BRANCHES[b].duct) draw('1 · ' + b + '/duct', BRANCHES[b].duct);
+});
+ZONES2.forEach(z => draw('2 · ' + z.id + ' — ' + z.name, z));
+Object.keys(BRANCHES2).forEach(b => {
+  BRANCHES2[b].rooms.forEach(r => draw('2 · ' + b + '/' + r.id + ' — ' + r.name, r));
+});
+</script></body></html>

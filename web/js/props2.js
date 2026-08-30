@@ -1659,6 +1659,195 @@ Object.assign(PROPS, {
     }
     ctx.restore();
   },
+  /* ============ INSIDE THE WRECK ============ */
+  /* The way in: a hole torn in her plating, big enough to run straight
+     through. It is a gateway, not an obstacle — nothing here can be hit. */
+  hullHole(ctx, x, y, w, h, t) {
+    /* the ship's side around it */
+    fillRR(ctx, x - 10, y, w + 20, h, 6, '#3f3126');
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let i = 0; i * 26 < w + 20; i++) line(ctx, x - 10 + i * 26, y, x - 10 + i * 26, y + h, '#2b2119', 2.6);
+    for (let k = 1; k < 5; k++) line(ctx, x - 10, y + k * (h / 5), x + w + 10, y + k * (h / 5), '#2b2119', 2);
+    ctx.restore();
+    /* the tear itself, ragged, with the dark of the hold behind it */
+    const cx = x + w * 0.5, cy = y + h * 0.62, rw = w * 0.42, rh = h * 0.42;
+    ctx.beginPath();
+    for (let i = 0; i <= 14; i++) {
+      const a = (i / 14) * TAU, k = 0.72 + imod(i * 37, 11) * 0.05;
+      const px = cx + Math.cos(a) * rw * k, py = cy + Math.sin(a) * rh * k;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, rw);
+    g.addColorStop(0, '#0b1a22'); g.addColorStop(1, '#16333f');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = '#5f4a38'; ctx.lineWidth = 5; ctx.stroke();
+    /* plating peeled back off the edges */
+    ctx.save(); ctx.globalAlpha = .85;
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * TAU + 0.3;
+      poly(ctx, [[cx + Math.cos(a) * rw * 0.8, cy + Math.sin(a) * rh * 0.8],
+                 [cx + Math.cos(a + 0.3) * rw * 1.16, cy + Math.sin(a + 0.3) * rh * 1.16],
+                 [cx + Math.cos(a - 0.16) * rw * 1.1, cy + Math.sin(a - 0.16) * rh * 1.1]], '#6b5340');
+    }
+    ctx.restore();
+    /* a rivet line, weed, and a fish looking out of it */
+    ctx.save(); ctx.globalAlpha = .8;
+    for (let i = 0; i < 5; i++) leafy(ctx, x + w * (0.1 + i * 0.2), y + h - 4, 15, 8, '#3f7a5c', '#5aa87a', i * 7);
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .7;
+    fillEll(ctx, cx + Math.sin(t * 0.8) * 12, cy - 8, 10, 5, '#8fd6ff');
+    poly(ctx, [[cx - 8 + Math.sin(t * 0.8) * 12, cy - 8], [cx - 16 + Math.sin(t * 0.8) * 12, cy - 13],
+               [cx - 16 + Math.sin(t * 0.8) * 12, cy - 3]], '#8fd6ff');
+    ctx.restore();
+  },
+  /* one step of the broken companionway out of the hold: split planks on a
+     rusted stringer, with the odd one missing a corner */
+  treadWreck(ctx, x, y, w, h, t, pal, seed, o) {
+    const k = imod(Math.round((seed || 0) / 7), 3);
+    fillRR(ctx, x, y, w, Math.max(h, 12), 2, '#4a3a2c');
+    ctx.strokeStyle = 'rgba(15,10,6,.55)'; ctx.lineWidth = 2; ctx.stroke();
+    fillRR(ctx, x, y, w, 9, 2, '#7a5f45');
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let i = 0; i * 18 < w; i++) line(ctx, x + i * 18, y + 1, x + i * 18, y + 8, '#5f4429', 1.8);
+    ctx.restore();
+    /* a bite out of the front edge, never in the same place twice */
+    ctx.save(); ctx.globalAlpha = .9;
+    if (k === 0) poly(ctx, [[x + w * 0.62, y], [x + w * 0.86, y], [x + w * 0.74, y + 8]], '#2b2119');
+    else if (k === 1) poly(ctx, [[x + w * 0.1, y], [x + w * 0.3, y], [x + w * 0.16, y + 7]], '#2b2119');
+    ctx.restore();
+    /* the rusted stringer holding it, and weed along the tread */
+    if (o && o.dir) {
+      const dy = -o.dir * (o.rise || 42);
+      ctx.save(); ctx.globalAlpha = .8;
+      line(ctx, x, y - 52, x + w, y - 52 + dy, '#6b5a4a', 6);
+      line(ctx, x + 7, y - 4, x + 7, y - 50, '#5a4a3c', 5);
+      ctx.restore();
+    }
+    ctx.save(); ctx.globalAlpha = .65;
+    leafy(ctx, x + w * (0.2 + (k * 0.3)), y + 2, 13, 7, '#3f7a5c', '#5aa87a', k * 9);
+    ctx.restore();
+  },
+  /* the broken end of the deck: planks snapped off over open water */
+  deckEdge(ctx, x, y, w, h, t) {
+    const fy = y + h;
+    fillRR(ctx, x, fy - 26, w, 13, 2, '#6b5340');
+    ctx.save(); ctx.globalAlpha = .45;
+    for (let i = 0; i * 24 < w; i++) line(ctx, x + i * 24, fy - 26, x + i * 24, fy - 14, '#4a3a2c', 2.2);
+    ctx.restore();
+    /* splintered ends, each a different length */
+    for (let i = 0; i * 22 < w * 0.6; i++) {
+      const len = 14 + imod(i * 41, 26);
+      poly(ctx, [[x + w - 6 - i * 22, fy - 26], [x + w - 6 - i * 22 - 13, fy - 26],
+                 [x + w - 6 - i * 22 - 6, fy - 26 + len]], '#5f4a38');
+    }
+    /* the rail bent out over nothing */
+    line(ctx, x + 10, fy - 26, x + 10, fy - 116, '#5d6878', 6);
+    ctx.beginPath();
+    ctx.moveTo(x + 6, fy - 120);
+    ctx.quadraticCurveTo(x + w * 0.6, fy - 128, x + w - 4, fy - 74);
+    ctx.strokeStyle = '#5d6878'; ctx.lineWidth = 6; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .7;
+    for (let i = 0; i < 4; i++) leafy(ctx, x + 16 + i * 28, fy - 24, 14, 8, '#3f7a5c', '#5aa87a', i * 11);
+    ctx.restore();
+    /* the sea floor a long way down, hinted at */
+    ctx.save(); ctx.globalAlpha = .22;
+    const g = ctx.createLinearGradient(0, fy - 12, 0, fy + 120);
+    g.addColorStop(0, 'rgba(15,74,106,0)'); g.addColorStop(1, '#0a3450');
+    ctx.fillStyle = g; ctx.fillRect(x - 30, fy - 12, w + 60, 132);
+    ctx.restore();
+  },
+  /* a shelf the sea floor steps up by. Not stairs and not an obstacle: a
+     ledge of packed sand with a rock lip, which she simply runs up. */
+  sandShelf(ctx, x, y, w, h, t, pal, seed) {
+    const top = (pal && pal.floorTop) || '#f0e0b0';
+    const body = (pal && pal.floorBody) || '#c2ac80';
+    ctx.beginPath();
+    ctx.moveTo(x, y + Math.max(h, 12));
+    ctx.lineTo(x, y + 7);
+    for (let px = 0; px <= w; px += 12)
+      ctx.lineTo(x + px, y + 3 + Math.sin((px + (seed || 0)) * 0.06) * 3);
+    ctx.lineTo(x + w, y + Math.max(h, 12));
+    ctx.closePath();
+    ctx.fillStyle = body; ctx.fill();
+    ctx.save(); ctx.globalAlpha = .95;
+    fillRR(ctx, x, y + 3, w, 9, 3, top); ctx.restore();
+    /* pebbles and shells caught on the lip, and weed off the front of it */
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let i = 0; i * 26 < w; i++)
+      fillEll(ctx, x + 10 + i * 26, y + 15 + imod(i * 17, 7), 6, 3.4, shade(body, -.22));
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .7;
+    for (let i = 0; i * 42 < w; i++) {
+      const sw = Math.sin(t * 1.1 + i) * 4;
+      ctx.beginPath(); ctx.moveTo(x + 18 + i * 42, y + 6);
+      ctx.quadraticCurveTo(x + 18 + i * 42 + sw, y - 12, x + 18 + i * 42 + sw * 1.7, y - 26);
+      ctx.strokeStyle = i % 2 ? '#3f7a5c' : '#4f9c6c'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+    }
+    ctx.restore();
+  },
+  /* cargo that never got unloaded */
+  crateSunk(ctx, x, y, w, h) {
+    boxy(ctx, x, y, w, h, 3, '#7a5f45', '#5a442f');
+    ctx.save(); ctx.globalAlpha = .55;
+    line(ctx, x + 3, y + 3, x + w - 3, y + h - 3, '#4a3a2c', 3);
+    line(ctx, x + w - 3, y + 3, x + 3, y + h - 3, '#4a3a2c', 3);
+    ctx.restore();
+    fillRR(ctx, x, y, w, 7, 2, '#8a6b4c');
+    ctx.save(); ctx.globalAlpha = .7;
+    leafy(ctx, x + w * 0.28, y + h - 2, 14, 8, '#3f7a5c', '#5aa87a', 3);
+    leafy(ctx, x + w * 0.74, y + 4, 11, 6, '#3f7a5c', '#5aa87a', 8);
+    ctx.restore();
+    circle(ctx, x + w * 0.5, y + h * 0.42, 5, '#c9a24a');
+  },
+  /* a coil of anchor chain, half buried */
+  chainPile(ctx, x, y, w, h) {
+    ctx.save();
+    for (let k = 0; k < 3; k++) {
+      const ry = y + h - 8 - k * (h * 0.3), rw = w * (0.5 - k * 0.09);
+      ctx.beginPath(); ctx.ellipse(x + w / 2, ry, rw, h * 0.16, 0, 0, TAU);
+      ctx.strokeStyle = k % 2 ? '#6f7a8c' : '#5d6878'; ctx.lineWidth = 8; ctx.stroke();
+      ctx.save(); ctx.globalAlpha = .4;
+      ctx.beginPath(); ctx.ellipse(x + w / 2, ry - 2, rw, h * 0.16, 0, Math.PI, TAU);
+      ctx.strokeStyle = '#9aa6b8'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .55;
+    for (let i = 0; i < 3; i++) leafy(ctx, x + w * (0.2 + i * 0.3), y + h - 4, 12, 6, '#3f7a5c', '#5aa87a', i * 5);
+    ctx.restore();
+  },
+  /* the seaside street's own traffic: a van with boards on the roof. It is a
+     real obstacle here, not scenery — she jumps it or lands on top of it. */
+  surfVan(ctx, x, y, w, h, t, pal) {
+    const c = (pal && pal.car) || '#3f9cc4';
+    /* the boards first, so the rack goes over them */
+    ctx.save(); ctx.globalAlpha = .98;
+    [[-4, '#f6e2cf'], [3, '#ffd870']].forEach((b, i) => {
+      ctx.beginPath();
+      ctx.moveTo(x + w * 0.08, y + 7 + b[0]);
+      ctx.quadraticCurveTo(x + w * 0.5, y - 4 + b[0], x + w * 0.94, y + 7 + b[0]);
+      ctx.quadraticCurveTo(x + w * 0.5, y + 14 + b[0], x + w * 0.08, y + 7 + b[0]);
+      ctx.closePath(); ctx.fillStyle = b[1]; ctx.fill();
+      ctx.strokeStyle = 'rgba(40,30,20,.45)'; ctx.lineWidth = 1.8; ctx.stroke();
+      if (i) { ctx.save(); ctx.globalAlpha = .5;
+        line(ctx, x + w * 0.2, y + 7 + b[0], x + w * 0.82, y + 7 + b[0], '#e07a3a', 2); ctx.restore(); }
+    });
+    ctx.restore();
+    /* the van */
+    fillRR(ctx, x + w * 0.06, y + h * 0.22, w * 0.88, h * 0.56, 9, c);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+    fillRR(ctx, x, y + h * 0.5, w, h * 0.34, 10, shade(c, -.12));
+    ctx.strokeStyle = INK; ctx.stroke();
+    fillRR(ctx, x + w * 0.12, y + h * 0.28, w * 0.3, h * 0.24, 4, '#a9dcf0');
+    fillRR(ctx, x + w * 0.48, y + h * 0.28, w * 0.3, h * 0.24, 4, '#a9dcf0');
+    ctx.save(); ctx.globalAlpha = .85;
+    fillRR(ctx, x + w * 0.04, y + h * 0.56, w * 0.92, h * 0.08, 3, '#f2ece0'); ctx.restore();
+    /* the roof bars holding the boards down */
+    [0.26, 0.72].forEach(f => line(ctx, x + w * f, y + 6, x + w * f, y + h * 0.24, '#4a5468', 4));
+    wheel(ctx, x + w * 0.24, y + h * 0.88, h * 0.14, '#2c2a33');
+    wheel(ctx, x + w * 0.78, y + h * 0.88, h * 0.14, '#2c2a33');
+    circle(ctx, x + w - 5, y + h * 0.62, 4, '#ffe07a');
+  },
   /* the stone doorway between the two halls of the fox cave */
   caveGate(ctx, x, y, w, h) {
     ctx.beginPath();
@@ -1707,6 +1896,7 @@ Object.assign(PROP_NATURAL, {
   sandRipple: 120, mossDeco: 120, fernDeco: 110, seagrass: 120, bubblesDeco: 120,
   shells: 110, ropeCoil: 90, marbleShine: 110, pebblesC: 110,
   cannonW: 130, caveExit: 150, pierEnd: 130, caveGate: 130,
+  crateSunk: 96, chainPile: 108, sandShelf: 0, treadWreck: 0, surfVan: 190,
   deckchair: 108, sandcastle: 104, rockWet: 118, seabedRock: 118, boulderF: 120,
   fernF: 100, mushroomF: 100, coralRock: 118, reefRock: 118, clamShell: 104,
   anemone: 90, amphora: 86, chestW: 110, barrelW: 92, anchorW: 104,
@@ -1732,7 +1922,8 @@ Object.assign(PROP_SIZE, {
   barrelW: [60, 68], cannonW: [100, 52], rockWet: [82, 54], seabedRock: [82, 54],
   reefRock: [84, 60], fernF: [80, 60], mushroomF: [70, 54], logF: [116, 52],
   boulderF: [88, 60], stumpF: [66, 46], rootF: [86, 44], stalagmite: [56, 64],
-  caveRock: [84, 56], crystalC: [62, 68], mushroomC: [68, 52], gull: [58, 40]
+  caveRock: [84, 56], crystalC: [62, 68], mushroomC: [68, 52], gull: [58, 40],
+  crateSunk: [72, 62], chainPile: [84, 46], surfVan: [116, 70]
 });
 
 /* ---------------------------------------------------------------

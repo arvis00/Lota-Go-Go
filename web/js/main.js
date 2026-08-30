@@ -26,10 +26,10 @@ document.addEventListener('dblclick', e => e.preventDefault(), { passive: false 
 ----------------------------------------------------------------*/
 window.LotaDev = {
   give(level, kind, n) { Save.earn(level, kind, n); UI.showLobby(); return Save.purse(level); },
-  clear(level) { Save.markCleared(level); UI.showLobby(); return Save.clears(level); },
+  clear(level, mode) { Save.markCleared(level, mode || 'raw'); UI.showLobby(); return Save.clears(level); },
   key(level) {
     const p = level - 1;
-    Save.markCleared(p);
+    Save.markCleared(p, 'raw');
     Levels.shop(p).forEach(s => Save.give(s.id));
     UI.showLobby();
     return Levels.unlocked(level);

@@ -56,9 +56,15 @@ ant kilimo guli tik jos antkaklis.
 | Lygis | Vieta | Kas renkama | Už finišą (su K.T. / be jų) | Kaip atrakinamas |
 |---|---|---|---|---|
 | 1 | Kelias į Londoną | skaniukai 🦴 (15) | +10 / +50 | atviras nuo pradžios |
-| 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | +30 / +100 | pereiti 1 lygį **ir** atrakinti visas 1 lygio aprangas |
-| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | +50 / +200 | pereiti 2 lygį **ir** atrakinti visas 2 lygio aprangas |
-| 4 | Bosas: Didysis Siurblys | nieko | visada su K.T. | pereiti 3 lygį **ir** atrakinti visas 3 lygio aprangas |
+| 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | +30 / +100 | pereiti 1 lygį **be kontrolinių taškų** ir atrakinti visas 1 lygio aprangas |
+| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | +50 / +200 | pereiti 2 lygį **be kontrolinių taškų** ir atrakinti visas 2 lygio aprangas |
+| 4 | Bosas: Didysis Siurblys | nieko | visada su K.T. | pereiti 3 lygį **be kontrolinių taškų** ir atrakinti visas 3 lygio aprangas |
+
+**Raktą duoda tik bėgimas be kontrolinių taškų.** Finišas su vėliavėlėmis moka skaniukais
+ir tiek — kitas lygis neatsirakina, kad ir kiek kartų taip pereitum. Reikia bent vieno
+švaraus perėjimo nuo starto linijos iki finišo, ir tik tada, kai visa to lygio spinta jau
+nupirkta. Kiek kartų lygis pereitas kuriuo būdu, matyti pradžios ekrane po logotipu
+(`Finišas ×3` ir po juo `🔑 be k. t. ×1` arba `Be kontrolinių taškų — dar nė karto`).
 
 Kai raktas uždirbamas, visos to lygio spynos atsirakina iš karto ir ekrane vieną kartą
 parodoma `🔑 N lygio raktas!`.
@@ -110,20 +116,28 @@ Pilnas nubėgimas gatve trunka **~3 min 15 s**; radus metro raktą ir įlipus į
 
 ### 2 lygis — Nuo viešbučio iki miško
 
-Seed `20260901`, **15 vietų** — dviem daugiau nei pirmame lygyje:
+Seed `20260901`, **17 vietų** — keturiomis daugiau nei pirmame lygyje:
 
 `Apartamentai → Koridorius → Laukiamasis → Baseinas → Promenada → Paplūdimys → Tiltas →
-Jūros dugnas → Nuskendęs laivas → Koralų rifas → Sekluma → Krantas → Gatvė → Miškas →
-Tankus miškas`
+Jūros dugnas → Nuskendęs laivas → Laivo triumas → Apgriuvęs denis → Koralų rifas →
+Sekluma → Krantas → Gatvė → Miškas → Tankus miškas`
+
+**Gatvė yra gatvė.** Pajūrio gatvėje nėra jokio vandens: kelias su šaligatviu ir bortu,
+palei jį — vienaaukščiai nameliai ir mediniai vasarnamiai su verandomis (vietoj buvusių
+daugiaaukščių), o pravažiuojantis transportas rieda **ratais ant asfalto** — universalas
+su banglentėmis ant stogo, pikapas su lenta kėbule, kemperis su kopėčiomis ir mašina su
+valtimi ant priekabos. Anksčiau mašinos buvo nupieštos pusmetriu virš kelio, ir būtent tai
+darė gatvę panašią į užtvindytą.
 
 Prasideda prašmatnaus viešbučio apartamente ir eina per koridorių su numeruotomis
 durimis, per fojė su kolonomis ir arkiniais langais į jūrą, pro baseiną, pro viešbučio
 vartus į promenadą ir paplūdimį. **Ant tilto ekranas pasisuka** — Lota pasuka į dešinę ir
 nubėga tiltu (kaip Palangoje) iki pat galo, o nuo galo **šoka į vandenį**. Po vandeniu ji
-bėga dugnu pro koralus, nuskendusį laivą ir rifą; seklumoje **vandens paviršius nusileidžia**,
-ir ji išbėga į krantą. Toliau trumpa pajūrio gatvė ir miškas, kuriame stovi finišas.
+bėga dugnu pro koralus, **įbėga į nuskendusį laivą** ir išlipa ant jo denio (žr. „Nuskendęs
+laivas" žemiau), paskui rifas; seklumoje **jūros dugnas pakyla**, ir ji išbėga į krantą.
+Toliau trumpa pajūrio gatvė ir miškas, kuriame stovi finišas.
 
-Trunka **~3 min 10 s**. **Sunkesnis už pirmą lygį:** pradeda 400 px/s (pirmas lygis
+Trunka **~3 min 20 s**. **Sunkesnis už pirmą lygį:** pradeda 400 px/s (pirmas lygis
 tokio greičio pasiekia tik įpusėjęs) ir įsibėgėja iki 880; tarpai tarp kliūčių trumpesni
 (vidutinis 1,10 s vietoj 1,37 s, medianinis 0,85 s vietoj 1,13 s), kliūčių per minutę
 daugiau, o sunkiausiose vietose reakcijos lieka 0,40 s vietoj 0,46 s.
@@ -134,10 +148,45 @@ užšokti negalima** — vienintelis daiktas visame žaidime, kuris neturi virš
 (50–116 px nuo grindų) parinkta taip, kad abu keliai visada tilptų: pasilenkusi Lota yra
 30 px aukščio, o šuolio viršūnė — 188 px.
 
+**Posūkis ant tilto.** Nuo paplūdimio ji pasuka į dešinę, ir kamera pasisuka paskui ją.
+Užrašo, kad taip nutiko, nebėra — apie posūkį pasako tik pats vaizdas: Lota pasisuka
+vietoje (jos siluetas per akimirką susiaurėja iki briaunos ir vėl išsiskleidžia), o kamera
+nusiveja ją pusę akimirkos vėliau — pasvyra, prisitraukia ir per ekraną nubėga greito
+posūkio dryžiai. Kadras visą laiką lieka užpildytas — anksčiau vaizdas būdavo suplojamas
+horizontaliai ir pro jo kampus prasišviesdavo fonas. Trukmė ~1,1 s (`fx.spin`, `js/game.js`).
+
+**Nuskendęs laivas.** Trys vietos iš eilės, ir jokio pasirinkimo tarp jų nėra:
+
+1. **Nuskendęs laivas** — dugnu prieinama prie jos šono; vietos gale plotoje išplėšta
+   **skylė**, pro kurią įbėgama į vidų.
+2. **Laivo triumas** — tamsu, laivo špantai, iliuminatoriai su šviesos pluoštais, krovinys
+   po tinklu, siūbuojantis žibintas, grandinės nuo denio. Kliūtys — statinės, skrynios,
+   dėžės, patrankos, grandinių krūvos.
+3. **Apgriuvęs denis** — triumo gale **apgriuvę laiptai** kyla į denį. Jais ne šokinėjama,
+   o bėgama, ir apeiti jų neįmanoma: pirmoji pakopa yra viena pakopa nuo grindų, tad Lota
+   tiesiog užbėga. Denis stovi 210 px virš dugno ir yra po vandeniu kaip ir visa kita —
+   stiebas su takelažu, ventiliatoriaus kaklas, gervė, vairinė. **Denio galas nulūžęs**:
+   lentos tiesiog baigiasi, Lota iššoka į mėlyną ir nukrinta atgal ant jūros dugno, iš kur
+   bėga toliau į rifą. Nukristi ten irgi neįmanoma — apačioje visą laiką yra dugnas.
+
+**Sekluma — kyla smėlis, o ne leidžiasi vanduo.** Jūra šioje vietoje niekur nedingsta:
+jos paviršius stovi fiksuotame aukštyje (`surfaceY`, pasaulio koordinatėmis 320), o kyla
+**dugnas** — devynios smėlio pakopos po 38 px, iš viso 342 px. Pakopa yra laiptas: ja
+bėgama, ant jos mirti neįmanoma. Todėl paviršius artėja prie Lotos, o ne atvirkščiai, ir
+matyti, kad ji kopia: krantas su pušimis pamažu iškyla virš vandens, o horizontas lieka
+lygus. Nuo šios vietos ir iki finišo visa trasa eina 342 px aukščiau nei jūros dugnas.
+
 **Šuolis nuo tilto.** Tilto gale grindys tikrai baigiasi — tai vienintelė vieta abiejose
 trasose, kur po kojomis nieko nėra, ir tai ne skylė, o scenarijus: Lota atsispiria pati,
 nukrinta į vandenį, pasigirsta pliūpsnis, ekranas nuplaukia ir ji atsiranda bėganti jūros
 dugnu. Nukristi ir žūti ten neįmanoma.
+
+**Trasa nebėra plokščia.** Iki šiol visa trasa buvo viename aukštyje ir tik antri keliai
+nukrypdavo aukštyn ar žemyn. Dabar aukštį gali keisti ir pati vieta: `stairsUp` prie
+vietos pradžios pastato privalomus laiptus, `climb` išbarsto pakopas per visą vietą, o
+`dropEnd` gale nutraukia grindis, po kuriomis jau laukia žemesnis aukštas. Kamera, fonai,
+kontroliniai taškai ir startas atsiremia į tas grindis, kurios tikrai yra po Lota
+(`groundYAt()`, `js/level.js`).
 
 **Skylių nėra niekur.** Duobių, angų grindyse ir pralaimėjimo dėl kritimo nėra nė
 vienoje trasoje. Ten, kur galėtų būti skylė, yra arba paprasta kliūtis, arba **laiptai**,
@@ -162,6 +211,33 @@ objektas apskritai turi piešinį.
 
 Vienintelė išimtis — **ženklai** (metro rodyklė, rodyklė į laiptus). Jie piešiami blankiau
 ir atitraukti į foną, o Lota per juos tiesiog prabėga.
+
+**Fonas nesikartoja.** Uždarose vietose fonas anksčiau buvo vienas piešinys, kartojamas
+per visą vietą: berniuko kambaryje tas pats raketos plakatas, mergaitės — ta pati spinta
+su supamu arkliuku, rife — tie patys koralai, oloje — tie patys kristalai. Dabar kiekviena
+tokia juosta turi kelias skirtingas variacijas, ir kuri kur atsiduria, sprendžia juostos
+numeris (`tileLayer` antras argumentas `i`), o ne vieta ekrane — todėl slenkant vaizdui
+niekas nemirga.
+
+Ką dabar mato Lota: berniuko kambaryje — raketa, dinozauras, futbolo marškinėliai, piratų
+žemėlapis, o po jais lentyna su modeliais, knygomis arba taurėmis; mergaitės kambaryje —
+spinta, tualetinis staliukas su veidrodžiu, lentyna su lėlėmis ir knygomis, didelis
+meškiukas fotelyje, o šalia vežimėlis, aitvaras arba gimnastikos lankas; vonioje —
+veidrodis, vaistinėlė, langelis į sodą, dušas, rankšluosčių kabykla, skalbinių krepšys;
+močiutės kambaryje — knygų spinta, indauja, fotelis su mezginiu, pianinas; kaimynų
+koridoriuje — radiatorius, pakaba su paltais, laikrodis, batų suoliukas; ventiliacijoje —
+ventiliatorius, atšaka, įspėjamasis ženklas; kieme — skalbinių virvė, būda, gėlynas,
+lesyklėlė, karutis; viešbučio apartamente — balkono langas, židinys, lova su baldakimu;
+fojė — registratūra, sėdimoji zona, liftai su fortepijonu; baseine — trys skirtingi
+viešbučio korpusai, kopėčios, tramplinas, gelbėtojo kėdė; ant tilto — jachta, žvejų
+laivas, plūduras, banglentininkas; rife — vėduokliniai, šakoti, „smegeniniai" koralai,
+kempinės, jūrų ežiai, elniaragiai, o pro šalį plaukia vėžlys arba rajas; laivo triume —
+kas antra sekcija kitokia; lapių urve — kristalų gyslos, grybai, šaknys, rūdos gysla;
+kristalų salėje — pavieniai smailiai, jų kekės, nuvirtę kristalai ir perskelti geodai
+penkiomis spalvomis.
+
+Gatvės (pirmame ir antrame lygyje) ir viešbučio koridorius palikti kartotis specialiai:
+vienoda namų eilė ir vienodos numeruotos durys yra būtent tai, kas jie ir yra.
 
 **Fono langai nemirksi.** Kuris pastato langas dega, sprendžia to lango eilutė ir stulpelis
 pačiame pastate (`BG.buildings`, `js/zones.js`), o ne jo vieta ekrane — anksčiau buvo
@@ -279,6 +355,12 @@ Kiekvieną lygį galima bėgti dviem būdais, ir **žaidėjas pasirenka pats**. 
 užduodamas **vieną kartą** — pirmą kartą paspaudus *ŽAISTI* tame lygyje. Atsakymas
 įsimenamas, ir nuo tol *ŽAISTI* iš karto paleidžia bėgimą.
 
+**Bet kitas lygis atsirakina tik be jų.** Su kontroliniais taškais bėgti galima kiek nori
+ir uždirbti tuo galima kiek nori — tik raktas taip neuždirbamas. Kad atsivertų kitas
+lygis, reikia bent vieno perėjimo **be kontrolinių taškų** (ir, kaip ir anksčiau, visos to
+lygio spintos). Todėl vėliavėlės nebėra „lengvesnis kelias į priekį" — jos yra būdas
+ramiai prisirinkti aprangoms, o pats žingsnis pirmyn visada padaromas švariai.
+
 **Kaina yra finišas.** Be kontrolinių taškų vienas prisilietimas prie kliūties baigia visą
 bėgimą — bet už finišą mokama kelis kartus daugiau:
 
@@ -291,6 +373,8 @@ bėgimą — bet už finišą mokama kelis kartus daugiau:
 
 Boso lygyje pasirinkimo nėra: jis visada žaidžiamas su kontroliniais taškais. Trečiame
 lygyje renkami abu dalykai, tad ir premija už finišą įskaitoma į abi to lygio pinigines.
+
+Boso lygis pasirinkimo neturi, ir už jo nieko nebeatsirakina, tad jo tai neliečia.
 
 **Kur pasirinkimas matomas.** Bėgant — **ekrano viršuje**, HUD'e, greta skaniukų:
 `SU K.T. +10` arba `BE K.T. +50`. Pradžios ekrane — juostelė virš mygtukų; bakstelėjus ją
@@ -341,11 +425,12 @@ skaniukais, antras — žaisliukais.
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
 | `js/zones.js` | 1 lygio 13 vietų + `BRANCHES` (metro, antras aukštas, ventiliacija); `BG` ir grindų piešimas |
-| `js/zones2.js` | 2 lygio 15 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
+| `js/zones2.js` | 2 lygio 17 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
 | `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
 | `js/ui.js` | ekranai, HUD, aprangų parduotuvė |
+| `dev/bgs.html` | visų vietų fonai vienoje lentelėje, po kelis kadrus iš eilės — kad kartojimasis matytųsi iš karto (atskiras puslapis) |
 | `dev/bot.js` | testinis botas (žaidimo neįkeliamas) |
 | `dev/headless.js` | tas pats botas be naršyklės — `node dev/headless.js <lygis>` |
 | `dev/skins.html` | visos aprangos keturiose pozose, dideliu masteliu (atskiras puslapis) |
@@ -368,6 +453,9 @@ Dažniausiai keičiami dalykai:
   ir `Levels.bonus()` (`js/levels.js`); `choose: false` reiškia, kad lygis pasirinkimo
   nesiūlo. Kas įsimenama — `Save.mode()` (`js/util.js`), klausimo ekranas — `UI.showMode()`
   (`js/ui.js`)
+- **Kada atsirakina kitas lygis** — `Levels.unlocked()` ir `Levels.blockedBy()`
+  (`js/levels.js`); švarių perėjimų skaitiklis — `Save.rawClears()` / `Save.markCleared()`
+  (`js/util.js`)
 - **Kiek metro sutrumpina trasą** — `tail` funkcijoje `buildWorld()` (`js/level.js`): kiek
   sekundžių Londono lieka po išlipimo
 - **Lapių urvas** — `BRANCHES2.foxcave` (`js/zones2.js`): `sec`, `drop`, `foxes`;
@@ -375,7 +463,12 @@ Dažniausiai keičiami dalykai:
 - **Žuvėdros** — `gulls:` zonoje (`js/zones2.js`), juosta — `BIRD_BOTTOM` ir `BIRD_H`
   (`js/level.js`)
 - **Šuolis nuo tilto** — `dive: 1` zonoje ir `z.dive` blokas `buildWorld()` viduje
-- **Ekrano pasisukimas** — `turn: 1` zonoje; pats efektas — `fx.spin` (`js/game.js`)
+- **Ekrano pasisukimas** — `turn: 1` zonoje; pats efektas — `fx.spin` ir `drawTurnBlur()`
+  (`js/game.js`)
+- **Trasos aukštis** — `stairsUp` / `stairProp`, `climb: {n, h}` / `riseProp`,
+  `dropEnd` / `dropTo` / `dropProp` / `dropRoom` zonos įraše (`js/zones2.js`); pačios
+  pakopos — `P.riser()` ir `flight()` (`js/level.js`)
+- **Jūros lygis seklumoje** — `surfaceY` ir `climb` zonoje `shallows` (`js/zones2.js`)
 - **Greitis** — `phys` lygio įraše `TRACKS` (`js/levels.js`); numatytasis — `PHYS`
   (`js/level.js`)
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį, o `rest` ir `minRest`
@@ -426,7 +519,9 @@ pripildomi iš konsolės (žaidimas šių funkcijų niekur nekviečia):
 
 ```js
 LotaDev.give(2, 't', 200);   // 200 žaisliukų į 2 lygio piniginę
+LotaDev.clear(1, 'cp');      // vienas finišas su kontroliniais taškais
 LotaDev.key(2);              // viskas, ko reikia 2 lygiui atrakinti
+                             // (įskaitant perėjimą be kontrolinių taškų)
 LotaDev.boss();              // atiduoda boso prizą — abi 4 lygio aprangas
 LotaDev.reset();             // ištrina išsaugojimą
 ```

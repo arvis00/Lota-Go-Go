@@ -93,6 +93,9 @@ const Save = {
   data: {
     wallet: { 1: { b: 0, t: 0 }, 2: { b: 0, t: 0 }, 3: { b: 0, t: 0 }, 4: { b: 0, t: 0 } },
     cleared: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    /* finishes with the flags switched off — the key to the next level. A run
+       with checkpoints counts here for nothing. */
+    rawCleared: { 1: 0, 2: 0, 3: 0, 4: 0 },
     keys: {},
     /* 'cp' or 'raw' per level — how she is playing it. Nothing is stored until
        the player has actually been asked, and being asked happens once. */
@@ -128,10 +131,12 @@ const Save = {
     const d = this.data;
     if (!d.wallet || typeof d.wallet !== 'object') d.wallet = {};
     if (!d.cleared || typeof d.cleared !== 'object') d.cleared = {};
+    if (!d.rawCleared || typeof d.rawCleared !== 'object') d.rawCleared = {};
     for (let n = 1; n <= 4; n++) {
       const w = d.wallet[n];
       d.wallet[n] = { b: (w && +w.b) || 0, t: (w && +w.t) || 0 };
       d.cleared[n] = (+d.cleared[n]) || 0;
+      d.rawCleared[n] = (+d.rawCleared[n]) || 0;
     }
     if (!d.keys || typeof d.keys !== 'object') d.keys = {};
     if (!d.mode || typeof d.mode !== 'object') d.mode = {};
@@ -189,7 +194,13 @@ const Save = {
     this.write();
   },
   clears(level) { return this.data.cleared[level] || 0; },
-  markCleared(level) { this.data.cleared[level] = this.clears(level) + 1; this.write(); },
+  /** finishes of this level run without checkpoints */
+  rawClears(level) { return this.data.rawCleared[level] || 0; },
+  markCleared(level, mode) {
+    this.data.cleared[level] = this.clears(level) + 1;
+    if (mode === 'raw') this.data.rawCleared[level] = this.rawClears(level) + 1;
+    this.write();
+  },
   owns(id) { return this.data.owned.indexOf(id) >= 0; },
   give(id) { if (!this.owns(id)) { this.data.owned.push(id); this.write(); return true; } return false; }
 };

@@ -245,11 +245,13 @@ const Game = {
     this.world.spins.forEach(sp => { sp.used = false; });
     this.trail.length = 0; this.foxes.length = 0;
     const sx = cp ? cp.x : 60;
+    const sy0 = groundYAt(this.world, sx, 'main') || 0;
+    this.baseRef = sy0; this.camBase = sy0;
     this.lota = {
-      x: sx, y: 0, vy: 0, grounded: true, duck: false, runPhase: 0,
+      x: sx, y: sy0, vy: 0, grounded: true, duck: false, runPhase: 0,
       state: 'run', dead: false, sitT: 0, alpha: 1, layer: 'main'
     };
-    this.cam.x = sx - this.VW * 0.30; this.cam.y = 0;
+    this.cam.x = sx - this.VW * 0.30; this.cam.y = sy0;
     this.input.jumpBuf = 0; this.input.duckHeld = false; this.input.duckTimer = 0; this.input.coyote = 0;
     this.fx.dust.length = 0; this.fx.confetti.length = 0; this.fx.sparks.length = 0;
     this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0; this.fx.spin = 0;
@@ -343,6 +345,17 @@ const Game = {
   layerBase(id) {
     const l = this.world.layers[id];
     return l ? l.base : 0;
+  },
+  /** The height of the floor she is actually over. On a branch that is the
+      layer's own base; on the main route it used to be zero everywhere, but
+      the deck of the wreck stands over the sea bed and the shore climbs out
+      of the water, so it has to be looked up. Over a gap the last known one
+      stands, or the camera would lurch every time she is in the air. */
+  floorBase(L) {
+    if (L.layer !== 'main') return this.layerBase(L.layer);
+    const y = groundYAt(this.world, L.x, 'main');
+    if (y != null) this.baseRef = y;
+    return this.baseRef || 0;
   },
   switchLayer(to) {
     const L = this.lota;
@@ -570,9 +583,12 @@ const Game = {
       for (let i = 0; i < W.spins.length; i++) {
         const sp = W.spins[i];
         if (sp.used || LY !== 'main' || L.x < sp.x) continue;
+        /* No caption. She plants a paw, swings her whole body round to the
+           right and the camera comes round with her — a beat behind, the way
+           a camera would. Saying so in words is what made it read as a bug. */
         sp.used = true; this.fx.spin = 1;
         Sfx.swipe();
-        UI.toast('↱ Į tiltą!', 'Lota pasuka į dešinę');
+        this.puff(L.x - 14, L.y, 7);
       }
 
       /* --- off the end of the pier ---
@@ -601,7 +617,7 @@ const Game = {
 
       /* --- safety net. There are no holes to fall down any more, so this only
          ever fires if the world itself went wrong. --- */
-      if (!this.run.warpTo && !this.run.diving && L.y < this.layerBase(LY) - 460) { this.crash('fall'); return; }
+      if (!this.run.warpTo && !this.run.diving && L.y < this.floorBase(L) - 460) { this.crash('fall'); return; }
 
       /* --- finish --- */
       if (L.x >= W.finishX) { this.finish(); return; }
@@ -609,7 +625,10 @@ const Game = {
 
     /* warp teleport once the wipe has covered the screen */
     if (this.run.warpTo && this.fx.warp < 0.21) {
-      L.x = this.run.warpTo.x; L.y = 0; L.vy = 0; L.grounded = true;
+      L.x = this.run.warpTo.x;
+      L.y = groundYAt(W, L.x, 'main') || 0;
+      this.baseRef = L.y;
+      L.vy = 0; L.grounded = true;
       L.layer = 'main';
       this.cam.x = L.x - this.VW * 0.30;
       this.run.warpTo = null;
@@ -666,7 +685,9 @@ const Game = {
     L.x += speedAt(L.x) * dt * 0.7;
     L.runPhase += dt * 16;
     L.state = 'run';
-    if (!L.grounded) { L.vy -= PHYS.GRAV * dt; L.y += L.vy * dt; if (L.y <= 0) { L.y = 0; L.vy = 0; L.grounded = true; } }
+    const fy = groundYAt(this.world, L.x, 'main') || 0;
+    if (!L.grounded) { L.vy -= PHYS.GRAV * dt; L.y += L.vy * dt; }
+    if (L.y <= fy) { L.y = fy; L.vy = 0; L.grounded = true; }
     this.updateCam(dt);
   },
 
@@ -678,7 +699,12 @@ const Game = {
 
   updateCam(dt) {
     const L = this.lota;
-    const base = this.layerBase(L.layer);
+    const base = this.floorBase(L);
+    /* the floor line the backgrounds hang off. It follows the real one but
+       eases into it, so a flight of steps slides the place up behind her
+       instead of snapping it up 42 px at a time. */
+    if (this.camBase == null) this.camBase = base;
+    this.camBase = lerp(this.camBase, base, 1 - Math.pow(0.004, dt));
     const tx = L.x - this.VW * 0.30;
     const ty = base + clamp((L.y - base) * 0.6, -70, 170);
     this.cam.x = lerp(this.cam.x, tx, 1 - Math.pow(0.0001, dt));
@@ -753,7 +779,7 @@ const Game = {
       if (c.y > this.VH + 40) f.confetti.splice(i, 1);
     }
     f.layerFade = Math.max(0, f.layerFade - dt * 2.4);
-    f.spin = Math.max(0, f.spin - dt * 1.15);
+    f.spin = Math.max(0, f.spin - dt * 0.9);
     f.shake = Math.max(0, f.shake - dt * 1.6);
     f.flash = Math.max(0, f.flash - dt * 2.2);
     f.warp = Math.max(0, f.warp - dt);
@@ -783,19 +809,54 @@ const Game = {
     }
     /* the view swinging round as she turns onto the pier. It has to zoom in
        while it turns, or the corners of the rotated picture show through. */
-    if (this.fx.spin > 0 && this.state !== 'lobby') {
-      const k = Math.sin((1 - this.fx.spin) * Math.PI);
-      const a = k * 0.17, sc = 1 + k * 0.32;
+    /* The camera coming round after her. It swings and pushes in at the same
+       time — pushing in is not decoration, it is what keeps the corners of
+       the frame covered while the picture is tilted. The streaks over the top
+       are the pan itself; without them a turn this fast just reads as the
+       screen wobbling. */
+    const spin = this.state === 'lobby' ? 0 : this.fx.spin;
+    ctx.save();
+    if (spin > 0) {
+      const k = Math.sin((1 - spin) * Math.PI);
       ctx.translate(this.VW / 2, this.VH / 2);
-      ctx.rotate(a); ctx.scale(sc, sc);
+      ctx.rotate(k * 0.34);
+      ctx.scale(1 + k * 0.75, 1 + k * 0.75);
       ctx.translate(-this.VW / 2, -this.VH / 2);
     }
 
     if (this.state === 'lobby' || this.state === 'mode') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
     else this.renderWorld();
+    ctx.restore();
+    if (spin > 0) this.drawTurnBlur(Math.sin((1 - spin) * Math.PI));
 
     ctx.restore();
+    ctx.restore();
+  },
+
+  /** the smear of a fast pan, drawn flat over the top of the turn */
+  drawTurnBlur(k) {
+    const ctx = this.ctx, VW = this.VW, VH = this.VH;
+    ctx.save();
+    ctx.globalAlpha = k * 0.5;
+    for (let i = 0; i < 26; i++) {
+      const r = makeRng(i * 37 + Math.floor(this.t * 20) * 13);
+      const yy = r() * VH, len = VW * (0.3 + r() * 0.7);
+      const x0 = r() * VW;
+      const g = ctx.createLinearGradient(x0, 0, x0 + len, 0);
+      g.addColorStop(0, 'rgba(255,255,255,0)');
+      g.addColorStop(0.5, i % 3 ? 'rgba(255,255,255,.5)' : 'rgba(180,220,255,.55)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(x0, yy, len, 1 + r() * 3);
+    }
+    /* and the frame darkening at the edges as it whips round */
+    ctx.globalAlpha = k * 0.4;
+    const v = ctx.createLinearGradient(0, 0, VW, 0);
+    v.addColorStop(0, 'rgba(10,12,24,.9)');
+    v.addColorStop(0.35, 'rgba(10,12,24,0)');
+    v.addColorStop(0.65, 'rgba(10,12,24,0)');
+    v.addColorStop(1, 'rgba(10,12,24,.9)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, VW, VH);
     ctx.restore();
   },
 
@@ -812,14 +873,20 @@ const Game = {
       const zs = W.zones;
       let zi = 0;
       for (let i = 0; i < zs.length; i++) if (atX >= zs[i].x0 - 200) zi = i;
+      /* the line the place is built on. It used to be zero everywhere; now
+         the deck of the wreck and the shelves out of the sea sit above it,
+         so the background is hung off whatever floor is under the middle of
+         the screen. `base` goes with it, for the places that need to know
+         how high they have climbed. */
+      const b = this.camBase || 0, fy = this.sy(b);
       const z = zs[zi].zone;
-      z.bg(ctx, VW, VH, this.cam.x, this.sy(0), this.t, z.pal);
+      z.bg(ctx, VW, VH, this.cam.x, fy, this.t, z.pal, b);
       if (zi + 1 < zs.length) {
         const fade = inv(atX, zs[zi].x1 - 420, zs[zi].x1 + 60);
         if (fade > 0) {
           ctx.save(); ctx.globalAlpha = fade;
           const nz = zs[zi + 1].zone;
-          nz.bg(ctx, VW, VH, this.cam.x, this.sy(0), this.t, nz.pal);
+          nz.bg(ctx, VW, VH, this.cam.x, fy, this.t, nz.pal, b);
           ctx.restore();
         }
       }
@@ -904,7 +971,7 @@ const Game = {
       ctx.save();
       if (p.oneWay) { ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 6; }
       drawPropTiled(ctx, p.prop, x0, y0, p.w, hgt, this.t, this.palOf(p), p.x,
-                    { role: p.stair ? 'stair' : 'step', floorY: this.sy(this.layerBase(p.layer)),
+                    { role: p.stair ? 'stair' : 'step', floorY: this.sy(p.base || 0),
                       rise: p.rise, dir: p.dir });
       ctx.restore();
       /* readable landing edge */
@@ -933,7 +1000,7 @@ const Game = {
     near.hazards.forEach(hz => {
       if (!mine(hz)) return;
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
-      const floorY = this.sy(this.layerBase(hz.layer));
+      const floorY = this.sy(hz.base || 0);
       if (hz.kind === 'bird') {
         /* a gull's shadow belongs on the ground below it, which is also the
            cue that something is coming */
@@ -983,13 +1050,26 @@ const Game = {
       });
     }
 
-    /* ---- Lota ---- */
+    /* ---- Lota ----
+       On the turn she pivots on the spot: her own squeeze runs a little ahead
+       of the camera's, so she is round before the view has finished coming
+       round after her. ---- */
     if (L) {
+      const spin = this.fx.spin;
+      ctx.save();
+      if (spin > 0) {
+        const pl = clamp((1 - spin) * 1.45, 0, 1);
+        const lx = this.sx(L.x), ly = this.sy(L.y);
+        ctx.translate(lx, ly);
+        ctx.scale(Math.max(0.1, Math.abs(Math.cos(pl * Math.PI))), 1);
+        ctx.translate(-lx, -ly);
+      }
       drawLota(ctx, this.sx(L.x), this.sy(L.y), {
         state: L.state, t: this.t, run: L.runPhase, skin: Save.data.skin,
         face: this.state === 'crash' ? 'sad' : undefined,
         tilt: this.state === 'crash' ? Math.sin(L.sitT * 3) * 0.22 - 0.08 : undefined
       });
+      ctx.restore();
       if (this.state === 'crash' && this.stateT > 0.35) {
         ctx.save(); ctx.globalAlpha = clamp((this.stateT - 0.35) * 2, 0, 1);
         ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
@@ -1008,7 +1088,10 @@ const Game = {
        blue of it, the bubbles and the light ---- */
     if (LY === 'main') {
       const zf = this.zoneAt(L ? L.x : 0).zone;
-      if (zf.fg) { ctx.save(); zf.fg(ctx, VW, VH, camX, this.sy(0), this.t, zf.pal); ctx.restore(); }
+      if (zf.fg) {
+        const b = this.camBase || 0;
+        ctx.save(); zf.fg(ctx, VW, VH, camX, this.sy(b), this.t, zf.pal, b); ctx.restore();
+      }
     }
 
     /* ---- speed streaks when she is really flying. A calm place — under

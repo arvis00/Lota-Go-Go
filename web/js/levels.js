@@ -55,9 +55,11 @@ const TRACKS = {
   2: {
     level: 2, seed: 20260901, zones: ZONES2, branches: BRANCHES2,
     treats: 20, currency: 't', minRest: 0.40, rest: [0.80, 0.42],
-    perZone: [1, 1, 2, 1, 1, 2, 2, 1, 2, 1, 1, 1, 1, 2, 1],    // = 20
+    /* seventeen places now: the wreck is three of them — up to her side, in
+       through the hole, and out on the broken deck */
+    perZone: [1, 1, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // = 20
     shortcuts: [],
-    phys: { V_MIN: 400, V_MAX: 880, X_FULL: 96000 }
+    phys: { V_MIN: 400, V_MAX: 880, X_FULL: 104000 }
   }
 };
 
@@ -110,19 +112,24 @@ const Levels = {
   /** every outfit on that shelf bought — half of the key to the next level */
   allOwned(n) { return this.shop(n).every(s => Save.owns(s.id)); },
 
-  /** level 1 is always open; every later one needs the previous level
-      finished at least once AND its whole wardrobe unlocked */
+  /** level 1 is always open; every later one needs the previous level's whole
+      wardrobe bought AND that level finished at least once with the flags
+      switched off. Finishing it with checkpoints is worth treats, not a key:
+      the way on is earned by running it clean from the start line. */
   unlocked(n) {
     if (n <= 1) return true;
     const p = n - 1;
-    return Save.clears(p) > 0 && this.allOwned(p);
+    return Save.rawClears(p) > 0 && this.allOwned(p);
   },
 
   /** what is still missing, for the padlock caption */
   blockedBy(n) {
     if (this.unlocked(n)) return null;
     const p = n - 1, need = [];
-    if (Save.clears(p) < 1) need.push('pereiti ' + p + ' lygį');
+    if (Save.rawClears(p) < 1)
+      need.push(Save.clears(p) > 0
+        ? 'pereiti ' + p + ' lygį BE kontrolinių taškų'
+        : 'pereiti ' + p + ' lygį be kontrolinių taškų');
     const left = this.shop(p).filter(s => !Save.owns(s.id)).length;
     if (left) need.push('atrakinti visas ' + p + ' lygio aprangas (liko ' + left + ')');
     return need.join(' ir ');

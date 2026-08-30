@@ -124,6 +124,9 @@ function buildWorld(track) {
   function place(layer, base, room) { curLayer = layer; curBase = base; curRoom = room || null; }
   function stamp(o) {
     o.layer = curLayer;
+    /* the height of the floor this thing is standing on: props with legs need
+       it to draw them, and it is no longer always zero */
+    if (o.base == null) o.base = curBase;
     if (o.zone == null) o.zone = curZone.index;
     if (curRoom) { o.pal = curRoom.pal; o.floor = curRoom.floor; o.room = curRoom.id; }
     return o;
@@ -230,12 +233,25 @@ function buildWorld(track) {
       x += len;
     },
 
+    /* One shelf the floor itself steps up by. It is a stair, so she runs
+       straight up it — the ground behind her is simply lower than the ground
+       in front. Nothing about the sea has to move for this to read. */
+    riser(z, h) {
+      const run = Math.max(76, reachAt(x) * 0.17);
+      closeGround(x);
+      plat(x, h, run, h, z.riseProp || 'sandShelf', false,
+           { stair: true, rise: h, dir: 1, pal: z.pal });
+      x += run;
+      curBase += h;
+      openGround(x);
+    },
+
     shortcut(z) {
       const len = dx(rng.range(0.7, 0.95));
       plat(x, LEDGE_TOP, len, LEDGE_TOP - LEDGE_CLEAR, rng.pick(z.pools.ledge), true);
-      const trig = stamp({ x: x + len - 26, y: LEDGE_TOP, w: 44, h: 60, zone: z.index, toX: 0, toY: 0 });
+      const trig = stamp({ x: x + len - 26, y: curBase + LEDGE_TOP, w: 44, h: 60, zone: z.index, toX: 0, toY: 0 });
       W.warps.push(trig);
-      W.deco.push(stamp({ x: x + len - 34, y: LEDGE_TOP, prop: z.pools.tunnel[0], w: 58, h: 62, shortcut: true }));
+      W.deco.push(stamp({ x: x + len - 34, y: curBase + LEDGE_TOP, prop: z.pools.tunnel[0], w: 58, h: 62, shortcut: true }));
       anchor(x + len - 70, LEDGE_TOP + 34, 'shortcut', true);
       const low = z.pools.hurdle.filter(p => propSize(p)[1] <= 58);
       const lp = low.length ? rng.pick(low) : rng.pick(z.pools.hurdle);
@@ -249,10 +265,10 @@ function buildWorld(track) {
   /* ---------- staircases ---------- */
   /** A run of treads. dir -1 goes down, +1 goes up. Starts at world height
       `from` and ends exactly on `from + dir * n * STAIR_RISE`. */
-  function flight(n, run, from, dir, pal) {
+  function flight(n, run, from, dir, pal, prop) {
     const y0 = from - curBase;
     for (let i = 0; i < n; i++) {
-      plat(x + i * run, y0 + dir * STAIR_RISE * (i + 1), run + 1.5, STAIR_RISE, 'tread', false,
+      plat(x + i * run, y0 + dir * STAIR_RISE * (i + 1), run + 1.5, STAIR_RISE, prop || 'tread', false,
            { stair: true, pal: pal, rise: STAIR_RISE, dir: dir });
     }
     x += n * run;
@@ -288,10 +304,16 @@ function buildWorld(track) {
        gets four, spread evenly down its length */
     const gulls = o.gulls || 0;
     let gullsDone = 0;
+    /* the same trick for the shelves the sea floor climbs by: a place that
+       says it rises eight times rises eight times, evenly */
+    const risers = o.risers || 0;
     while (budget > (o.tail == null ? 1.6 : o.tail)) {
       const x0 = x;
       let name;
-      if (gulls && gullsDone < gulls && (sec - budget) >= sec * ((gullsDone + 0.7) / (gulls + 1))) {
+      if (risers && o.risersDone < risers && (sec - budget) >= sec * ((o.risersDone + 0.5) / (risers + 1))) {
+        name = 'riser'; o.risersDone++;
+      }
+      else if (gulls && gullsDone < gulls && (sec - budget) >= sec * ((gullsDone + 0.7) / (gulls + 1))) {
         name = 'bird'; gullsDone++;
       }
       else if (o.shortcut && !o.shortcutDone && budget < sec * 0.62) { name = 'shortcut'; o.shortcutDone = true; }
@@ -304,6 +326,7 @@ function buildWorld(track) {
       else if (name === 'step') P.step(pl);
       else if (name === 'ledge') P.ledge(pl, rng.chance(0.4));
       else if (name === 'bird') P.bird(pl);
+      else if (name === 'riser') P.riser(pl, o.riseH || 38);
       else if (name === 'shortcut') P.shortcut(pl);
       used = name;
 
@@ -327,7 +350,11 @@ function buildWorld(track) {
       then has to fill. */
   function openBranch(z) {
     const br = BR[z.branch];
-    const rec = { br: br, id: br.id, x0: x, base: 0, entryEndX: 0, overlap: 0 };
+    /* `top` is the floor the branch is cut into — the street, or the forest
+       path. It used to be zero everywhere, so everything down here was
+       written as if it were; it no longer is. */
+    const B = curBase;
+    const rec = { br: br, id: br.id, x0: x, base: 0, top: B, entryEndX: 0, overlap: 0 };
     const keep = { l: curLayer, b: curBase, r: curRoom, seg: segStart };
 
     if (br.drop) {
@@ -336,28 +363,28 @@ function buildWorld(track) {
       const mouth = Math.round(reachAt(x) * 0.40);
       const n = Math.ceil(-br.drop / STAIR_RISE);
       const run = Math.max(100, reachAt(x) * 0.22);
-      rec.base = -n * STAIR_RISE;
+      rec.base = B - n * STAIR_RISE;
       const mouthX = x;
       closeGround(x);
-      W.deco.push(stamp({ x: x, y: 0, prop: br.shaft, w: mouth, h: 128, shaft: true }));
-      W.deco.push(stamp({ x: x - 14, y: 0, prop: br.sign, w: mouth + 28, h: 158, sign: true,
+      W.deco.push(stamp({ x: x, y: B, prop: br.shaft, w: mouth, h: 128, shaft: true }));
+      W.deco.push(stamp({ x: x - 14, y: B, prop: br.sign, w: mouth + 28, h: 158, sign: true,
                           lock: br.locked ? br.id : 0 }));
       if (br.locked) {
         /* The way down is barred until she has the key. The bars are floor, not
            an obstacle: with them shut she simply runs over the mouth and never
            knows it was there — with the key they fold back and the steps open. */
-        W.ground.push(stamp({ x: x - 8, w: mouth + 16, y: 0, lock: br.id }));
-        W.deco.push(stamp({ x: x - 8, y: 0, prop: 'metroGrate', w: mouth + 16, h: 70, gate: true, lock: br.id }));
+        W.ground.push(stamp({ x: x - 8, w: mouth + 16, y: B, lock: br.id }));
+        W.deco.push(stamp({ x: x - 8, y: B, prop: 'metroGrate', w: mouth + 16, h: 70, gate: true, lock: br.id }));
       }
-      portal(x - 4, mouth + 30, rec.base - 90, -8, 'main', br.id);
+      portal(x - 4, mouth + 30, rec.base - 90, B - 8, 'main', br.id);
       x += mouth;
       openGround(x);
       keep.seg = x;          // the floor now resumes past the mouth, not before it
       /* the steps themselves belong to the branch: from above you see the
          drawing, from down here you run on these */
-      place(br.id, 0, br.rooms[0]);
+      place(br.id, B, br.rooms[0]);
       x = mouthX;
-      flight(n, run, 0, -1, br.rooms[0].pal);
+      flight(n, run, B, -1, br.rooms[0].pal);
       rec.entryEndX = x;
       place(keep.l, keep.b, keep.r); segStart = keep.seg;
       x = mouthX + mouth;
@@ -369,14 +396,14 @@ function buildWorld(track) {
     const n = Math.ceil((br.rise - STAIR_FIRST) / STAIR_RISE);
     const run = Math.max(72, reachAt(x) * 0.26);
     const first = Math.max(132, reachAt(x) * 0.5);
-    rec.base = STAIR_FIRST + n * STAIR_RISE;
+    rec.base = B + STAIR_FIRST + n * STAIR_RISE;
     rec.overlap = run + 24;
     const x0 = x;
-    W.deco.push(stamp({ x: x - 34, y: 0, prop: 'stairsUpSign', w: 104, h: 162, sign: true }));
+    W.deco.push(stamp({ x: x - 34, y: B, prop: 'stairsUpSign', w: 104, h: 162, sign: true }));
     plat(x, STAIR_FIRST, first, STAIR_RISE, 'tread', false, { stair: true, pal: br.rooms[0].pal });
     anchor(x + first * 0.5, STAIR_FIRST + 36, 'stair', true);
     x += first;
-    flight(n, run, STAIR_FIRST, 1, br.rooms[0].pal);
+    flight(n, run, B + STAIR_FIRST, 1, br.rooms[0].pal);
     rec.entryEndX = x;
     portal(x - 12, run * 2 + 140, rec.base - 80, rec.base + 280, 'main', br.id);
     /* the hallway underneath stays clear — the flight is right over it */
@@ -392,13 +419,13 @@ function buildWorld(track) {
   function closeDown(z, rec) {
     /* she comes back into the first room of the branch and climbs out of that,
        so the way up is dressed as the place the steps belong to */
-    const br = rec.br, room = br.rooms[0];
-    const n = Math.ceil(-rec.base / STAIR_RISE);
+    const br = rec.br, room = br.rooms[0], B = rec.top;
+    const n = Math.ceil((B - rec.base) / STAIR_RISE);
     const run = Math.max(76, reachAt(x) * 0.15);
     const keep = { l: curLayer, b: curBase, r: curRoom, seg: segStart }, x0 = x;
     rec.exitStartX = x;
-    W.deco.push(stamp({ x: x - 24, y: 0, prop: br.exitSign, w: n * run + 48, h: 104, sign: true }));
-    place(br.id, 0, room);
+    W.deco.push(stamp({ x: x - 24, y: B, prop: br.exitSign, w: n * run + 48, h: 104, sign: true }));
+    place(br.id, B, room);
     W.deco.push(stamp({ x: x + 8, y: rec.base, prop: br.roomGate, w: 112, h: 196, gateway: true }));
     flight(n, run, rec.base, 1, room.pal);
     rec.exitEndX = x;
@@ -407,10 +434,10 @@ function buildWorld(track) {
          street: the last treads hand her to a stop far down the line, near the
          finish — which is the whole point of hunting down the key. Only someone
          coming up these steps can trigger it; the street above cannot. */
-      metroWarp = stamp({ x: x - run * 1.8, y: -60, w: run * 1.5, h: 210, toX: 0, toY: 0 });
+      metroWarp = stamp({ x: x - run * 1.8, y: B - 60, w: run * 1.5, h: 210, toX: 0, toY: 0 });
       W.warps.push(metroWarp);
     }
-    portal(x + 8, 200, -70, 220, br.id, 'main');
+    portal(x + 8, 200, B - 70, B + 220, br.id, 'main');
     const spent = x - x0;
     place(keep.l, keep.b, keep.r); segStart = keep.seg;
     x = x0;
@@ -510,14 +537,33 @@ function buildWorld(track) {
     segStart = keepSeg;
   }
 
-  /* ---------- walk the whole track ---------- */
+  /* ---------- walk the whole track ----------
+     The main route is no longer flat. A place can stand higher than the one
+     before it — the broken deck of the wreck does, and the shore climbs out
+     of the sea a shelf at a time — so `mainBase` is the height the floor is
+     at right now, and everything the zone lays down is stamped with it. */
+  let mainBase = 0;
   openGround(0);
   ZL.forEach((z, zi) => {
     curZone = z;
-    place('main', 0, null);
+    place('main', mainBase, null);
     const zx0 = x;
     /* calm entry so the new place reads before it is dangerous */
     P.flat(zi === 0 ? 2.6 : 1.15);
+    /* ---- a flight up into a place that stands higher ----
+       There is no way past it and no way to fail it: stairs are run, not
+       jumped, so the only thing this asks of the player is to keep going. */
+    if (z.stairsUp) {
+      const n = z.stairsUp, run = Math.max(88, reachAt(x) * 0.2);
+      closeGround(x);
+      if (z.stairSign) W.deco.push(stamp({ x: x - 24, y: curBase, prop: z.stairSign,
+                                           w: n * run + 60, h: 150, sign: true }));
+      flight(n, run, mainBase, 1, z.pal, z.stairProp);
+      mainBase += n * STAIR_RISE;
+      place('main', mainBase, null);
+      openGround(x);
+      P.flat(0.9);
+    }
     /* the one place the view swings round: she comes off the beach, turns
        right and the pier is suddenly ahead of her */
     if (z.turn) W.spins.push({ x: zx0 + dx(0.3) });
@@ -525,7 +571,9 @@ function buildWorld(track) {
 
     const br = z.branch ? BR[z.branch] : null;
     const opts = { shortcut: (track.shortcuts || []).indexOf(z.id) >= 0, shortcutDone: false,
-                   gulls: z.gulls || 0 };
+                   gulls: z.gulls || 0,
+                   risers: (z.climb && z.climb.n) || 0, risersDone: 0,
+                   riseH: (z.climb && z.climb.h) || 38 };
     let rec = null, budget = z.sec;
 
     if (br) {
@@ -561,11 +609,16 @@ function buildWorld(track) {
     }
 
     fill(z, budget, opts);
+    /* a place that promised to climb, climbs — whatever the gaps did */
+    while (opts.risers && opts.risersDone < opts.risers) {
+      P.flat(0.5); P.riser(z, opts.riseH); opts.risersDone++; P.flat(0.5);
+    }
+    mainBase = curBase;
     P.flat(1.1);
     if (z.exit) {
       const gw = z.exit === 'jetbridge' ? 190 : z.exit === 'planeDoor' ? 110 : 118;
       const gh = z.exit === 'jetbridge' ? 190 : 205;
-      W.deco.push(stamp({ x: x - gw - 40, y: 0, prop: z.exit, w: gw, h: gh, gateway: true }));
+      W.deco.push(stamp({ x: x - gw - 40, y: curBase, prop: z.exit, w: gw, h: gh, gateway: true }));
       P.flat(0.55);
     }
     /* ---- off the end of the pier ----
@@ -577,17 +630,37 @@ function buildWorld(track) {
       const lip = x;
       z.deckEnd = lip;      /* the background stops laying deck here too */
       closeGround(lip);
-      W.deco.push(stamp({ x: lip - 118, y: 0, prop: 'pierEnd', w: 130, h: 150, gateway: true }));
+      W.deco.push(stamp({ x: lip - 118, y: curBase, prop: 'pierEnd', w: 130, h: 150, gateway: true }));
       const gap = dx(1.7);
       x = lip + gap;
       openGround(x);
       /* the region ends just short of the new floor, so coming back from a
          checkpoint down there never re-triggers the leap */
-      W.dives.push({ x0: lip - 26, x1: x - 6, toX: x + dx(0.55), lip: lip });
+      W.dives.push({ x0: lip - 26, x1: x - 6, toX: x + dx(0.55), lip: lip, base: curBase });
+    }
+    /* ---- the far end of a deck that stands over something ----
+       The planking simply stops. It is not a hole: the floor she came in on
+       has been running along underneath the whole time, so she drops onto it
+       and keeps going — the way out of the wreck is a jump off the side. */
+    if (z.dropEnd) {
+      P.flat(0.5);
+      const lip = x;
+      closeGround(lip);
+      W.deco.push(stamp({ x: lip - 128, y: curBase, prop: z.dropProp || 'deckEdge',
+                          w: 140, h: 160, gateway: true }));
+      mainBase = z.dropTo == null ? 0 : z.dropTo;
+      /* the floor down there belongs to what she is dropping onto, not to the
+         deck she is leaving — the sea bed under a wreck is still sea bed */
+      place('main', mainBase, z.dropRoom || null);
+      /* the floor below is already there, well before the edge */
+      openGround(lip - dx(1.1));
+      x = lip + dx(0.25);
+      P.flat(1.5);
     }
     if (br && !br.drop) rec.x1 = x;
     z.span = { x0: zx0, x1: x };
-    W.zones.push({ zone: z, x0: zx0, x1: x });
+    z.baseY = mainBase;
+    W.zones.push({ zone: z, x0: zx0, x1: x, baseY: mainBase });
 
     /* ---- and now the other way through, over exactly the same span ---- */
     if (rec) {
@@ -601,11 +674,12 @@ function buildWorld(track) {
   });
 
   /* ---------- finish line ---------- */
-  place('main', 0, null);
+  /* whatever height the last place left her at, the finish stands on it */
+  place('main', mainBase, null);
   curZone = ZL[ZL.length - 1];
   P.flat(1.6);
   W.finishX = x + 120;
-  W.deco.push(stamp({ x: x, y: 0, prop: 'finish', w: 190, h: 210, finish: true }));
+  W.deco.push(stamp({ x: x, y: curBase, prop: 'finish', w: 190, h: 210, finish: true }));
   P.flat(2.4);
   closeGround(x + 400);
   W.totalX = x + 400;
@@ -724,11 +798,13 @@ function buildWorld(track) {
     /* barred floor comes and goes with the key — splitting it would throw the
        flag away */
     if (g.layer !== 'main' || g.lock) { keepG.push(g); return; }
+    /* whatever height this stretch of floor was laid at, it keeps — the deck
+       of the wreck and the shelves out of the sea are floor like any other */
+    const cut = (a, b) => ({ x: a, w: b - a, y: g.y, base: g.base, layer: 'main',
+                             floor: g.floor, pal: g.pal, room: g.room });
     let x0 = g.x; const x1 = g.x + g.w;
-    cuts.forEach(c => {
-      if (c > x0 && c < x1) { split.push({ x: x0, w: c - x0, y: 0, layer: 'main' }); x0 = c; }
-    });
-    split.push({ x: x0, w: x1 - x0, y: 0, layer: 'main' });
+    cuts.forEach(c => { if (c > x0 && c < x1) { split.push(cut(x0, c)); x0 = c; } });
+    split.push(cut(x0, x1));
   });
   const mainG = split.filter(g => g.w > 1);
   mainG.forEach(g => {
@@ -741,6 +817,21 @@ function buildWorld(track) {
   /* spatial buckets so rendering & collision stay cheap */
   W.index = buildIndex(W);
   return W;
+}
+
+/** The height of the floor under a point on a route. The main route used to
+    be flat all the way, so this was always zero; it no longer is. */
+function groundYAt(W, x, layer) {
+  const c = queryCells(W, x - 3, x + 3);
+  const LY = layer || 'main';
+  let y = null;
+  for (let i = 0; i < c.ground.length; i++) {
+    const g = c.ground[i];
+    if ((g.layer || 'main') !== LY || g.lock) continue;
+    if (x < g.x - 1 || x > g.x + g.w + 1) continue;
+    if (y === null || g.y > y) y = g.y;
+  }
+  return y;
 }
 
 /* bucket everything by 800-px columns */

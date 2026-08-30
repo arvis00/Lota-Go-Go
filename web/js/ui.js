@@ -129,8 +129,12 @@ const UI = {
       const ico = L.picks.indexOf('t') >= 0 ? ' 🧸' : ' 🦴';
       const shop = Levels.shop(level);
       const own = shop.filter(s => Save.owns(s.id)).length;
+      /* the finish that counts towards the next level is the one run without
+         the flags, so the lobby says outright whether it has happened yet */
+      const raws = Save.rawClears(level);
       const head = Save.clears(level)
-        ? 'Finišas ×' + Save.clears(level) + ' · rekordas ' + Save.best(level) + ico
+        ? 'Finišas ×' + Save.clears(level) + ' · rekordas ' + Save.best(level) + ico +
+          '<br>' + (raws ? '🔑 be k. t. ×' + raws : 'Be kontrolinių taškų — dar nė karto')
         : (Save.far(level) ? 'Toliausiai: ' + Save.far(level)
           : (level === 1 ? 'Pirmyn į Londoną!' : 'Pirmyn prie jūros!'));
       $('lobbyBest').innerHTML = head + (shop.length ? '<br>Aprangos: ' + own + ' / ' + shop.length : '');
@@ -292,7 +296,7 @@ const UI = {
     const bonus = Levels.bonus(r.level || 1, r.mode);
     const earned = this.bank(true);
     const last = W.zoneList[W.zoneList.length - 1].name;
-    Save.markCleared(r.level || 1);
+    Save.markCleared(r.level || 1, r.mode);
     Save.far(r.level || 1, last + ' — finišas!');
     Save.write();
 

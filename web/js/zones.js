@@ -258,9 +258,46 @@ const ZONES = [
       BG.clouds(ctx, VW, VH, camX * 0.08, t, pal.cloud, 60);
       BG.hills(ctx, VW, VH, camX * 0.15, floorY - 40, pal.far, 34);
       BG.trees(ctx, VW, VH, camX * 0.3, floorY - 6, '#7a5a3a', '#4caf6d', '#6fd48c', 1.05, 200);
-      tileLayer(camX * 0.5, 210, VW, x => {
-        for (let i = 0; i < 5; i++) fillRR(ctx, x + i * 22, floorY - 62, 12, 66, 3, '#f2ead9');
+      /* the fence runs the whole way, but something different is standing
+         against it every time */
+      tileLayer(camX * 0.5, 210, VW, (x, i) => {
+        for (let k = 0; k < 5; k++) fillRR(ctx, x + k * 22, floorY - 62, 12, 66, 3, '#f2ead9');
         fillRR(ctx, x, floorY - 46, 118, 8, 3, '#e0d5bd');
+        const k = imod(i, 5);
+        if (k === 0) {                    /* the washing line */
+          ctx.save(); ctx.globalAlpha = .9;
+          ctx.beginPath(); ctx.moveTo(x + 118, floorY - 96);
+          ctx.quadraticCurveTo(x + 150, floorY - 78, x + 182, floorY - 98);
+          ctx.strokeStyle = '#b8ac98'; ctx.lineWidth = 2; ctx.stroke();
+          ['#ffd15c', '#e2584f', '#6fc9ff'].forEach((c, q) =>
+            fillRR(ctx, x + 128 + q * 17, floorY - 88 + q, 13, 21, 2, c));
+          ctx.restore();
+        } else if (k === 1) {             /* a kennel with a bone by the door */
+          fillRR(ctx, x + 126, floorY - 62, 66, 62, 4, '#a8794a');
+          poly(ctx, [[x + 118, floorY - 62], [x + 159, floorY - 92], [x + 200, floorY - 62]], '#8a5f3a');
+          ctx.beginPath();
+          ctx.moveTo(x + 145, floorY); ctx.lineTo(x + 145, floorY - 30);
+          ctx.quadraticCurveTo(x + 159, floorY - 50, x + 173, floorY - 30);
+          ctx.lineTo(x + 173, floorY); ctx.closePath();
+          ctx.fillStyle = '#5f4429'; ctx.fill();
+        } else if (k === 2) {             /* a flower bed */
+          fillRR(ctx, x + 126, floorY - 26, 80, 26, 4, '#8a6440');
+          for (let q = 0; q < 5; q++) {
+            line(ctx, x + 136 + q * 15, floorY - 26, x + 136 + q * 15, floorY - 52, '#4caf6d', 3);
+            circle(ctx, x + 136 + q * 15, floorY - 56, 6, ['#ff8fb0', '#ffd15c', '#e2584f'][q % 3]);
+          }
+        } else if (k === 3) {             /* a bird table with a bird on it */
+          line(ctx, x + 158, floorY, x + 158, floorY - 78, '#8a6a45', 6);
+          fillRR(ctx, x + 132, floorY - 88, 54, 10, 3, '#a8794a');
+          poly(ctx, [[x + 126, floorY - 88], [x + 159, floorY - 112], [x + 192, floorY - 88]], '#c9855a');
+          fillEll(ctx, x + 150, floorY - 94, 8, 6, '#5f7080');
+          circle(ctx, x + 156, floorY - 98, 4, '#5f7080');
+        } else {                          /* a wheelbarrow leaning on the fence */
+          fillRR(ctx, x + 128, floorY - 44, 62, 24, 5, '#c9855a');
+          line(ctx, x + 188, floorY - 36, x + 210, floorY - 16, '#8a6a45', 4);
+          ctx.beginPath(); ctx.arc(x + 142, floorY - 12, 12, 0, TAU);
+          ctx.strokeStyle = '#5f4429'; ctx.lineWidth = 4; ctx.stroke();
+        }
       });
     },
     pools: { hurdle: ['rock', 'bushY', 'logpile', 'bucket', 'wheelbarrow', 'fenceY'], over: ['branchY'],
@@ -274,10 +311,43 @@ const ZONES = [
            floorTop: '#dfe9ef', floorBody: '#9fb4c2', accent: '#6fc9ff' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'stripe');
-      tileLayer(camX * 0.5, 380, VW, x => {
-        fillRR(ctx, x, floorY - 190, 96, 120, 6, '#cfe0ea');
-        for (let i = 0; i < 3; i++) fillRR(ctx, x + 6, floorY - 182 + i * 38, 84, 30, 3, '#eef5f9');
-        circle(ctx, x + 48, floorY - 210, 16, '#ffd8e6');
+      /* what stands along a hall: a radiator, then a coat rack, then a hall
+         clock, then a shoe bench — never the same thing twice running */
+      tileLayer(camX * 0.5, 380, VW, (x, i) => {
+        const k = imod(i, 4);
+        if (k === 0) {
+          fillRR(ctx, x, floorY - 190, 96, 120, 6, '#cfe0ea');
+          for (let q = 0; q < 3; q++) fillRR(ctx, x + 6, floorY - 182 + q * 38, 84, 30, 3, '#eef5f9');
+          circle(ctx, x + 48, floorY - 210, 16, '#ffd8e6');
+        } else if (k === 1) {
+          line(ctx, x + 44, floorY, x + 44, floorY - 220, '#8a6a45', 7);
+          fillEll(ctx, x + 44, floorY - 6, 30, 9, '#8a6a45');
+          [[-30, '#e2584f'], [30, '#4f8ce2'], [0, '#f0b23a']].forEach((c, q) => {
+            line(ctx, x + 44 + c[0], floorY - 214, x + 44 + c[0] * 0.6, floorY - 196, '#8a6a45', 4);
+            ctx.beginPath();
+            ctx.moveTo(x + 44 + c[0] * 0.6, floorY - 196);
+            ctx.quadraticCurveTo(x + 22 + c[0] * 0.6, floorY - 140, x + 30 + c[0] * 0.6, floorY - 96);
+            ctx.lineTo(x + 62 + c[0] * 0.6, floorY - 96);
+            ctx.quadraticCurveTo(x + 66 + c[0] * 0.6, floorY - 140, x + 44 + c[0] * 0.6, floorY - 196);
+            ctx.closePath(); ctx.fillStyle = c[1]; ctx.fill();
+          });
+        } else if (k === 2) {
+          fillRR(ctx, x + 10, floorY - 246, 62, 246, 6, '#8a6440');
+          fillRR(ctx, x + 18, floorY - 236, 46, 74, 4, '#f2ead9');
+          circle(ctx, x + 41, floorY - 200, 20, '#fdf8ea');
+          line(ctx, x + 41, floorY - 200, x + 41, floorY - 214, '#3a3238', 2.4);
+          line(ctx, x + 41, floorY - 200, x + 51, floorY - 195, '#3a3238', 2.4);
+          ctx.save(); ctx.globalAlpha = .6;
+          line(ctx, x + 41, floorY - 150, x + 41, floorY - 60, '#c9962c', 3);
+          circle(ctx, x + 41, floorY - 54, 11, '#c9962c'); ctx.restore();
+        } else {
+          fillRR(ctx, x + 4, floorY - 56, 128, 14, 4, '#a8794a');
+          [x + 16, x + 118].forEach(px => line(ctx, px, floorY - 46, px, floorY - 4, '#8a6a45', 6));
+          for (let q = 0; q < 3; q++) {
+            fillEll(ctx, x + 32 + q * 34, floorY - 8, 15, 7, ['#e2584f', '#4f8ce2', '#68c77e'][q]);
+            fillEll(ctx, x + 32 + q * 34, floorY - 14, 11, 6, shade(['#e2584f', '#4f8ce2', '#68c77e'][q], .3));
+          }
+        }
       });
     },
     pools: { hurdle: ['laundry', 'basket', 'books', 'toybox', 'plantH'], over: ['table'],
@@ -313,12 +383,46 @@ const ZONES = [
            floorTop: '#c96f8a', floorBody: '#8a4a63', accent: '#ffb0d0' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'dots');
-      tileLayer(camX * 0.5, 420, VW, x => {
-        fillRR(ctx, x, floorY - 150, 70, 150, 8, '#8a6440');
-        for (let i = 0; i < 3; i++) {
-          fillRR(ctx, x + 5, floorY - 140 + i * 46, 60, 8, 3, '#a8794a');
-          for (let k = 0; k < 4; k++) fillRR(ctx, x + 9 + k * 13, floorY - 152 + i * 46, 9, 12, 2,
-            ['#e2584f', '#4f8ce2', '#f0b23a', '#68c77e'][k]);
+      /* granny's front room: the bookcase, then the china cabinet, then the
+         armchair with the knitting, then the piano */
+      tileLayer(camX * 0.5, 420, VW, (x, i) => {
+        const k = imod(i, 4);
+        if (k === 0) {
+          fillRR(ctx, x, floorY - 150, 70, 150, 8, '#8a6440');
+          for (let q = 0; q < 3; q++) {
+            fillRR(ctx, x + 5, floorY - 140 + q * 46, 60, 8, 3, '#a8794a');
+            for (let m = 0; m < 4; m++) fillRR(ctx, x + 9 + m * 13, floorY - 152 + q * 46, 9, 12, 2,
+              ['#e2584f', '#4f8ce2', '#f0b23a', '#68c77e'][m]);
+          }
+        } else if (k === 1) {
+          fillRR(ctx, x, floorY - 200, 96, 200, 8, '#8a6440');
+          fillRR(ctx, x + 8, floorY - 190, 80, 128, 4, '#e6dcf0');
+          for (let q = 0; q < 2; q++) {
+            fillRR(ctx, x + 12, floorY - 132 + q * 40, 72, 6, 2, '#a8794a');
+            for (let m = 0; m < 3; m++) {
+              fillEll(ctx, x + 26 + m * 22, floorY - 136 + q * 40, 9, 5, '#fdf8ea');
+              circle(ctx, x + 26 + m * 22, floorY - 142 + q * 40, 6, '#fdf8ea');
+            }
+          }
+          ctx.save(); ctx.globalAlpha = .35;
+          fillRR(ctx, x + 16, floorY - 186, 20, 118, 3, '#ffffff'); ctx.restore();
+        } else if (k === 2) {
+          fillRR(ctx, x + 4, floorY - 118, 106, 66, 12, '#c26f8a');
+          fillRR(ctx, x, floorY - 62, 114, 62, 10, '#a85a74');
+          fillRR(ctx, x + 12, floorY - 74, 90, 16, 6, '#d68fa4');
+          circle(ctx, x + 128, floorY - 22, 20, '#f0b23a');
+          line(ctx, x + 128, floorY - 22, x + 152, floorY - 46, '#c9962c', 3);
+          line(ctx, x + 134, floorY - 26, x + 158, floorY - 50, '#c9962c', 3);
+        } else {
+          fillRR(ctx, x, floorY - 128, 156, 96, 5, '#5f4429');
+          fillRR(ctx, x - 6, floorY - 138, 168, 14, 4, '#7a5434');
+          fillRR(ctx, x + 10, floorY - 34, 136, 12, 3, '#f6efe2');
+          ctx.save(); ctx.globalAlpha = .8;
+          for (let q = 0; q < 9; q++) fillRR(ctx, x + 16 + q * 15, floorY - 34, 5, 8, 1, '#3a3238');
+          ctx.restore();
+          fillRR(ctx, x + 6, floorY - 22, 20, 22, 3, '#5f4429');
+          fillRR(ctx, x + 130, floorY - 22, 20, 22, 3, '#5f4429');
+          fillRR(ctx, x + 40, floorY - 160, 60, 24, 3, '#f6efe2');
         }
       });
     },
@@ -740,17 +844,69 @@ const BRANCHES = {
                treadTop: '#d9a86a', treadSide: '#a87a4a', rail: '#a8794a', post: '#8a6a45' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
           BG.room(ctx, VW, VH, camX * 0.35, floorY, pal, 'dots');
-          /* rocket poster + a shelf of models: unmistakably a boy's room */
+          /* A boy's room, and no two stretches of its wall the same: the
+             poster changes, and so does what is on the shelf under it. */
           tileLayer(camX * 0.5, 400, VW, (x, i) => {
-            fillRR(ctx, x, floorY - 300, 104, 128, 5, '#1f2a44');
-            poly(ctx, [[x + 52, floorY - 290], [x + 70, floorY - 240], [x + 34, floorY - 240]], '#e8eef8');
-            poly(ctx, [[x + 34, floorY - 240], [x + 70, floorY - 240], [x + 78, floorY - 214], [x + 26, floorY - 214]], '#c9302c');
-            poly(ctx, [[x + 44, floorY - 214], [x + 60, floorY - 214], [x + 52, floorY - 190]], '#f6c93a');
-            for (let k = 0; k < 9; k++) circle(ctx, x + 10 + imod(k * 37, 88), floorY - 294 + imod(k * 53, 118), 1.8, '#fff');
+            const k = imod(i, 4);
+            fillRR(ctx, x, floorY - 300, 104, 128, 5, ['#1f2a44', '#2f4a32', '#3f2a44', '#123a44'][k]);
+            if (k === 0) {                     /* the rocket */
+              poly(ctx, [[x + 52, floorY - 290], [x + 70, floorY - 240], [x + 34, floorY - 240]], '#e8eef8');
+              poly(ctx, [[x + 34, floorY - 240], [x + 70, floorY - 240], [x + 78, floorY - 214], [x + 26, floorY - 214]], '#c9302c');
+              poly(ctx, [[x + 44, floorY - 214], [x + 60, floorY - 214], [x + 52, floorY - 190]], '#f6c93a');
+              for (let q = 0; q < 9; q++) circle(ctx, x + 10 + imod(q * 37, 88), floorY - 294 + imod(q * 53, 118), 1.8, '#fff');
+            } else if (k === 1) {              /* a dinosaur */
+              ctx.beginPath();
+              ctx.moveTo(x + 16, floorY - 186);
+              ctx.quadraticCurveTo(x + 40, floorY - 250, x + 74, floorY - 236);
+              ctx.quadraticCurveTo(x + 92, floorY - 230, x + 86, floorY - 258);
+              ctx.quadraticCurveTo(x + 74, floorY - 276, x + 56, floorY - 266);
+              ctx.quadraticCurveTo(x + 30, floorY - 254, x + 16, floorY - 186);
+              ctx.closePath(); ctx.fillStyle = '#68c77e'; ctx.fill();
+              for (let q = 0; q < 4; q++)
+                poly(ctx, [[x + 34 + q * 12, floorY - 246 - q * 3], [x + 40 + q * 12, floorY - 262 - q * 3],
+                           [x + 46 + q * 12, floorY - 246 - q * 3]], '#4a9d6e');
+              circle(ctx, x + 74, floorY - 262, 3, '#1f2a1c');
+              fillRR(ctx, x + 12, floorY - 200, 80, 8, 3, '#8a6a45');
+            } else if (k === 2) {              /* a football shirt and a ball */
+              fillRR(ctx, x + 24, floorY - 274, 56, 62, 6, '#e2584f');
+              fillRR(ctx, x + 12, floorY - 272, 20, 22, 5, '#e2584f');
+              fillRR(ctx, x + 72, floorY - 272, 20, 22, 5, '#e2584f');
+              ctx.fillStyle = '#fff'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
+              ctx.fillText('7', x + 52, floorY - 232);
+              circle(ctx, x + 52, floorY - 200, 17, '#f2ead9');
+              for (let q = 0; q < 5; q++)
+                poly(ctx, [[x + 52, floorY - 200], [x + 52 + Math.cos(q * 1.26) * 13, floorY - 200 + Math.sin(q * 1.26) * 13],
+                           [x + 52 + Math.cos(q * 1.26 + .8) * 13, floorY - 200 + Math.sin(q * 1.26 + .8) * 13]], '#2b2b34');
+            } else {                            /* a pirate map */
+              fillRR(ctx, x + 12, floorY - 282, 80, 94, 4, '#e8d9ae');
+              ctx.save(); ctx.globalAlpha = .7;
+              ctx.beginPath();
+              ctx.moveTo(x + 22, floorY - 210); ctx.quadraticCurveTo(x + 48, floorY - 254, x + 82, floorY - 232);
+              ctx.setLineDash([5, 5]); ctx.strokeStyle = '#8a5f3a'; ctx.lineWidth = 2.4; ctx.stroke();
+              ctx.setLineDash([]); ctx.restore();
+              line(ctx, x + 74, floorY - 240, x + 90, floorY - 224, '#c9302c', 4);
+              line(ctx, x + 90, floorY - 240, x + 74, floorY - 224, '#c9302c', 4);
+              fillEll(ctx, x + 36, floorY - 262, 16, 9, '#8fb8d6');
+            }
+            /* the shelf: models, then books, then trophies, then rocks */
             fillRR(ctx, x + 150, floorY - 214, 130, 9, 3, '#8a6a45');
-            for (let k = 0; k < 4; k++) {
-              fillRR(ctx, x + 158 + k * 30, floorY - 240, 20, 26, 3, ['#4f8ce2', '#e2584f', '#68c77e', '#f0b23a'][k]);
-              circle(ctx, x + 168 + k * 30, floorY - 244, 5, '#dfe6f0');
+            if (k === 0 || k === 3) {
+              for (let q = 0; q < 4; q++) {
+                fillRR(ctx, x + 158 + q * 30, floorY - 240, 20, 26, 3, ['#4f8ce2', '#e2584f', '#68c77e', '#f0b23a'][q]);
+                circle(ctx, x + 168 + q * 30, floorY - 244, 5, '#dfe6f0');
+              }
+            } else if (k === 1) {
+              for (let q = 0; q < 7; q++)
+                fillRR(ctx, x + 156 + q * 15, floorY - 214 - (22 + imod(q * 13, 12)), 11, 22 + imod(q * 13, 12), 2,
+                  ['#e2584f', '#4f8ce2', '#f0b23a', '#68c77e', '#b884e8'][q % 5]);
+            } else {
+              for (let q = 0; q < 3; q++) {
+                const cx0 = x + 176 + q * 42;
+                fillRR(ctx, cx0 - 11, floorY - 222, 22, 8, 2, '#c9962c');
+                line(ctx, cx0, floorY - 222, cx0, floorY - 234, '#c9962c', 4);
+                ctx.beginPath(); ctx.arc(cx0, floorY - 242, 9, 0, Math.PI); ctx.closePath();
+                ctx.fillStyle = '#f0b23a'; ctx.fill();
+              }
             }
           });
         },
@@ -773,24 +929,66 @@ const BRANCHES = {
           ctx.save(); ctx.globalAlpha = .5;
           for (let px = -imod(camX * 0.35, 40); px < VW; px += 40) fillRR(ctx, px + 8, floorY - 163, 22, 10, 3, '#dff0fb');
           ctx.restore();
-          tileLayer(camX * 0.5, 470, VW, x => {
-            /* mirror over a basin */
+          tileLayer(camX * 0.5, 470, VW, (x, i) => {
+            const k = imod(i, 3);
+            /* over the basin: a mirror, then a medicine cabinet, then a
+               porthole window with the garden behind it */
             fillRR(ctx, x, floorY - 288, 108, 96, 10, '#c9d8e4');
             ctx.save(); rr(ctx, x + 7, floorY - 281, 94, 82, 7); ctx.clip();
-            ctx.fillStyle = '#dff0fb'; ctx.fillRect(x, floorY - 281, 108, 82);
-            ctx.globalAlpha = .55; fillRR(ctx, x + 16, floorY - 274, 26, 66, 6, '#ffffff'); ctx.restore();
-            /* shower head and a rail */
-            line(ctx, x + 250, floorY - 300, x + 250, floorY - 254, '#c9ced9', 6);
-            fillEll(ctx, x + 250, floorY - 250, 20, 8, '#c9ced9');
-            ctx.save(); ctx.globalAlpha = .45;
-            for (let k = 0; k < 6; k++) line(ctx, x + 236 + k * 6, floorY - 244, x + 234 + k * 6, floorY - 210, '#8fd6ff', 2);
+            if (k === 2) {
+              ctx.fillStyle = '#bfe4f4'; ctx.fillRect(x, floorY - 281, 108, 82);
+              ctx.translate(x + 7, 0);
+              BG.hills(ctx, 94, 200, i * 40, floorY - 214, '#7fc48f', 12, 60);
+            } else {
+              ctx.fillStyle = '#dff0fb'; ctx.fillRect(x, floorY - 281, 108, 82);
+              ctx.globalAlpha = .55; fillRR(ctx, x + 16, floorY - 274, 26, 66, 6, '#ffffff');
+            }
             ctx.restore();
-            /* rubber duck on a stool, because of course */
+            if (k === 1) {
+              ctx.save(); ctx.globalAlpha = .8;
+              line(ctx, x + 54, floorY - 281, x + 54, floorY - 199, '#c9d8e4', 4);
+              for (let q = 0; q < 3; q++) circle(ctx, x + 22 + q * 30, floorY - 262, 6, '#eaf6fb');
+              ctx.restore();
+            }
+            if (k === 0) {
+              /* shower head and a rail */
+              line(ctx, x + 250, floorY - 300, x + 250, floorY - 254, '#c9ced9', 6);
+              fillEll(ctx, x + 250, floorY - 250, 20, 8, '#c9ced9');
+              ctx.save(); ctx.globalAlpha = .45;
+              for (let q = 0; q < 6; q++) line(ctx, x + 236 + q * 6, floorY - 244, x + 234 + q * 6, floorY - 210, '#8fd6ff', 2);
+              ctx.restore();
+            } else if (k === 1) {
+              /* a towel rail with towels on it */
+              fillRR(ctx, x + 210, floorY - 250, 96, 7, 3, '#c9ced9');
+              ['#8fd6ff', '#ffd94a', '#ff9bb8'].forEach((c, q) =>
+                fillRR(ctx, x + 218 + q * 30, floorY - 248, 22, 60 + q * 6, 3, c));
+            } else {
+              /* a laundry basket, spilling */
+              ctx.beginPath();
+              ctx.moveTo(x + 226, floorY); ctx.lineTo(x + 234, floorY - 58);
+              ctx.lineTo(x + 300, floorY - 58); ctx.lineTo(x + 308, floorY);
+              ctx.closePath(); ctx.fillStyle = '#d8c9a8'; ctx.fill();
+              ctx.save(); ctx.globalAlpha = .5;
+              for (let q = 0; q < 4; q++) line(ctx, x + 236 + q * 17, floorY - 56, x + 232 + q * 17, floorY - 2, '#b8a582', 2);
+              ctx.restore();
+              fillRR(ctx, x + 248, floorY - 72, 34, 18, 6, '#ff9bb8');
+              fillRR(ctx, x + 272, floorY - 66, 26, 14, 5, '#8fd6ff');
+            }
+            /* and something on a stool: a duck, a boat, a pile of soap */
             fillRR(ctx, x + 350, floorY - 44, 40, 44, 4, '#dfe8f0');
-            fillEll(ctx, x + 370, floorY - 56, 15, 11, '#ffd94a');
-            circle(ctx, x + 379, floorY - 64, 8, '#ffd94a');
-            poly(ctx, [[x + 385, floorY - 65], [x + 394, floorY - 62], [x + 385, floorY - 60]], '#f2762c');
-            circle(ctx, x + 381, floorY - 66, 1.6, '#2b2b34');
+            if (k === 0) {
+              fillEll(ctx, x + 370, floorY - 56, 15, 11, '#ffd94a');
+              circle(ctx, x + 379, floorY - 64, 8, '#ffd94a');
+              poly(ctx, [[x + 385, floorY - 65], [x + 394, floorY - 62], [x + 385, floorY - 60]], '#f2762c');
+              circle(ctx, x + 381, floorY - 66, 1.6, '#2b2b34');
+            } else if (k === 1) {
+              poly(ctx, [[x + 354, floorY - 52], [x + 388, floorY - 52], [x + 382, floorY - 44], [x + 360, floorY - 44]], '#e2584f');
+              line(ctx, x + 371, floorY - 52, x + 371, floorY - 80, '#f6efe2', 3);
+              poly(ctx, [[x + 373, floorY - 78], [x + 392, floorY - 56], [x + 373, floorY - 56]], '#ffffff');
+            } else {
+              [0, 1, 2].forEach(q => fillRR(ctx, x + 356 + (q % 2) * 8, floorY - 52 - q * 9, 26, 9, 4,
+                ['#ff9bb8', '#a6e88f', '#ffd94a'][q]));
+            }
           });
           fillRR(ctx, 0, 0, VW, Math.max(0, floorY - 300), 0, '#e4eff6');
         },
@@ -819,19 +1017,82 @@ const BRANCHES = {
               circle(ctx, lx, ly + 6, 11, '#fff3c4'); ctx.restore();
             }
           });
-          /* a wardrobe and a rocking horse pushed back against the wall */
-          tileLayer(camX * 0.5, 460, VW, x => {
-            fillRR(ctx, x, floorY - 218, 118, 218, 6, '#e8c9d8');
-            fillRR(ctx, x + 6, floorY - 210, 50, 202, 4, '#f2dae6');
-            fillRR(ctx, x + 62, floorY - 210, 50, 202, 4, '#f2dae6');
-            circle(ctx, x + 58, floorY - 108, 4, '#c2607a');
-            fillEll(ctx, x + 250, floorY - 46, 42, 16, '#f6efe2');
-            fillRR(ctx, x + 236, floorY - 76, 46, 34, 10, '#f6efe2');
-            circle(ctx, x + 286, floorY - 82, 15, '#f6efe2');
-            circle(ctx, x + 292, floorY - 85, 2.6, '#3a2f38');
-            ctx.save(); ctx.globalAlpha = .8;
-            for (let k = 0; k < 4; k++) line(ctx, x + 276 + k * 4, floorY - 96, x + 268 + k * 5, floorY - 74, '#e0a8c4', 3);
-            ctx.restore();
+          /* Against the wall, a different thing every time — the room used to
+             be one wardrobe and one rocking horse, repeated for ever. */
+          tileLayer(camX * 0.5, 460, VW, (x, i) => {
+            const k = imod(i, 4);
+            if (k === 0) {                      /* the wardrobe */
+              fillRR(ctx, x, floorY - 218, 118, 218, 6, '#e8c9d8');
+              fillRR(ctx, x + 6, floorY - 210, 50, 202, 4, '#f2dae6');
+              fillRR(ctx, x + 62, floorY - 210, 50, 202, 4, '#f2dae6');
+              circle(ctx, x + 58, floorY - 108, 4, '#c2607a');
+            } else if (k === 1) {               /* a dressing table with a mirror */
+              fillRR(ctx, x + 4, floorY - 88, 118, 20, 4, '#e8c9d8');
+              [x + 14, x + 112].forEach(px => line(ctx, px, floorY - 70, px, floorY - 4, '#e0a8c4', 6));
+              ctx.beginPath();
+              ctx.ellipse(x + 63, floorY - 140, 40, 52, 0, 0, TAU);
+              ctx.fillStyle = '#f2dae6'; ctx.fill();
+              ctx.save(); ctx.globalAlpha = .6;
+              ctx.beginPath(); ctx.ellipse(x + 63, floorY - 140, 32, 44, 0, 0, TAU);
+              ctx.fillStyle = '#fdf3f7'; ctx.fill();
+              fillRR(ctx, x + 48, floorY - 172, 14, 60, 6, '#ffffff'); ctx.restore();
+              fillRR(ctx, x + 26, floorY - 104, 12, 16, 3, '#ff8fb0');
+              circle(ctx, x + 96, floorY - 96, 8, '#b48bff');
+            } else if (k === 2) {               /* a bookcase of dolls and books */
+              fillRR(ctx, x, floorY - 196, 104, 196, 6, '#e8c9d8');
+              for (let q = 0; q < 3; q++) {
+                fillRR(ctx, x + 5, floorY - 186 + q * 62, 94, 7, 3, '#d8a2bd');
+                if (q === 1) {
+                  for (let m = 0; m < 3; m++) {
+                    circle(ctx, x + 24 + m * 28, floorY - 206 + q * 62 + 10, 8, '#f6e0cf');
+                    fillRR(ctx, x + 17 + m * 28, floorY - 188 + q * 62, 14, 22, 4,
+                      ['#ff8fb0', '#b48bff', '#8fd6ff'][m]);
+                  }
+                } else {
+                  for (let m = 0; m < 6; m++)
+                    fillRR(ctx, x + 9 + m * 15, floorY - 186 + q * 62 - (22 + imod(m * 17, 12)), 11,
+                      22 + imod(m * 17, 12), 2,
+                      ['#ff8fb0', '#ffd15c', '#b48bff', '#8fd6ff', '#a6e88f'][m % 5]);
+                }
+              }
+            } else {                            /* a big teddy in an armchair */
+              fillRR(ctx, x + 4, floorY - 92, 104, 92, 12, '#e0a8c4');
+              fillRR(ctx, x + 12, floorY - 118, 88, 40, 10, '#e8c9d8');
+              fillEll(ctx, x + 56, floorY - 74, 30, 26, '#c9955f');
+              circle(ctx, x + 56, floorY - 116, 20, '#c9955f');
+              circle(ctx, x + 40, floorY - 132, 8, '#c9955f');
+              circle(ctx, x + 72, floorY - 132, 8, '#c9955f');
+              fillEll(ctx, x + 56, floorY - 110, 11, 8, '#f0dcc0');
+              circle(ctx, x + 49, floorY - 120, 2.6, '#3a2f38');
+              circle(ctx, x + 63, floorY - 120, 2.6, '#3a2f38');
+              circle(ctx, x + 56, floorY - 112, 3, '#3a2f38');
+              fillRR(ctx, x + 40, floorY - 96, 32, 10, 4, '#ff8fb0');
+            }
+            /* and next to it: a doll's pram, a kite, a hoop, a skipping rope */
+            const k2 = imod(i, 3);
+            if (k2 === 0) {
+              fillRR(ctx, x + 236, floorY - 76, 60, 40, 12, '#f6efe2');
+              ctx.beginPath(); ctx.arc(x + 266, floorY - 76, 30, Math.PI, TAU);
+              ctx.fillStyle = '#ff9bb8'; ctx.fill();
+              line(ctx, x + 296, floorY - 70, x + 318, floorY - 94, '#c2607a', 4);
+              circle(ctx, x + 248, floorY - 30, 10, '#c2607a');
+              circle(ctx, x + 286, floorY - 30, 10, '#c2607a');
+            } else if (k2 === 1) {
+              ctx.save(); ctx.translate(x + 274, floorY - 96); ctx.rotate(0.2);
+              poly(ctx, [[0, -46], [30, 0], [0, 46], [-30, 0]], '#8fd6ff');
+              line(ctx, 0, -46, 0, 46, '#fdf3f7', 2);
+              line(ctx, -30, 0, 30, 0, '#fdf3f7', 2);
+              ctx.restore();
+              ctx.beginPath();
+              ctx.moveTo(x + 268, floorY - 52);
+              ctx.quadraticCurveTo(x + 292, floorY - 26, x + 262, floorY - 4);
+              ctx.strokeStyle = '#c2607a'; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+              ctx.beginPath(); ctx.arc(x + 268, floorY - 42, 40, 0, TAU);
+              ctx.strokeStyle = '#ffd15c'; ctx.lineWidth = 8; ctx.stroke();
+              ctx.beginPath(); ctx.arc(x + 268, floorY - 42, 40, 0.4, 2.1);
+              ctx.strokeStyle = '#b48bff'; ctx.lineWidth = 8; ctx.stroke();
+            }
           });
         },
         pools: { hurdle: ['dollhouse', 'vanity', 'plushPile', 'toyboxG'], over: ['bunting'],
@@ -862,13 +1123,42 @@ const BRANCHES = {
         /* the ceiling of it, low over her head */
         fillRR(ctx, 0, 0, VW, Math.max(0, floorY - 208), 0, '#12151d');
         fillRR(ctx, 0, Math.max(0, floorY - 214), VW, 8, 0, '#4e5768');
-        tileLayer(camX * 0.6, 240, VW, x => {
-          /* a duct joint, and a cable run stapled along it */
+        tileLayer(camX * 0.6, 240, VW, (x, i) => {
+          /* a duct joint, and a cable run stapled along it — and then, every
+             so often, a fan, a branch running off sideways, or a warning
+             sticker nobody was ever meant to read down here */
           fillRR(ctx, x, floorY - 216, 16, 216, 3, '#4e5768');
           ctx.save(); ctx.globalAlpha = .5;
           ctx.beginPath(); ctx.moveTo(x - 120, floorY - 196);
           ctx.quadraticCurveTo(x - 60, floorY - 178, x, floorY - 196);
           ctx.strokeStyle = '#2f3542'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+          const k = imod(i, 4);
+          if (k === 1) {
+            /* a fan turning slowly behind a grille */
+            ctx.save(); ctx.globalAlpha = .8;
+            circle(ctx, x + 90, floorY - 150, 34, '#232833');
+            ctx.translate(x + 90, floorY - 150); ctx.rotate(t * 1.2);
+            for (let q = 0; q < 4; q++) {
+              ctx.save(); ctx.rotate(q * Math.PI / 2);
+              fillEll(ctx, 15, 0, 15, 7, '#3d4450'); ctx.restore();
+            }
+            ctx.restore();
+            ctx.save(); ctx.globalAlpha = .55;
+            ctx.beginPath(); ctx.arc(x + 90, floorY - 150, 34, 0, TAU);
+            ctx.strokeStyle = '#5b6472'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+          } else if (k === 2) {
+            /* a branch of the duct going off into the dark */
+            fillRR(ctx, x + 60, floorY - 208, 96, 74, 4, '#2b303c');
+            fillRR(ctx, x + 66, floorY - 202, 84, 62, 3, '#171a24');
+            ctx.save(); ctx.globalAlpha = .45;
+            for (let q = 0; q < 4; q++) line(ctx, x + 70 + q * 20, floorY - 202, x + 70 + q * 20, floorY - 140, '#3d4450', 2);
+            ctx.restore();
+          } else if (k === 3) {
+            fillRR(ctx, x + 74, floorY - 176, 44, 30, 3, '#c9962c');
+            ctx.save(); ctx.globalAlpha = .8;
+            poly(ctx, [[x + 96, floorY - 170], [x + 106, floorY - 154], [x + 86, floorY - 154]], '#171a24');
+            ctx.restore();
+          }
         });
         /* light coming up through the louvres in the floor of the duct */
         tileLayer(camX * 0.9, 300, VW, x => {

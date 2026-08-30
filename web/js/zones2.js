@@ -158,6 +158,69 @@ const BG2 = {
     }
   },
 
+  /* What drives along the seaside street. Four of them, and the wheels are
+     on the road: a car floating clear of the tarmac was the single thing
+     that made this street read as a flooded one. */
+  beachTraffic(ctx, x, roadY, t, i) {
+    const k = imod(i, 4);
+    const body = ['#3f9cc4', '#e2453c', '#4a9d6e', '#f0a93a'][k];
+    const board = (bx, by, w0, col, stripe) => {
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + w0 * 0.5, by - 11, bx + w0, by);
+      ctx.quadraticCurveTo(bx + w0 * 0.5, by + 11, bx, by);
+      ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = 'rgba(40,30,20,.4)'; ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.save(); ctx.globalAlpha = .55;
+      line(ctx, bx + w0 * 0.12, by, bx + w0 * 0.88, by, stripe, 2); ctx.restore();
+    };
+    const wheels = (x0, x1, r) => { wheel(ctx, x0, roadY - r, r, '#2c2a33'); wheel(ctx, x1, roadY - r, r, '#2c2a33'); };
+    if (k === 0) {
+      /* an estate car with two boards strapped to the roof */
+      fillRR(ctx, x + 14, roadY - 62, 84, 30, 8, shade(body, .12));
+      fillRR(ctx, x, roadY - 40, 116, 28, 10, body);
+      fillRR(ctx, x + 22, roadY - 58, 30, 22, 4, '#a9dcf0');
+      fillRR(ctx, x + 58, roadY - 58, 34, 22, 4, '#a9dcf0');
+      board(x + 12, roadY - 70, 92, '#f6e2cf', '#e07a3a');
+      board(x + 20, roadY - 78, 84, '#ffd870', '#c9445a');
+      circle(ctx, x + 114, roadY - 32, 4, '#ffe07a');
+      wheels(x + 28, x + 92, 10);
+    } else if (k === 1) {
+      /* a pickup with a board sticking out of the back */
+      fillRR(ctx, x + 6, roadY - 40, 116, 28, 8, body);
+      fillRR(ctx, x + 14, roadY - 62, 46, 26, 6, shade(body, .12));
+      fillRR(ctx, x + 20, roadY - 58, 34, 20, 4, '#a9dcf0');
+      fillRR(ctx, x + 64, roadY - 52, 58, 16, 3, shade(body, -.16));
+      board(x + 46, roadY - 58, 96, '#f2ece0', '#3f9cc4');
+      wheels(x + 30, x + 100, 10);
+    } else if (k === 2) {
+      /* a camper van with a ladder up the back */
+      fillRR(ctx, x, roadY - 74, 128, 62, 8, body);
+      fillRR(ctx, x + 2, roadY - 44, 124, 10, 3, '#f2ece0');
+      fillRR(ctx, x + 12, roadY - 68, 40, 24, 4, '#a9dcf0');
+      fillRR(ctx, x + 60, roadY - 68, 30, 24, 4, '#a9dcf0');
+      ctx.save(); ctx.globalAlpha = .8;
+      for (let q = 0; q < 4; q++) line(ctx, x + 2, roadY - 62 + q * 5, x + 4, roadY - 62 + q * 5, '#fff', 2);
+      ctx.restore();
+      line(ctx, x + 2, roadY - 70, x + 2, roadY - 20, '#c9c2b4', 3);
+      for (let q = 0; q < 4; q++) line(ctx, x - 2, roadY - 64 + q * 12, x + 6, roadY - 64 + q * 12, '#c9c2b4', 2.4);
+      board(x + 18, roadY - 82, 96, '#a6e88f', '#3f7a5c');
+      wheels(x + 26, x + 104, 11);
+    } else {
+      /* a car towing a little boat on a trailer */
+      fillRR(ctx, x + 10, roadY - 58, 66, 26, 8, shade(body, .12));
+      fillRR(ctx, x, roadY - 38, 92, 26, 10, body);
+      fillRR(ctx, x + 18, roadY - 54, 26, 18, 4, '#a9dcf0');
+      fillRR(ctx, x + 48, roadY - 54, 24, 18, 4, '#a9dcf0');
+      wheels(x + 22, x + 72, 10);
+      line(ctx, x + 92, roadY - 22, x + 112, roadY - 22, '#5d6878', 4);
+      poly(ctx, [[x + 112, roadY - 52], [x + 186, roadY - 52], [x + 172, roadY - 22], [x + 124, roadY - 22]], '#f2ece0');
+      fillRR(ctx, x + 116, roadY - 56, 74, 7, 3, '#e2453c');
+      line(ctx, x + 148, roadY - 56, x + 148, roadY - 108, '#c9bda8', 3);
+      wheel(ctx, x + 148, roadY - 9, 9, '#2c2a33');
+    }
+  },
+
   /* the canopy layers of the forest */
   forest(ctx, VW, VH, off, floorY, t, pal, density) {
     BG.hills(ctx, VW, VH, off * 0.1, floorY - 62, pal.far, 46, 320);
@@ -360,6 +423,56 @@ Object.assign(FLOOR_EXT, {
     }
     ctx.restore();
   },
+  /* the hold: planking with sand drifted over it, and the ship's frames
+     showing through where the sand has been scoured away */
+  holdFloor(ctx, x, y, w, h, pal, t, camX) {
+    ctx.fillStyle = pal.floorBody; ctx.fillRect(x, y, w, h);
+    fillRR(ctx, x, y, w, 12, 0, pal.floorTop);
+    ctx.save(); ctx.globalAlpha = .4;
+    for (let px = Math.floor((x + camX) / 120) * 120 - camX; px < x + w; px += 120)
+      if (px > x) fillRR(ctx, px, y + 2, 16, h, 2, shade(pal.floorBody, -.35));
+    ctx.globalAlpha = .3;
+    for (let i = 0; i < 3; i++) line(ctx, x, y + 18 + i * 16, x + w, y + 18 + i * 16, shade(pal.floorBody, -.3), 2);
+    ctx.restore();
+    /* the sand that has come in through the hole, in drifts */
+    ctx.save(); ctx.globalAlpha = .55;
+    for (let px = Math.floor((x + camX) / 96) * 96 - camX; px < x + w; px += 96) {
+      if (px < x - 96) continue;
+      const k = imod(Math.round((px + camX) / 96), 4);
+      ctx.beginPath();
+      ctx.moveTo(px - 20, y + 12);
+      ctx.quadraticCurveTo(px + 24, y - 2 - k * 3, px + 70, y + 12);
+      ctx.lineTo(px + 70, y + 24); ctx.lineTo(px - 20, y + 24); ctx.closePath();
+      ctx.fillStyle = '#cfc49c'; ctx.fill();
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let px = Math.floor((x + camX) / 58) * 58 - camX; px < x + w; px += 58)
+      if (px > x) leafy(ctx, px, y + 6, 12, 6, '#3f7a5c', '#5aa87a', Math.round((px + camX) / 58));
+    ctx.restore();
+  },
+  /* the deck up top: planks with gaps blown in them and weed in the seams */
+  deckWreck(ctx, x, y, w, h, pal, t, camX) {
+    ctx.fillStyle = pal.floorBody; ctx.fillRect(x, y, w, h);
+    fillRR(ctx, x, y, w, 14, 0, pal.floorTop);
+    ctx.save(); ctx.globalAlpha = .45;
+    for (let px = Math.floor((x + camX) / 34) * 34 - camX; px < x + w; px += 34)
+      if (px > x) line(ctx, px, y, px, y + 15, shade(pal.floorTop, -.34), 2.4);
+    ctx.restore();
+    /* every so often a plank is simply gone, and the sea shows underneath */
+    ctx.save(); ctx.globalAlpha = .8;
+    for (let px = Math.floor((x + camX) / 210) * 210 - camX; px < x + w; px += 210) {
+      const a = Math.max(px + 40, x), b = Math.min(px + 40 + 34, x + w);
+      if (b > a) { ctx.fillStyle = '#123a4e'; ctx.fillRect(a, y + 2, b - a, 12); }
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .55;
+    for (let px = Math.floor((x + camX) / 62) * 62 - camX; px < x + w; px += 62)
+      if (px > x) leafy(ctx, px, y + 4, 13, 7, '#3f7a5c', '#5aa87a', Math.round((px + camX) / 62));
+    ctx.globalAlpha = .3;
+    for (let i = 0; i < 3; i++) line(ctx, x, y + 24 + i * 18, x + w, y + 24 + i * 18, shade(pal.floorBody, -.3), 2);
+    ctx.restore();
+  },
   caveFloor(ctx, x, y, w, h, pal, t, camX) {
     ctx.fillStyle = pal.floorBody; ctx.fillRect(x, y, w, h);
     fillRR(ctx, x, y, w, 9, 0, pal.floorTop);
@@ -391,8 +504,49 @@ const ZONES2 = [
     pal: Object.assign({}, HOTEL_PAL),
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG2.hotelWall(ctx, VW, VH, camX * 0.35, floorY, pal);
-      /* the balcony window, with the sea already visible through it */
-      tileLayer(camX * 0.5, 520, VW, x => {
+      /* the balcony window, with the sea already visible through it. Every
+         other bay of the suite is something else entirely — a fireplace, a
+         four-poster alcove, a writing desk — so the room does not read as one
+         window printed over and over. */
+      tileLayer(camX * 0.5, 520, VW, (x, wi) => {
+       if (imod(wi, 3) === 1) {
+        /* a marble fireplace with a gilt mirror over it */
+        fillRR(ctx, x + 20, floorY - 168, 170, 168, 5, '#e6d9c0');
+        fillRR(ctx, x + 10, floorY - 182, 190, 18, 5, '#d8cab0');
+        ctx.beginPath();
+        ctx.moveTo(x + 56, floorY); ctx.lineTo(x + 56, floorY - 96);
+        ctx.quadraticCurveTo(x + 105, floorY - 138, x + 154, floorY - 96);
+        ctx.lineTo(x + 154, floorY); ctx.closePath();
+        ctx.fillStyle = '#2b2119'; ctx.fill();
+        ctx.save(); ctx.globalAlpha = .5 + Math.sin(t * 3) * .12;
+        poly(ctx, [[x + 88, floorY - 4], [x + 105, floorY - 66], [x + 122, floorY - 4]], '#f0a93a');
+        poly(ctx, [[x + 96, floorY - 4], [x + 105, floorY - 44], [x + 114, floorY - 4]], '#ffe7a8');
+        ctx.restore();
+        fillRR(ctx, x + 46, floorY - 300, 118, 112, 6, '#d8b25e');
+        ctx.save(); ctx.globalAlpha = .55;
+        fillRR(ctx, x + 54, floorY - 292, 102, 96, 4, '#efe6d4');
+        fillRR(ctx, x + 64, floorY - 284, 26, 80, 3, '#ffffff'); ctx.restore();
+        [x + 32, x + 178].forEach(px => {
+          fillRR(ctx, px - 8, floorY - 210, 16, 30, 3, '#d8b25e');
+          circle(ctx, px, floorY - 218, 7, '#fff6d8');
+        });
+        return;
+       }
+       if (imod(wi, 3) === 2) {
+        /* the alcove with the four-poster in it */
+        fillRR(ctx, x - 10, floorY - 300, 230, 300, 6, shade(pal.far, -.1));
+        fillRR(ctx, x + 4, floorY - 128, 200, 128, 6, '#8a3f5c');
+        fillRR(ctx, x + 4, floorY - 138, 200, 18, 5, '#f6efe2');
+        fillRR(ctx, x + 12, floorY - 168, 60, 34, 8, '#f6efe2');
+        fillRR(ctx, x + 78, floorY - 164, 56, 30, 8, '#f6efe2');
+        [x + 6, x + 198].forEach(px => fillRR(ctx, px - 5, floorY - 290, 11, 290, 4, '#5f4429'));
+        fillRR(ctx, x - 4, floorY - 300, 216, 16, 5, '#5f4429');
+        ctx.save(); ctx.globalAlpha = .9;
+        swag(ctx, x - 2, floorY - 288, 212, 54, '#8a3f5c', '#6f2f47', 5);
+        ctx.restore();
+        return;
+       }
+       (function (x) {
         fillRR(ctx, x, floorY - 296, 200, 210, 8, '#d8b25e');
         ctx.save(); rr(ctx, x + 9, floorY - 287, 182, 192, 5); ctx.clip();
         const g = ctx.createLinearGradient(0, floorY - 287, 0, floorY - 95);
@@ -415,6 +569,7 @@ const ZONES2 = [
           ctx.closePath(); ctx.fillStyle = '#8a3f5c'; ctx.fill(); ctx.restore();
         });
         fillRR(ctx, x - 30, floorY - 312, 260, 12, 5, '#d8b25e');
+       })(x);
       });
       /* a chandelier or two on the ceiling */
       tileLayer(camX * 0.55, 340, VW, x => {
@@ -522,19 +677,59 @@ const ZONES2 = [
       tileLayer(camX * 0.16, 96, VW, x => { goldEdge(ctx, x + 8, floorY - 64, 80, 50, 4); });
       ctx.restore();
       fillRR(ctx, 0, floorY - 86, VW, 10, 0, '#d8b25e');
-      /* reception, and a sweep of stair behind it */
-      tileLayer(camX * 0.42, 660, VW, x => {
-        for (let k = 0; k < 8; k++)
-          fillRR(ctx, x + 330 + k * 22, floorY - 30 - k * 20, 130 - k * 4, 18, 3, '#c9a878');
-        ctx.save(); ctx.globalAlpha = .7;
-        line(ctx, x + 336, floorY - 62, x + 508, floorY - 214, '#d8b25e', 6); ctx.restore();
-        fillRR(ctx, x, floorY - 150, 250, 150, 6, '#7a5434');
-        fillRR(ctx, x - 8, floorY - 158, 266, 16, 5, '#d8b25e');
-        ctx.save(); ctx.globalAlpha = .5;
-        for (let k = 0; k < 5; k++) fillRR(ctx, x + 14 + k * 46, floorY - 138, 34, 120, 3, '#8a5f3a');
-        ctx.restore();
-        ctx.fillStyle = '#8a5f3a'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('REGISTRATŪRA', x + 125, floorY - 172);
+      /* What stands in a hotel lobby: reception, then the sweep of stair,
+         then a seating group, then the lifts and a grand piano. A hotel has
+         one reception desk, not one every screen. */
+      tileLayer(camX * 0.42, 660, VW, (x, i) => {
+        const k = imod(i, 3);
+        if (k === 0) {
+          for (let q = 0; q < 8; q++)
+            fillRR(ctx, x + 330 + q * 22, floorY - 30 - q * 20, 130 - q * 4, 18, 3, '#c9a878');
+          ctx.save(); ctx.globalAlpha = .7;
+          line(ctx, x + 336, floorY - 62, x + 508, floorY - 214, '#d8b25e', 6); ctx.restore();
+          fillRR(ctx, x, floorY - 150, 250, 150, 6, '#7a5434');
+          fillRR(ctx, x - 8, floorY - 158, 266, 16, 5, '#d8b25e');
+          ctx.save(); ctx.globalAlpha = .5;
+          for (let q = 0; q < 5; q++) fillRR(ctx, x + 14 + q * 46, floorY - 138, 34, 120, 3, '#8a5f3a');
+          ctx.restore();
+          ctx.fillStyle = '#8a5f3a'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('REGISTRATŪRA', x + 125, floorY - 172);
+        } else if (k === 1) {
+          /* a seating group round a low table, with a palm behind it */
+          fillRR(ctx, x + 40, floorY - 96, 130, 96, 12, '#8a3f5c');
+          fillRR(ctx, x + 52, floorY - 122, 106, 40, 10, '#9c4f6c');
+          fillRR(ctx, x + 196, floorY - 96, 130, 96, 12, '#8a3f5c');
+          fillRR(ctx, x + 208, floorY - 122, 106, 40, 10, '#9c4f6c');
+          fillRR(ctx, x + 158, floorY - 52, 60, 10, 4, '#d8b25e');
+          [x + 166, x + 210].forEach(px => line(ctx, px, floorY - 44, px, floorY - 4, '#7a5434', 6));
+          fillRR(ctx, x + 380, floorY - 74, 66, 74, 8, '#c9a878');
+          for (let q = 0; q < 7; q++) {
+            const a = -Math.PI * 0.5 + (q - 3) * 0.42;
+            ctx.beginPath(); ctx.moveTo(x + 413, floorY - 78);
+            ctx.quadraticCurveTo(x + 413 + Math.cos(a) * 44, floorY - 96 + Math.sin(a) * 40,
+              x + 413 + Math.cos(a) * 76, floorY - 74 + Math.sin(a) * 70);
+            ctx.strokeStyle = q % 2 ? '#3f9c5c' : '#4caf6d'; ctx.lineWidth = 8; ctx.stroke();
+          }
+        } else {
+          /* the lifts, and a grand piano nobody is playing */
+          fillRR(ctx, x + 20, floorY - 250, 190, 250, 6, '#d8cab0');
+          [x + 32, x + 122].forEach(px => {
+            fillRR(ctx, px, floorY - 236, 76, 236, 4, '#c9a878');
+            fillRR(ctx, px + 36, floorY - 236, 4, 236, 2, '#8a6a45');
+            fillRR(ctx, px + 10, floorY - 258, 56, 16, 4, '#d8b25e');
+          });
+          fillRR(ctx, x + 300, floorY - 84, 190, 46, 10, '#2b2119');
+          ctx.beginPath();
+          ctx.moveTo(x + 316, floorY - 84);
+          ctx.quadraticCurveTo(x + 420, floorY - 132, x + 486, floorY - 88);
+          ctx.lineTo(x + 486, floorY - 84); ctx.closePath();
+          ctx.fillStyle = '#3a2c22'; ctx.fill();
+          [x + 316, x + 470].forEach(px => line(ctx, px, floorY - 40, px, floorY - 4, '#2b2119', 7));
+          ctx.save(); ctx.globalAlpha = .9;
+          fillRR(ctx, x + 306, floorY - 46, 176, 8, 2, '#f6efe2');
+          for (let q = 0; q < 16; q++) fillRR(ctx, x + 312 + q * 11, floorY - 46, 4, 5, 1, '#2b2119');
+          ctx.restore();
+        }
       });
       /* the columns, standing in front of all of it */
       tileLayer(camX * 0.3, 330, VW, x => {
@@ -581,7 +776,25 @@ const ZONES2 = [
       BG.clouds(ctx, VW, VH, camX * 0.06, t, pal.cloud, 44, 0.9);
       /* the hotel standing behind the terrace */
       tileLayer(camX * 0.16, 330, VW, (x, i) => {
-        fillRR(ctx, x, floorY - 330, 260, 330, 8, '#f2ece0');
+        const k = imod(i, 3);
+        const h = k === 1 ? 260 : 330;
+        fillRR(ctx, x, floorY - h, 260, h, 8, '#f2ece0');
+        if (k === 1) {
+          /* a lower wing, with an arcade along the front of it */
+          poly(ctx, [[x - 10, floorY - h], [x + 130, floorY - h - 44], [x + 270, floorY - h]], '#c96f5a');
+          ctx.save(); ctx.globalAlpha = .8;
+          for (let c = 0; c < 4; c++) {
+            ctx.beginPath();
+            ctx.moveTo(x + 16 + c * 60, floorY - 30); ctx.lineTo(x + 16 + c * 60, floorY - 100);
+            ctx.quadraticCurveTo(x + 38 + c * 60, floorY - 146, x + 60 + c * 60, floorY - 100);
+            ctx.lineTo(x + 60 + c * 60, floorY - 30); ctx.closePath();
+            ctx.fillStyle = '#8fc4d6'; ctx.fill();
+          }
+          for (let c = 0; c < 8; c++)
+            fillRR(ctx, x + 20 + c * 30, floorY - 224, 22, 44, 4, c % 2 ? '#8fc4d6' : '#d8cab0');
+          ctx.restore();
+          return;
+        }
         ctx.save(); ctx.globalAlpha = .8;
         for (let r = 0; r < 3; r++) {
           fillRR(ctx, x + 6, floorY - 306 + r * 84, 248, 10, 4, '#d8b25e');
@@ -589,9 +802,22 @@ const ZONES2 = [
             fillRR(ctx, x + 16 + c * 60, floorY - 366 + r * 84 + 62, 44, 52, 5, '#8fc4d6');
             ctx.save(); ctx.globalAlpha = .5;
             fillRR(ctx, x + 20 + c * 60, floorY - 366 + r * 84 + 66, 16, 44, 3, '#eaf6fb'); ctx.restore();
-            /* the balcony rail in front of every window */
+            /* the balcony rail in front of every window, and a parasol or a
+               towel out on some of them */
             for (let b = 0; b < 5; b++) line(ctx, x + 18 + c * 60 + b * 10, floorY - 306 + r * 84,
               x + 18 + c * 60 + b * 10, floorY - 290 + r * 84, '#d8b25e', 2);
+            if (imod(i * 5 + r * 3 + c, 7) === 0)
+              fillRR(ctx, x + 22 + c * 60, floorY - 306 + r * 84, 30, 22, 3,
+                ['#e2453c', '#3f9cc4', '#ffd870'][imod(i + c, 3)]);
+          }
+        }
+        if (k === 2) {
+          /* the roof terrace, with its own parasols */
+          fillRR(ctx, x - 6, floorY - 344, 272, 16, 5, '#efe6d4');
+          for (let c = 0; c < 3; c++) {
+            line(ctx, x + 50 + c * 80, floorY - 344, x + 50 + c * 80, floorY - 396, '#c9bda8', 4);
+            poly(ctx, [[x + 14 + c * 80, floorY - 392], [x + 86 + c * 80, floorY - 392],
+                       [x + 50 + c * 80, floorY - 420]], ['#e2453c', '#3f9cc4', '#ffd870'][c]);
           }
         }
         ctx.restore();
@@ -649,11 +875,30 @@ const ZONES2 = [
       ctx.save(); ctx.globalAlpha = .5;
       for (let px = -imod(camX * 0.5, 24); px < VW; px += 24) line(ctx, px, pb, px, pb + 26, '#d5c9b0', 2);
       ctx.restore();
-      tileLayer(camX * 0.66, 560, VW, x => {
-        [x, x + 26].forEach(lx => line(ctx, lx, pb + 6, lx, py - 34, '#dfe6ec', 5));
-        for (let k = 0; k < 3; k++) line(ctx, x, py - 22 + k * 16, x + 26, py - 22 + k * 16, '#dfe6ec', 4);
-        ctx.beginPath(); ctx.arc(x + 13, py - 34, 13, Math.PI, 0);
-        ctx.strokeStyle = '#dfe6ec'; ctx.lineWidth = 5; ctx.stroke();
+      tileLayer(camX * 0.66, 560, VW, (x, i) => {
+        const k = imod(i, 3);
+        if (k === 0) {
+          [x, x + 26].forEach(lx => line(ctx, lx, pb + 6, lx, py - 34, '#dfe6ec', 5));
+          for (let q = 0; q < 3; q++) line(ctx, x, py - 22 + q * 16, x + 26, py - 22 + q * 16, '#dfe6ec', 4);
+          ctx.beginPath(); ctx.arc(x + 13, py - 34, 13, Math.PI, 0);
+          ctx.strokeStyle = '#dfe6ec'; ctx.lineWidth = 5; ctx.stroke();
+        } else if (k === 1) {
+          /* a diving board out over the deep end */
+          fillRR(ctx, x - 10, py - 62, 96, 10, 4, '#f2ece0');
+          line(ctx, x + 62, py - 54, x + 62, py - 12, '#c9bda8', 7);
+          line(ctx, x + 76, py - 54, x + 76, py - 12, '#c9bda8', 7);
+          for (let q = 0; q < 3; q++) line(ctx, x + 62, py - 60 - q * 14, x + 84, py - 60 - q * 14, '#dfe6ec', 4);
+          line(ctx, x + 84, py - 100, x + 84, py - 56, '#dfe6ec', 4);
+        } else {
+          /* the lifeguard's chair, with a ring hanging off it */
+          [x + 6, x + 46].forEach(px => line(ctx, px, py - 6, px, py - 96, '#c9a878', 6));
+          fillRR(ctx, x - 4, py - 104, 64, 12, 4, '#e2453c');
+          fillRR(ctx, x - 4, py - 148, 64, 44, 6, '#efe6d4');
+          ctx.beginPath(); ctx.arc(x + 74, py - 62, 14, 0, TAU);
+          ctx.strokeStyle = '#f2ece0'; ctx.lineWidth = 7; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x + 74, py - 62, 14, 0, TAU); ctx.lineWidth = 7;
+          ctx.setLineDash([10, 10]); ctx.strokeStyle = '#e2453c'; ctx.stroke(); ctx.setLineDash([]);
+        }
       });
     },
     pools: { hurdle: ['sunLounger', 'poolFloat', 'towelStack', 'palmPot', 'champagne'],
@@ -803,13 +1048,58 @@ const ZONES2 = [
         });
         ctx.restore();
       }
-      /* a sailing boat out on the water, because it is that kind of day */
-      tileLayer(camX * 0.12, 900, VW, x => {
-        const by = floorY - 168 + Math.sin(t * 0.8) * 3;
-        poly(ctx, [[x, by], [x + 74, by], [x + 62, by + 15], [x + 10, by + 15]], '#f2ece0');
-        line(ctx, x + 40, by, x + 40, by - 74, '#c9bda8', 3);
-        poly(ctx, [[x + 42, by - 72], [x + 76, by - 4], [x + 42, by - 4]], '#ffffff');
-        poly(ctx, [[x + 37, by - 68], [x + 12, by - 4], [x + 37, by - 4]], '#eaf4fb');
+      /* what is out on the water: a yacht, then a fishing boat, then a
+         channel buoy, then a windsurfer — it is that kind of day, but it is
+         not the same boat over and over */
+      tileLayer(camX * 0.12, 900, VW, (x, i) => {
+        const by = floorY - 168 + Math.sin(t * 0.8 + i) * 3;
+        const k = imod(i, 4);
+        if (k === 0) {
+          poly(ctx, [[x, by], [x + 74, by], [x + 62, by + 15], [x + 10, by + 15]], '#f2ece0');
+          line(ctx, x + 40, by, x + 40, by - 74, '#c9bda8', 3);
+          poly(ctx, [[x + 42, by - 72], [x + 76, by - 4], [x + 42, by - 4]], '#ffffff');
+          poly(ctx, [[x + 37, by - 68], [x + 12, by - 4], [x + 37, by - 4]], '#eaf4fb');
+        } else if (k === 1) {
+          /* a fishing boat, wheelhouse aft, gulls over the stern */
+          poly(ctx, [[x - 4, by + 2], [x + 88, by + 2], [x + 74, by + 20], [x + 8, by + 20]], '#3f7a8c');
+          fillRR(ctx, x + 6, by - 6, 82, 8, 3, '#f2ece0');
+          fillRR(ctx, x + 46, by - 34, 34, 30, 4, '#f2ece0');
+          fillRR(ctx, x + 52, by - 28, 22, 14, 2, '#8fc4d6');
+          line(ctx, x + 22, by - 6, x + 22, by - 62, '#c9bda8', 3);
+          line(ctx, x + 22, by - 58, x + 62, by - 30, '#c9bda8', 2);
+          ctx.save(); ctx.globalAlpha = .5;
+          for (let q = 0; q < 3; q++) {
+            const gx = x + 96 + q * 16, gy = by - 46 - q * 12 + Math.sin(t * 2 + q) * 3;
+            ctx.beginPath();
+            ctx.moveTo(gx - 7, gy + 3); ctx.quadraticCurveTo(gx - 3, gy - 3, gx, gy);
+            ctx.quadraticCurveTo(gx + 3, gy - 3, gx + 7, gy + 3);
+            ctx.strokeStyle = '#5f7080'; ctx.lineWidth = 1.6; ctx.stroke();
+          }
+          ctx.restore();
+        } else if (k === 2) {
+          /* a channel buoy, rocking */
+          ctx.save(); ctx.translate(x + 40, by + 14); ctx.rotate(Math.sin(t * 1.1 + i) * 0.16);
+          poly(ctx, [[-16, 6], [16, 6], [11, -30], [-11, -30]], '#e2453c');
+          fillRR(ctx, -13, -6, 26, 8, 2, '#f2ece0');
+          line(ctx, 0, -30, 0, -54, '#4a5468', 3);
+          circle(ctx, 0, -58, 6, '#ffd870');
+          ctx.restore();
+        } else {
+          /* a windsurfer leaning off the sail */
+          ctx.save(); ctx.translate(x + 40, by + 16);
+          fillEll(ctx, 0, 4, 34, 5, '#f2ece0');
+          ctx.beginPath();
+          ctx.moveTo(2, 2); ctx.quadraticCurveTo(30, -30, 20, -62);
+          ctx.quadraticCurveTo(6, -40, 2, 2); ctx.closePath();
+          ctx.fillStyle = '#ffd870'; ctx.fill();
+          ctx.save(); ctx.globalAlpha = .5;
+          ctx.beginPath();
+          ctx.moveTo(3, -6); ctx.quadraticCurveTo(22, -30, 19, -56);
+          ctx.strokeStyle = '#e07a3a'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+          line(ctx, -6, 2, -12, -22, '#3f4a5c', 4);
+          circle(ctx, -13, -27, 5, '#3f4a5c');
+          ctx.restore();
+        }
       });
     },
     pools: { hurdle: ['pierCrate', 'bollard', 'lifering', 'fishBox', 'poolFloat'],
@@ -818,7 +1108,7 @@ const ZONES2 = [
              deco: ['plankGrain', 'ropeCoil', 'wetPaw'] }
   },
   {
-    id: 'seabed', name: 'Jūros dugnas', sec: 11, diff: 0.62, floor: 'seabed', water: 1, calm: 1,
+    id: 'seabed', name: 'Jūros dugnas', sec: 9, diff: 0.62, floor: 'seabed', water: 1, calm: 1,
     pal: { floorTop: '#e0d4a8', floorBody: '#a8996f', accent: '#8fd6ff',
            treadTop: '#e0d4a8', treadSide: '#a8996f' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -844,15 +1134,21 @@ const ZONES2 = [
              deco: ['seagrass', 'shells', 'bubblesDeco'] }
   },
   {
-    id: 'wreck', name: 'Nuskendęs laivas', sec: 11, diff: 0.74, floor: 'seabed', water: 1, calm: 1,
+    /* she comes up on the wreck from outside and runs in through a hole
+       torn in her side */
+    id: 'wreck', name: 'Nuskendęs laivas', sec: 8, diff: 0.7, floor: 'seabed',
+    water: 1, calm: 1, exit: 'hullHole',
     pal: { floorTop: '#cfc49c', floorBody: '#8a7f5c', accent: '#d8b25e',
            treadTop: '#cfc49c', treadSide: '#8a7f5c' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG2.underwater(ctx, VW, VH, camX, floorY, t, '#2f7fa8', '#0a3450', -320);
-      /* the ship herself, lying over on the bottom */
-      tileLayer(camX * 0.22, 980, VW, x => {
+      /* the ship herself, lying over on the bottom. Each length of her is a
+         different length of a wrecked ship: bow, midships with the funnel
+         gone, the broken mast, then the stern with her name still on it. */
+      tileLayer(camX * 0.22, 980, VW, (x, i) => {
+        const k = imod(i, 3);
         ctx.save(); ctx.globalAlpha = .82;
-        ctx.translate(x, floorY - 30); ctx.rotate(-0.1);
+        ctx.translate(x, floorY - 30); ctx.rotate(-0.1 + k * 0.03);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.quadraticCurveTo(60, -150, 250, -170);
@@ -861,25 +1157,42 @@ const ZONES2 = [
         ctx.lineTo(80, 12); ctx.closePath();
         ctx.fillStyle = '#2f3f4a'; ctx.fill();
         ctx.save(); ctx.globalAlpha = .4;
-        for (let i = 0; i < 9; i++) line(ctx, 70 + i * 54, -150, 60 + i * 54, 8, '#1c2a33', 3);
-        for (let k = 0; k < 3; k++) line(ctx, 40, -40 - k * 42, 545, -56 - k * 42, '#1c2a33', 3);
+        for (let q = 0; q < 9; q++) line(ctx, 70 + q * 54, -150, 60 + q * 54, 8, '#1c2a33', 3);
+        for (let q = 1; q < 4; q++) line(ctx, 40, -40 - q * 42, 545, -56 - q * 42, '#1c2a33', 3);
         ctx.restore();
-        for (let i = 0; i < 6; i++) circle(ctx, 140 + i * 66, -96, 12, '#12222c');
-        /* the broken mast, and rigging still hanging off it */
-        ctx.save(); ctx.rotate(-0.34);
-        fillRR(ctx, 250, -420, 16, 270, 5, '#3f3126');
-        ctx.globalAlpha = .5;
-        line(ctx, 258, -412, 130, -190, '#5f5548', 3);
-        line(ctx, 258, -412, 390, -196, '#5f5548', 3);
-        ctx.restore();
+        for (let q = 0; q < 6; q++) circle(ctx, 140 + q * 66, -96, 12, '#12222c');
+        if (k === 0) {
+          /* the broken mast, and rigging still hanging off it */
+          ctx.save(); ctx.rotate(-0.34);
+          fillRR(ctx, 250, -420, 16, 270, 5, '#3f3126');
+          ctx.globalAlpha = .5;
+          line(ctx, 258, -412, 130, -190, '#5f5548', 3);
+          line(ctx, 258, -412, 390, -196, '#5f5548', 3);
+          ctx.restore();
+        } else if (k === 1) {
+          /* the stump of her funnel, and a davit with no boat on it */
+          fillRR(ctx, 300, -258, 74, 96, 8, '#3a4a55');
+          fillRR(ctx, 296, -264, 82, 14, 5, '#28353e');
+          ctx.beginPath(); ctx.moveTo(470, -160);
+          ctx.quadraticCurveTo(470, -240, 540, -232);
+          ctx.strokeStyle = '#3f4a5c'; ctx.lineWidth = 9; ctx.stroke();
+        } else {
+          /* her name, and the anchor still in its hawse */
+          ctx.save(); ctx.globalAlpha = .55;
+          ctx.fillStyle = '#c9bda8'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('AUDRA', 300, -84); ctx.restore();
+          circle(ctx, 96, -108, 15, '#1c2a33');
+          ctx.save(); ctx.globalAlpha = .7;
+          line(ctx, 96, -108, 96, -20, '#5d6878', 7); ctx.restore();
+        }
         ctx.restore();
       });
       BG2.fish(ctx, VW, VH, camX, floorY, t, 12, '#8fd6ff', '#f6b93a');
       ctx.save(); ctx.globalAlpha = .5;
       tileLayer(camX * 0.34, 210, VW, (x, i) => {
         const r = makeRng(i * 41 + 3);
-        for (let k = 0; k < 4; k++)
-          fillEll(ctx, x + k * 16, floorY - 12 - r() * 26, 15, 8, k % 2 ? '#3f7a5c' : '#4f9c6c', Math.sin(t + k) * .3);
+        for (let q = 0; q < 4; q++)
+          fillEll(ctx, x + q * 16, floorY - 12 - r() * 26, 15, 8, q % 2 ? '#3f7a5c' : '#4f9c6c', Math.sin(t + q) * .3);
       });
       ctx.restore();
     },
@@ -890,19 +1203,232 @@ const ZONES2 = [
              deco: ['seagrass', 'bubblesDeco', 'shells'] }
   },
   {
+    /* ---- inside her ----
+       The hold, in the dark, with the cargo that never came out of it. No
+       branch and no choice: the only way on is the companionway at the far
+       end, and stairs are run, not jumped. */
+    id: 'hold', name: 'Laivo triumas', sec: 11, diff: 0.72, floor: 'holdFloor',
+    water: 1, calm: 1,
+    pal: { floorTop: '#8a7452', floorBody: '#4f4132', accent: '#f6c93a',
+           treadTop: '#7a5f45', treadSide: '#4a3a2c', rail: '#6b5a4a', post: '#5a4a3c' },
+    bg(ctx, VW, VH, camX, floorY, t, pal) {
+      const g = ctx.createLinearGradient(0, 0, 0, floorY);
+      g.addColorStop(0, '#0b161d'); g.addColorStop(1, '#26333a');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+      /* the far side of the hold, and the bilge water lying along it */
+      fillRR(ctx, 0, floorY - 250, VW, 250, 0, '#2b3a42');
+      ctx.save(); ctx.globalAlpha = .35;
+      for (let px = -imod(camX * 0.2, 74); px < VW; px += 74)
+        line(ctx, px, floorY - 250, px, floorY, '#1d282e', 3);
+      ctx.restore();
+      /* her frames, curving up over the top of the screen. Every bay is a
+         different bay: what is stacked in it, whether it has a porthole and
+         whether anything is still hanging from the deckhead all change. */
+      tileLayer(camX * 0.34, 300, VW, (x, i) => {
+        const k = imod(i, 5);
+        ctx.save(); ctx.globalAlpha = .95;
+        [0, 214].forEach((o0, side) => {
+          const lean = side ? 26 : -26;
+          ctx.beginPath();
+          ctx.moveTo(x + o0 - 10, floorY);
+          ctx.quadraticCurveTo(x + o0 - 14, floorY - 190, x + o0 + lean - 10, 0);
+          ctx.lineTo(x + o0 + lean + 10, 0);
+          ctx.quadraticCurveTo(x + o0 + 6, floorY - 190, x + o0 + 10, floorY);
+          ctx.closePath();
+          /* the frames are in shadow, not lit: paler than the planking they
+             stand against and they read as shafts of light, not as ribs */
+          ctx.fillStyle = '#1c272d'; ctx.fill();
+          ctx.globalAlpha = .35;
+          ctx.beginPath();
+          ctx.moveTo(x + o0 - 6, floorY);
+          ctx.quadraticCurveTo(x + o0 - 10, floorY - 190, x + o0 + lean - 6, 0);
+          ctx.strokeStyle = '#4f636e'; ctx.lineWidth = 2.4; ctx.stroke();
+          ctx.globalAlpha = .95;
+        });
+        ctx.restore();
+        /* the deckhead over her, with a beam every bay */
+        fillRR(ctx, x - 30, 0, 300, 34, 0, '#1a252b');
+        fillRR(ctx, x + 40, 30, 150, 15, 3, '#3a4a53');
+        if (k === 0 || k === 3) {
+          /* a porthole with the sea outside it, and the light it lets in */
+          const py = floorY - 196;
+          circle(ctx, x + 120, py, 30, '#5d6878');
+          circle(ctx, x + 120, py, 23, '#2f8fb8');
+          ctx.save(); ctx.globalAlpha = .5;
+          circle(ctx, x + 112, py - 8, 8, '#bfeaf6'); ctx.restore();
+          for (let q = 0; q < 6; q++) circle(ctx, x + 120 + Math.cos(q) * 28, py + Math.sin(q) * 28, 3, '#8fa3b8');
+          ctx.save(); ctx.globalAlpha = .12;
+          poly(ctx, [[x + 96, py + 12], [x + 144, py + 12], [x + 214, floorY], [x + 40, floorY]], '#cfeaf6');
+          ctx.restore();
+        }
+        if (k === 1) {
+          /* cargo still lashed to the side, under a net */
+          for (let q = 0; q < 3; q++)
+            fillRR(ctx, x + 70 + q * 46, floorY - 108 + (q % 2) * 12, 42, 46, 3, q % 2 ? '#5a442f' : '#6b5340');
+          ctx.save(); ctx.globalAlpha = .5;
+          for (let q = -3; q < 8; q++) {
+            line(ctx, x + 60 + q * 22, floorY - 120, x + 82 + q * 22, floorY - 40, '#8a7a62', 2);
+            line(ctx, x + 60 + q * 22, floorY - 40, x + 82 + q * 22, floorY - 120, '#8a7a62', 2);
+          }
+          ctx.restore();
+        }
+        if (k === 2) {
+          /* a lantern still swinging on its hook, and a rack of tools */
+          const sw = Math.sin(t * 0.9 + i) * 0.2;
+          ctx.save(); ctx.translate(x + 150, 44); ctx.rotate(sw);
+          line(ctx, 0, 0, 0, 34, '#5d6878', 3);
+          fillRR(ctx, -11, 34, 22, 28, 4, '#3f4a5c');
+          ctx.save(); ctx.globalAlpha = .8; fillRR(ctx, -7, 38, 14, 20, 3, '#ffd870'); ctx.restore();
+          ctx.save(); ctx.globalAlpha = .16; circle(ctx, 0, 48, 62, '#ffd870'); ctx.restore();
+          ctx.restore();
+          fillRR(ctx, x + 40, floorY - 84, 96, 8, 3, '#4a3a2c');
+          for (let q = 0; q < 4; q++) line(ctx, x + 50 + q * 24, floorY - 80, x + 46 + q * 24, floorY - 42, '#6f7a8c', 4);
+        }
+        if (k === 4) {
+          /* a bulkhead door standing open, with the next hold black behind it */
+          fillRR(ctx, x + 84, floorY - 168, 96, 168, 6, '#2b3a42');
+          fillRR(ctx, x + 92, floorY - 158, 80, 158, 4, '#0e181e');
+          ctx.save(); ctx.globalAlpha = .7;
+          for (let q = 0; q < 6; q++) circle(ctx, x + 88 + q * 17, floorY - 172, 3, '#8fa3b8');
+          ctx.restore();
+          circle(ctx, x + 168, floorY - 84, 7, '#8fa3b8');
+        }
+        /* chains and weed off the deckhead, never the same run twice */
+        ctx.save(); ctx.globalAlpha = .55;
+        for (let q = 0; q < 2 + k % 3; q++) {
+          const cx0 = x + 26 + imod(i * 37 + q * 61, 240);
+          const len = 26 + imod(i * 19 + q * 43, 74);
+          for (let m = 0; m * 11 < len; m++) {
+            ctx.beginPath();
+            ctx.ellipse(cx0 + Math.sin(t * 0.5 + m * 0.4 + i) * (m * 0.7), 44 + m * 11, 4.5, 6.5, 0, 0, TAU);
+            ctx.strokeStyle = '#6f7a8c'; ctx.lineWidth = 2.4; ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
+      BG2.fish(ctx, VW, VH, camX, floorY, t, 7, '#f6b93a', '#8fd6ff');
+      /* silt turning over in the water she is stirring up */
+      ctx.save(); ctx.globalAlpha = .3;
+      for (let i = 0; i < 18; i++) {
+        const r = makeRng(i * 47 + 5);
+        circle(ctx, imod(i * 131 - camX * 0.7, VW + 60) - 30,
+          floorY - 20 - r() * 220 + Math.sin(t * 0.9 + i) * 10, 1.4 + r() * 2, '#cfe0e8');
+      }
+      ctx.restore();
+    },
+    fg(ctx, VW, VH, camX, floorY, t) { WATER_FG(ctx, VW, VH, camX, floorY, t, 0.26); },
+    pools: { hurdle: ['barrelW', 'chestW', 'crateSunk', 'cannonW', 'chainPile', 'anchorW'],
+             over: ['wreckBeam'], tunnel: ['wreckHull'],
+             ledge: ['wreckDeck'], step: ['crateSunk', 'chestW', 'barrelW'],
+             deco: ['seagrass', 'bubblesDeco', 'shells'] }
+  },
+  {
+    /* ---- and out on top of her ----
+       The companionway up is not a choice: she runs it. What it puts her on
+       is the deck itself, broken open and lying under thirty feet of water,
+       and the far end of it is snapped off — so the way off is a jump into
+       the blue and a long drop back to the sand. */
+    id: 'deck', name: 'Apgriuvęs denis', sec: 10, diff: 0.78, floor: 'deckWreck',
+    water: 1, calm: 1,
+    stairsUp: 5, stairProp: 'treadWreck',
+    dropEnd: 1, dropTo: 0, dropProp: 'deckEdge',
+    dropRoom: { id: 'wreckSand', floor: 'seabed',
+                pal: { floorTop: '#cfc49c', floorBody: '#8a7f5c', accent: '#8fd6ff' } },
+    pal: { floorTop: '#8a7452', floorBody: '#3f3a30', accent: '#8fd6ff',
+           treadTop: '#7a5f45', treadSide: '#4a3a2c', rail: '#6b5a4a', post: '#5a4a3c' },
+    bg(ctx, VW, VH, camX, floorY, t, pal) {
+      BG2.underwater(ctx, VW, VH, camX, floorY, t, '#3f9cc4', '#0f3f5c', -260);
+      /* the sea bed a long way down on the far side of her, so the height
+         she has climbed to is never in doubt */
+      ctx.save(); ctx.globalAlpha = .5;
+      BG.hills(ctx, VW, VH, camX * 0.08, floorY + 170, '#0e3346', 30, 380);
+      ctx.restore();
+      /* masts, davits, ventilators and the rail — a different piece of her
+         upperworks every time */
+      tileLayer(camX * 0.4, 340, VW, (x, i) => {
+        const k = imod(i, 4);
+        ctx.save(); ctx.globalAlpha = .9;
+        if (k === 0) {
+          /* a mast, leaning, with rigging and weed streaming off it */
+          ctx.save(); ctx.translate(x + 120, floorY); ctx.rotate(0.16);
+          fillRR(ctx, -10, -330, 20, 336, 6, '#4a3a2c');
+          fillRR(ctx, -66, -250, 132, 12, 4, '#4a3a2c');
+          ctx.save(); ctx.globalAlpha = .45;
+          line(ctx, 0, -324, -86, -60, '#6b5a4a', 3);
+          line(ctx, 0, -324, 92, -70, '#6b5a4a', 3); ctx.restore();
+          ctx.save(); ctx.globalAlpha = .7;
+          for (let q = 0; q < 5; q++) {
+            const sw = Math.sin(t * 0.8 + q) * 9;
+            ctx.beginPath(); ctx.moveTo(-60 + q * 30, -244);
+            ctx.quadraticCurveTo(-56 + q * 30 + sw, -212, -60 + q * 30 + sw * 1.6, -176);
+            ctx.strokeStyle = '#3f7a5c'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
+          }
+          ctx.restore();
+          ctx.restore();
+        } else if (k === 1) {
+          /* a cowl ventilator, and a skylight with the glass gone */
+          ctx.beginPath();
+          ctx.moveTo(x + 60, floorY); ctx.lineTo(x + 60, floorY - 130);
+          ctx.quadraticCurveTo(x + 62, floorY - 168, x + 100, floorY - 166);
+          ctx.lineTo(x + 100, floorY - 130);
+          ctx.quadraticCurveTo(x + 86, floorY - 128, x + 84, floorY);
+          ctx.closePath(); ctx.fillStyle = '#3f4a5c'; ctx.fill();
+          ctx.save(); ctx.globalAlpha = .5;
+          fillEll(ctx, x + 88, floorY - 150, 15, 20, '#1c2a33'); ctx.restore();
+          fillRR(ctx, x + 170, floorY - 74, 120, 74, 5, '#3a4a53');
+          for (let q = 0; q < 3; q++) fillRR(ctx, x + 180 + q * 38, floorY - 66, 28, 40, 3, '#0e2a36');
+        } else if (k === 2) {
+          /* a winch, a bollard and a coil of wire nobody will ever use */
+          fillRR(ctx, x + 70, floorY - 66, 110, 46, 6, '#3f4a5c');
+          circle(ctx, x + 96, floorY - 44, 20, '#2b3444');
+          circle(ctx, x + 154, floorY - 44, 20, '#2b3444');
+          fillRR(ctx, x + 230, floorY - 52, 26, 52, 5, '#4a5468');
+          fillRR(ctx, x + 224, floorY - 60, 38, 12, 4, '#4a5468');
+        } else {
+          /* the wheelhouse, or what is left of it */
+          fillRR(ctx, x + 50, floorY - 176, 190, 176, 8, '#3a4a53');
+          fillRR(ctx, x + 40, floorY - 190, 210, 20, 6, '#2b3a42');
+          for (let q = 0; q < 4; q++) {
+            fillRR(ctx, x + 64 + q * 44, floorY - 158, 34, 44, 4, q === 1 ? '#0e2a36' : '#2f7fa8');
+            ctx.save(); ctx.globalAlpha = .4;
+            fillRR(ctx, x + 68 + q * 44, floorY - 154, 12, 36, 2, '#bfeaf6'); ctx.restore();
+          }
+          ctx.save(); ctx.globalAlpha = .6;
+          line(ctx, x + 145, floorY - 190, x + 145, floorY - 258, '#4a5468', 5); ctx.restore();
+        }
+        ctx.restore();
+        /* the rail along the far side of the deck, in and out of the murk */
+        ctx.save(); ctx.globalAlpha = .55;
+        fillRR(ctx, x - 40, floorY - 96, 420, 7, 3, '#4a5468');
+        for (let q = 0; q < 8; q++) line(ctx, x - 30 + q * 50, floorY - 92, x - 30 + q * 50, floorY - 6, '#4a5468', 4);
+        ctx.restore();
+      });
+      BG2.fish(ctx, VW, VH, camX, floorY, t, 10, '#ffd870', '#8fd6ff');
+    },
+    fg(ctx, VW, VH, camX, floorY, t) { WATER_FG(ctx, VW, VH, camX, floorY, t, 0.24); },
+    pools: { hurdle: ['crateSunk', 'barrelW', 'chainPile', 'anchorW', 'cannonW'],
+             over: ['wreckBeam'], tunnel: ['wreckHull'],
+             ledge: ['wreckDeck'], step: ['crateSunk', 'chestW', 'barrelW'],
+             deco: ['seagrass', 'bubblesDeco', 'shells'] }
+  },
+  {
     id: 'reef', name: 'Koralų rifas', sec: 10, diff: 0.8, floor: 'seabed', water: 1, calm: 1,
     pal: { floorTop: '#f0dcb8', floorBody: '#b8a37a', accent: '#ff8fa8',
            treadTop: '#f0dcb8', treadSide: '#b8a37a' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG2.underwater(ctx, VW, VH, camX, floorY, t, '#4fbcd8', '#12607f', -140);
-      /* a wall of coral behind everything */
+      /* A wall of coral behind everything — and a reef is not one coral
+         repeated. Six kinds grow along it, in six colours, and which one
+         stands where is decided by the reef's own grid, so it never crawls. */
       tileLayer(camX * 0.26, 190, VW, (x, i) => {
         const r = makeRng(i * 61 + 11);
+        const COLS = ['#e0708a', '#f0a24a', '#a87fd6', '#4fb8a0', '#ffd870', '#6fbce0'];
         ctx.save(); ctx.globalAlpha = .78;
         for (let k = 0; k < 4; k++) {
           const px = x + k * 46 + r() * 16, ph = 60 + r() * 110;
-          const col = ['#e0708a', '#f0a24a', '#a87fd6', '#4fb8a0'][imod(i + k, 4)];
-          if (k % 2) {
+          const col = COLS[imod(i * 3 + k * 5, 6)];
+          const kind = imod(i * 2 + k * 3, 6);
+          if (kind === 0) {
             /* fan coral */
             ctx.beginPath();
             ctx.moveTo(px, floorY);
@@ -913,7 +1439,7 @@ const ZONES2 = [
             for (let q = -2; q <= 2; q++)
               line(ctx, px, floorY - 6, px + q * ph * 0.18, floorY - ph * 0.9, shade(col, -.25), 2);
             ctx.restore();
-          } else {
+          } else if (kind === 1) {
             /* branching coral */
             for (let b = -1; b <= 1; b++) {
               ctx.beginPath(); ctx.moveTo(px, floorY);
@@ -921,14 +1447,71 @@ const ZONES2 = [
               ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
               circle(ctx, px + b * 30, floorY - ph, 6, shade(col, .28));
             }
+          } else if (kind === 2) {
+            /* brain coral: a dome with a maze on it */
+            ctx.beginPath();
+            ctx.ellipse(px, floorY, ph * 0.45, ph * 0.42, 0, Math.PI, TAU);
+            ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+            ctx.save(); ctx.globalAlpha = .45;
+            for (let q = 1; q < 5; q++) {
+              ctx.beginPath();
+              ctx.ellipse(px, floorY, ph * 0.45 * (q / 5), ph * 0.42 * (q / 5), 0, Math.PI, TAU);
+              ctx.strokeStyle = shade(col, -.3); ctx.lineWidth = 3; ctx.stroke();
+            }
+            ctx.restore();
+          } else if (kind === 3) {
+            /* tube sponges, leaning with the current */
+            for (let b = 0; b < 3; b++) {
+              const sw = Math.sin(t * 0.6 + i + b) * 5, hh = ph * (0.5 + b * 0.22);
+              ctx.beginPath();
+              ctx.moveTo(px + b * 15 - 15, floorY);
+              ctx.quadraticCurveTo(px + b * 15 - 15 + sw, floorY - hh * 0.6, px + b * 15 - 12 + sw, floorY - hh);
+              ctx.strokeStyle = col; ctx.lineWidth = 13; ctx.lineCap = 'round'; ctx.stroke();
+              fillEll(ctx, px + b * 15 - 12 + sw, floorY - hh, 6, 3, shade(col, -.35));
+            }
+          } else if (kind === 4) {
+            /* a sea urchin wedged in the rock */
+            const rad = 14 + ph * 0.1;
+            for (let q = 0; q < 14; q++) {
+              const a = Math.PI + (q / 13) * Math.PI;
+              line(ctx, px, floorY - rad * 0.4, px + Math.cos(a) * rad * 1.9,
+                   floorY - rad * 0.4 + Math.sin(a) * rad * 1.9, shade(col, -.3), 3);
+            }
+            circle(ctx, px, floorY - rad * 0.4, rad, col);
+          } else {
+            /* staghorn coral, forking */
+            const stag = (bx, by, len, a, d) => {
+              const ex = bx + Math.cos(a) * len, ey = by + Math.sin(a) * len;
+              line(ctx, bx, by, ex, ey, col, 3 + d * 2.5);
+              if (d > 0) { stag(ex, ey, len * 0.66, a - 0.5, d - 1); stag(ex, ey, len * 0.66, a + 0.5, d - 1); }
+            };
+            stag(px, floorY, ph * 0.42, -Math.PI / 2, 2);
+            stag(px - 18, floorY, ph * 0.3, -Math.PI / 2 - 0.2, 2);
           }
         }
         ctx.restore();
       });
       BG2.fish(ctx, VW, VH, camX, floorY, t, 16, '#ffd870', '#6fe0c8');
-      /* a turtle going quietly about its business */
-      tileLayer(camX * 0.3 + t * 26, 1400, VW, x => {
+      /* something big drifting past: a turtle, then a ray, then a turtle
+         again — the reef is never twice the same stretch of water */
+      tileLayer(camX * 0.3 + t * 26, 1400, VW, (x, bi) => {
         const ty = floorY - 190 + Math.sin(t * 0.6) * 14;
+        if (imod(bi, 2)) {
+          ctx.save(); ctx.globalAlpha = .72; ctx.translate(x, ty + 40);
+          const flap = Math.sin(t * 1.4) * 10;
+          ctx.beginPath();
+          ctx.moveTo(-46, flap); ctx.quadraticCurveTo(-16, -14, 0, 0);
+          ctx.quadraticCurveTo(16, -14, 46, flap);
+          ctx.quadraticCurveTo(16, 16, 0, 12);
+          ctx.quadraticCurveTo(-16, 16, -46, flap);
+          ctx.closePath(); ctx.fillStyle = '#4f6f8a'; ctx.fill();
+          ctx.save(); ctx.globalAlpha = .5;
+          for (let q = -2; q <= 2; q++) circle(ctx, q * 13, 2, 3, '#8fb8d6'); ctx.restore();
+          line(ctx, 0, 10, 4, 52, '#4f6f8a', 3);
+          circle(ctx, -6, -2, 2, '#1c2a33'); circle(ctx, 6, -2, 2, '#1c2a33');
+          ctx.restore();
+          return;
+        }
         ctx.save(); ctx.globalAlpha = .8; ctx.translate(x, ty);
         fillEll(ctx, 0, 0, 34, 22, '#4f7a54');
         ctx.save(); ctx.globalAlpha = .5;
@@ -948,34 +1531,45 @@ const ZONES2 = [
              deco: ['seagrass', 'bubblesDeco', 'shells'] }
   },
   {
-    id: 'shallows', name: 'Sekluma', sec: 9, diff: 0.7, floor: 'seabed', water: 1, rising: 1, calm: 1,
+    /* ---- out of the sea ----
+       Nothing happens to the water here. The sea keeps its level exactly
+       where it has been all along; what changes is the bottom, which climbs
+       out from under it a shelf at a time until she is running in daylight.
+       `climb` is what actually lifts the floor — the drawing only has to
+       follow it. */
+    id: 'shallows', name: 'Sekluma', sec: 13, diff: 0.66, floor: 'seabed',
+    water: 1, calm: 1,
+    climb: { n: 9, h: 38 }, riseProp: 'sandShelf',
+    surfaceY: 320,          /* the level of the sea, in world height */
     pal: { floorTop: '#f0e0b0', floorBody: '#c2ac80', accent: '#8fd6ff',
            treadTop: '#f0e0b0', treadSide: '#c2ac80' },
-    /* the sea floor is climbing under her: the surface comes down to meet it,
-       and by the far end of this stretch she is running in daylight again */
-    surfAt(camX, VW, floorY) {
-      const sp = this.span;
-      const p = sp ? inv(camX + VW * 0.34, sp.x0, sp.x1) : 0;
-      return -260 + smooth(clamp(p * 1.18, 0, 1)) * (floorY + 300);
-    },
-    bg(ctx, VW, VH, camX, floorY, t, pal) {
-      const surf = this.surfAt(camX, VW, floorY);
-      const p = clamp(inv(surf, -260, floorY - 40), 0, 1);
-      /* the sky, revealed as the water drops away */
+    /* the screen y of the surface: a fixed height above the *original* sea
+       bed, converted through whatever shelf she is standing on now */
+    surfAt(floorY, baseY) { return floorY - (this.surfaceY - (baseY || 0)); },
+    bg(ctx, VW, VH, camX, floorY, t, pal, baseY) {
+      const surf = this.surfAt(floorY, baseY);
+      /* the sky over the water — always there, only nearer as she climbs */
       BG.sky(ctx, VW, VH, '#7fd6ee', '#d8f0f8');
       BG.sun(ctx, VW, VH, VW * 0.3, 56, 28, '#fff6d8');
       BG.clouds(ctx, VW, VH, camX * 0.04, t, '#ffffff', 34, 1.1);
-      /* the far shore she is climbing towards: a bank of sand that always
-         meets the water exactly where the surface is, with pines on top of it */
-      const bank = clamp(surf, 40, floorY - 20) + 4;
+      /* the shore ahead, which is the same sand she is running on carrying on
+         up out of the water. Its foot meets the surface exactly, because that
+         is where sand and sea meet. */
+      const bank = clamp(surf, 30, floorY + 30) + 4;
       BG.hills(ctx, VW, VH, camX * 0.16, bank, '#e6d3a4', 20, 340);
-      ctx.save(); ctx.globalAlpha = .92;
-      tileLayer(camX * 0.24, 230, VW, (x, i) => {
-        const r = makeRng(i * 31 + 5), h = 96 + r() * 64;
-        fillRR(ctx, x - 7, bank - h, 14, h + 14, 5, '#7a5a3a');
-        leafy(ctx, x, bank - h - 10, 42, 34, '#3f9c5c', '#5cc47c', i * 5);
-      });
-      ctx.restore();
+      /* the pines on it only come in once there is room for them: while she
+         is still deep the shore is a long way off and all that shows of it
+         is the sand */
+      const near = clamp(inv(surf, 40, 150), 0, 1);
+      if (near > 0.02) {
+        ctx.save(); ctx.globalAlpha = .92 * near;
+        tileLayer(camX * 0.24, 230, VW, (x, i) => {
+          const r = makeRng(i * 31 + 5), h = (96 + r() * 64) * near;
+          fillRR(ctx, x - 7, bank - h, 14, h + 14, 5, '#7a5a3a');
+          leafy(ctx, x, bank - h - 10, 42 * near, 34 * near, '#3f9c5c', '#5cc47c', i * 5);
+        });
+        ctx.restore();
+      }
       /* everything still below the waterline */
       ctx.save();
       ctx.beginPath();
@@ -986,8 +1580,23 @@ const ZONES2 = [
       ctx.clip();
       BG2.underwater(ctx, VW, VH, camX, floorY, t, '#5fc4dc', '#2f8fa8', surf);
       BG2.fish(ctx, VW, VH, camX, floorY, t, 7, '#f6b93a', '#8fd6ff');
+      /* the bottom behind her, stepping up in shelves of its own so the climb
+         is something she can see happening and not only feel */
+      ctx.save(); ctx.globalAlpha = .55;
+      tileLayer(camX * 0.42, 190, VW, (x, i) => {
+        const step = 22 + imod(i * 29, 20);
+        ctx.beginPath();
+        ctx.moveTo(x - 20, floorY + 40);
+        ctx.lineTo(x - 20, floorY + 6);
+        for (let px = 0; px <= 210; px += 14)
+          ctx.lineTo(x - 20 + px, floorY + 6 - step * smooth(clamp(px / 150, 0, 1))
+                                  + Math.sin((px + i * 40) * 0.05) * 3);
+        ctx.lineTo(x + 190, floorY + 40); ctx.closePath();
+        ctx.fillStyle = '#d8c496'; ctx.fill();
+      });
       ctx.restore();
-      /* the line of the surface itself, and the foam on it */
+      ctx.restore();
+      /* the surface itself, dead level, and the foam riding along it */
       if (surf < floorY + 30) {
         ctx.save(); ctx.globalAlpha = .9;
         ctx.beginPath();
@@ -995,12 +1604,21 @@ const ZONES2 = [
           const yy = surf + Math.sin((px + camX * 0.5) * 0.016 + t * 0.7) * 6;
           px === -10 ? ctx.moveTo(px, yy) : ctx.lineTo(px, yy);
         }
-        ctx.strokeStyle = '#f4fbfd'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+        ctx.strokeStyle = '#f4fbfd'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.globalAlpha = .5;
+        for (let i = 0; i < 22; i++) {
+          const r = makeRng(i * 23 + 11);
+          const fx = imod(i * 83 - camX * 0.5, VW + 40) - 20;
+          circle(ctx, fx, surf + Math.sin((fx + camX * 0.5) * 0.016 + t * 0.7) * 6 - 2 - r() * 5,
+                 1.4 + r() * 2.4, '#ffffff');
+        }
+        ctx.restore();
       }
     },
-    fg(ctx, VW, VH, camX, floorY, t) {
-      const surf = this.surfAt(camX, VW, floorY);
-      const k = clamp(inv(surf, floorY - 40, -180), 0, 1);
+    fg(ctx, VW, VH, camX, floorY, t, pal, baseY) {
+      const surf = this.surfAt(floorY, baseY);
+      /* the blue over everything thins out as the water above her does */
+      const k = clamp(inv(surf, floorY - 20, floorY - 300), 0, 1);
       if (k > 0.02) WATER_FG(ctx, VW, VH, camX, floorY, t, 0.22 * k, surf);
     },
     pools: { hurdle: ['rockWet', 'clamShell', 'coralRock', 'driftwood', 'starRock'],
@@ -1042,47 +1660,140 @@ const ZONES2 = [
              deco: ['shells', 'sandRipple', 'wetPaw'] }
   },
   {
+    /* ---- a seaside street, and nothing more than that ----
+       No sea in it and nothing standing in water: a road with a kerb, small
+       houses along it, and traffic that has plainly come back from the beach.
+       The tall blocks that used to line it and the cars that floated a foot
+       above the tarmac were what made it read as a flooded one. */
     id: 'seatown', name: 'Gatvė', sec: 7, diff: 0.8, floor: 'asphalt',
     pal: { sky1: '#6fcfea', sky2: '#cdeef8', far: '#c9d8e0', mid: '#a8bcc9',
-           floorTop: '#a9a29a', floorBody: '#55505c', accent: '#e2453c', cloud: '#ffffff', car: '#3f9cc4' },
+           floorTop: '#a9a29a', floorBody: '#55505c', accent: '#e2453c',
+           cloud: '#ffffff', car: '#3f9cc4' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG.sky(ctx, VW, VH, pal.sky1, pal.sky2);
       BG.clouds(ctx, VW, VH, camX * 0.05, t, pal.cloud, 40, 1.05);
-      /* a little seaside town: wooden villas, then the forest above the roofs */
+      /* wooded hills behind the roofs */
       ctx.save(); ctx.globalAlpha = .7;
-      BG.hills(ctx, VW, VH, camX * 0.1, floorY - 190, '#3f7a5c', 46, 300);
+      BG.hills(ctx, VW, VH, camX * 0.1, floorY - 210, '#3f7a5c', 46, 300);
       ctx.restore();
-      BG.buildings(ctx, VW, VH, camX * 0.16, floorY - 30, ['#e8ddc8', '#d2bc8a', '#c9d8e0'], '#ffe7b0', 120, 200, 175, true);
-      tileLayer(camX * 0.3, 230, VW, (x, i) => {
-        const c = ['#4f8ca8', '#c96f5a', '#6b9c6a'][imod(i, 3)];
-        fillRR(ctx, x, floorY - 172, 176, 172, 6, '#f2ece0');
-        poly(ctx, [[x - 10, floorY - 172], [x + 88, floorY - 232], [x + 186, floorY - 172]], c);
-        ctx.save(); ctx.globalAlpha = .55;
-        for (let k = 0; k < 12; k++) line(ctx, x + 4, floorY - 160 + k * 13, x + 172, floorY - 160 + k * 13, '#dcd0ba', 2);
-        ctx.restore();
-        for (let k = 0; k < 3; k++) {
-          fillRR(ctx, x + 16 + k * 54, floorY - 140, 38, 50, 4, '#8fc4d6');
-          fillRR(ctx, x + 14 + k * 54, floorY - 146, 42, 8, 3, c);
-          ctx.save(); ctx.globalAlpha = .5;
-          fillRR(ctx, x + 20 + k * 54, floorY - 136, 12, 40, 2, '#eaf6fb'); ctx.restore();
+      /* the far side of the street: one-storey houses, never two the same */
+      tileLayer(camX * 0.16, 210, VW, (x, i) => {
+        const k = imod(i, 5);
+        const wall = ['#f2ece0', '#e8ddc8', '#dfe8ee', '#f0e2cc', '#e6eee4'][k];
+        const roof = ['#8a5f4a', '#4f8ca8', '#c96f5a', '#6b9c6a', '#a8794a'][k];
+        const h = 104 + k * 9;
+        fillRR(ctx, x, floorY - h, 150, h, 5, wall);
+        if (k === 1 || k === 4) {
+          /* a hipped roof */
+          poly(ctx, [[x - 8, floorY - h], [x + 42, floorY - h - 40],
+                     [x + 108, floorY - h - 40], [x + 158, floorY - h]], roof);
+        } else {
+          poly(ctx, [[x - 8, floorY - h], [x + 75, floorY - h - 46], [x + 158, floorY - h]], roof);
         }
-        /* the veranda across the front */
-        fillRR(ctx, x + 6, floorY - 78, 164, 8, 3, c);
-        for (let k = 0; k < 5; k++) line(ctx, x + 14 + k * 36, floorY - 74, x + 14 + k * 36, floorY - 4, '#f2ece0', 5);
+        if (k === 2) fillRR(ctx, x + 108, floorY - h - 62, 17, 34, 3, '#b8a08a');   /* a chimney */
+        for (let q = 0; q < 3; q++)
+          fillRR(ctx, x + 18 + q * 44, floorY - h + 26, 30, 34, 3, k === 3 ? '#c9dce6' : '#8fc4d6');
+        if (k === 0) {
+          /* washing on a line between two of them */
+          ctx.save(); ctx.globalAlpha = .8;
+          ctx.beginPath();
+          ctx.moveTo(x + 150, floorY - h + 14);
+          ctx.quadraticCurveTo(x + 180, floorY - h + 34, x + 210, floorY - h + 12);
+          ctx.strokeStyle = '#b8ac98'; ctx.lineWidth = 2; ctx.stroke();
+          ['#ffd870', '#e2584f', '#8fd6ff'].forEach((c, q) =>
+            fillRR(ctx, x + 160 + q * 16, floorY - h + 22 + q * 2, 12, 18, 2, c));
+          ctx.restore();
+        }
       });
+      /* this side of the street: wooden villas with verandas, each one
+         doing something the last one was not */
+      tileLayer(camX * 0.3, 250, VW, (x, i) => {
+        const k = imod(i, 4);
+        const c = ['#4f8ca8', '#c96f5a', '#6b9c6a', '#d8a24a'][k];
+        fillRR(ctx, x, floorY - 176, 176, 176, 6, '#f2ece0');
+        poly(ctx, [[x - 10, floorY - 176], [x + 88, floorY - 236], [x + 186, floorY - 176]], c);
+        ctx.save(); ctx.globalAlpha = .55;
+        for (let q = 0; q < 12; q++) line(ctx, x + 4, floorY - 164 + q * 13, x + 172, floorY - 164 + q * 13, '#dcd0ba', 2);
+        ctx.restore();
+        if (k === 1) {            /* a dormer in the roof */
+          fillRR(ctx, x + 62, floorY - 218, 52, 44, 4, '#f2ece0');
+          poly(ctx, [[x + 54, floorY - 218], [x + 88, floorY - 240], [x + 122, floorY - 218]], shade(c, -.12));
+          fillRR(ctx, x + 74, floorY - 208, 28, 28, 3, '#8fc4d6');
+        }
+        if (k === 3) {            /* a little tower on the corner */
+          fillRR(ctx, x + 140, floorY - 232, 48, 60, 4, '#f2ece0');
+          poly(ctx, [[x + 134, floorY - 232], [x + 164, floorY - 274], [x + 194, floorY - 232]], shade(c, .1));
+          circle(ctx, x + 164, floorY - 206, 9, '#8fc4d6');
+        }
+        for (let q = 0; q < 3; q++) {
+          fillRR(ctx, x + 16 + q * 54, floorY - 144, 38, 50, 4, '#8fc4d6');
+          fillRR(ctx, x + 14 + q * 54, floorY - 150, 42, 8, 3, c);
+          ctx.save(); ctx.globalAlpha = .5;
+          fillRR(ctx, x + 20 + q * 54, floorY - 140, 12, 40, 2, '#eaf6fb'); ctx.restore();
+          /* shutters on some of them */
+          if (k === 2) {
+            fillRR(ctx, x + 10 + q * 54, floorY - 144, 8, 50, 2, shade(c, .1));
+            fillRR(ctx, x + 54 + q * 54, floorY - 144, 8, 50, 2, shade(c, .1));
+          }
+        }
+        /* the veranda across the front, standing on the pavement */
+        fillRR(ctx, x + 6, floorY - 82, 164, 8, 3, c);
+        for (let q = 0; q < 5; q++) line(ctx, x + 14 + q * 36, floorY - 78, x + 14 + q * 36, floorY - 14, '#f2ece0', 5);
+        /* and what is leaning against it: a board, a bike, a pile of pots */
+        if (k === 0) {
+          ctx.save(); ctx.translate(x + 132, floorY - 16); ctx.rotate(-0.22);
+          ctx.beginPath();
+          ctx.moveTo(0, 0); ctx.quadraticCurveTo(-13, -38, 0, -74);
+          ctx.quadraticCurveTo(13, -38, 0, 0); ctx.closePath();
+          ctx.fillStyle = '#ffd870'; ctx.fill();
+          ctx.strokeStyle = 'rgba(40,30,20,.4)'; ctx.lineWidth = 1.8; ctx.stroke();
+          line(ctx, 0, -8, 0, -66, '#e07a3a', 2); ctx.restore();
+        } else if (k === 2) {
+          circle(ctx, x + 118, floorY - 24, 13, 'rgba(0,0,0,0)');
+          ctx.strokeStyle = '#4a5468'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x + 118, floorY - 24, 13, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x + 152, floorY - 24, 13, 0, TAU); ctx.stroke();
+          line(ctx, x + 118, floorY - 24, x + 138, floorY - 46, '#c96f5a', 3);
+          line(ctx, x + 138, floorY - 46, x + 152, floorY - 24, '#c96f5a', 3);
+        } else if (k === 3) {
+          [0, 22, 44].forEach((o0, q) => {
+            fillRR(ctx, x + 116 + o0, floorY - 26 - q % 2 * 4, 18, 26, 3, '#c9855a');
+            leafy(ctx, x + 125 + o0, floorY - 30 - q % 2 * 4, 15, 12, '#4caf6d', '#75d493', q);
+          });
+        }
+      });
+      /* the far kerb and pavement, so the road has an edge and the houses
+         are standing on something */
+      fillRR(ctx, 0, floorY - 14, VW, 16, 0, '#ded4c2');
+      ctx.save(); ctx.globalAlpha = .5;
+      for (let px = -imod(camX * 0.3, 46); px < VW; px += 46) line(ctx, px, floorY - 14, px, floorY, '#c2b7a4', 2);
+      ctx.restore();
+      fillRR(ctx, 0, floorY - 2, VW, 6, 0, '#b8ada0');
+      /* lamp posts and a bus stop, standing on that pavement */
+      tileLayer(camX * 0.3, 320, VW, (x, i) => {
+        line(ctx, x, floorY - 12, x, floorY - 132, '#4a5468', 5);
+        fillEll(ctx, x, floorY - 138, 13, 7, '#fff6d8');
+        if (imod(i, 3) === 1) {
+          fillRR(ctx, x + 60, floorY - 104, 110, 10, 3, '#4f8ca8');
+          [x + 66, x + 162].forEach(px => line(ctx, px, floorY - 100, px, floorY - 12, '#4a5468', 4));
+          fillRR(ctx, x + 74, floorY - 60, 84, 48, 4, '#dfe8ee');
+        }
+      });
+      /* the traffic, on the road and not above it: everything on this street
+         has just come back from the beach */
       tileLayer((camX * 0.44 + t * 62) % 100000, 380, VW, (x, i) => {
-        const cols = ['#3f9cc4', '#e2453c', '#4a9d6e', '#f0a93a'];
         ctx.save(); ctx.globalAlpha = .95;
-        PROPS.car(ctx, x, floorY - 54, 78, 40, t, { car: cols[imod(i, 4)] }); ctx.restore();
+        BG2.beachTraffic(ctx, x, floorY - 4, t, i);
+        ctx.restore();
       });
     },
     pools: { hurdle: ['cone', 'bin', 'crate', 'hydrant', 'barrier', 'planterProm'],
              over: ['pipeS', 'awning'], tunnel: ['scaffold'],
-             ledge: ['awning', 'car'], step: ['car', 'crate', 'benchProm'],
+             ledge: ['awning', 'surfVan'], step: ['surfVan', 'crate', 'benchProm'],
              deco: ['roadPaint', 'manholeD', 'drainD', 'leafLitter'] }
   },
   {
-    id: 'forest', name: 'Miškas', sec: 22, diff: 0.88, floor: 'forestFloor', calm: 1,
+    id: 'forest', name: 'Miškas', sec: 15, diff: 0.88, floor: 'forestFloor', calm: 1,
     branch: 'foxcave',
     pal: { sky1: '#8fd6a8', sky2: '#d8f0d8', far: '#4f8a5c', trunk: '#6b4a2c',
            leaf: '#3f8a4c', leaf2: '#5cb864',
@@ -1107,7 +1818,7 @@ const ZONES2 = [
              deco: ['mossDeco', 'fernDeco', 'leafLitter', 'pebbles'] }
   },
   {
-    id: 'deepwood', name: 'Tankus miškas', sec: 12, diff: 1.0, floor: 'forestFloor', last: true, calm: 1,
+    id: 'deepwood', name: 'Tankus miškas', sec: 10, diff: 1.0, floor: 'forestFloor', last: true, calm: 1,
     pal: { far: '#2f5c3f', trunk: '#4f3a24', leaf: '#2f6b3f', leaf2: '#46905a',
            floorTop: '#4a7a48', floorBody: '#4f3a26', accent: '#ffd870' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1218,7 +1929,41 @@ const BRANCHES2 = {
             const r = makeRng(i * 43 + 7);
             const gy = floorY - 50 - r() * 140;
             const on = .5 + Math.sin(t * 1.4 + i) * .25;
-            if (i % 2) {
+            const kind = imod(i, 5);
+            if (kind === 2) {
+              /* roots that have found their way down through the roof */
+              ctx.save(); ctx.globalAlpha = .8;
+              for (let k = -1; k <= 1; k++) {
+                ctx.beginPath();
+                ctx.moveTo(x + k * 22, gy - 60);
+                ctx.quadraticCurveTo(x + k * 22 + 10, gy - 20, x + k * 26 - 6, gy + 30);
+                ctx.strokeStyle = k ? '#6b4a2c' : '#7a5a3a'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.stroke();
+              }
+              ctx.globalAlpha = on * .22;
+              fillEll(ctx, x, gy - 10, 40, 26, '#ffc48a'); ctx.restore();
+              return;
+            }
+            if (kind === 4) {
+              /* a seam of ore in the rock, and water beading off it */
+              ctx.save(); ctx.globalAlpha = .7;
+              ctx.beginPath();
+              ctx.moveTo(x - 40, gy + 18);
+              ctx.quadraticCurveTo(x, gy - 14, x + 44, gy + 10);
+              ctx.strokeStyle = '#c9962c'; ctx.lineWidth = 6; ctx.stroke();
+              ctx.globalAlpha = .45;
+              ctx.beginPath();
+              ctx.moveTo(x - 36, gy + 24);
+              ctx.quadraticCurveTo(x + 4, gy - 6, x + 40, gy + 16);
+              ctx.strokeStyle = '#8c8378'; ctx.lineWidth = 3; ctx.stroke();
+              ctx.restore();
+              ctx.save(); ctx.globalAlpha = .55;
+              for (let k = 0; k < 3; k++)
+                circle(ctx, x - 20 + k * 22, gy + 26 + imod(i * 7 + k * 11, 14) + Math.sin(t * 1.6 + k) * 2,
+                       2.4, '#bfeaf6');
+              ctx.restore();
+              return;
+            }
+            if (kind === 0 || kind === 3) {
               ctx.save(); ctx.globalAlpha = on * .34;
               fillEll(ctx, x, gy, 44, 30, '#7fd0f0'); ctx.restore();
               for (let k = -2; k <= 2; k++) {
@@ -1306,18 +2051,59 @@ const BRANCHES2 = {
           ctx.restore();
           /* a whole wall of crystal, lit from inside — set back and dimmed a
              little, so the things she actually has to jump still read first */
+          /* No two clusters alike: single spires, whole clumps of them, ones
+             that have broken off and lie across the floor, and geodes split
+             open in the rock — in five colours rather than two. */
           ctx.save(); ctx.globalAlpha = .78;
           tileLayer(camX * 0.32, 150, VW, (x, i) => {
             const r = makeRng(i * 71 + 5);
             const base = floorY - 20 - r() * 40, h = 80 + r() * 130;
             const on = .4 + Math.sin(t * 1.2 + i * 0.9) * .3;
-            const col = i % 3 ? '#6fc9ea' : '#b48bff';
+            const COLS = ['#6fc9ea', '#b48bff', '#7fe0c4', '#ff9bd0', '#ffd870'];
+            const col = COLS[imod(i * 2, 5)];
+            const kind = imod(i, 4);
             ctx.save(); ctx.globalAlpha = on * .26;
-            circle(ctx, x, base - h * 0.55, h * 0.5, col); ctx.restore();
-            poly(ctx, [[x - 15, base], [x - 9, base - h * 0.82], [x, base - h],
-              [x + 9, base - h * 0.82], [x + 15, base]], col);
-            ctx.save(); ctx.globalAlpha = .45;
-            poly(ctx, [[x - 4, base], [x, base - h * 0.9], [x + 5, base]], '#eaf9ff'); ctx.restore();
+            circle(ctx, x, base - h * 0.5, h * 0.5, col); ctx.restore();
+            const spire = (px, py, hh, wd, lean) => {
+              poly(ctx, [[px - wd, py], [px - wd * 0.6 + lean, py - hh * 0.82], [px + lean, py - hh],
+                         [px + wd * 0.6 + lean, py - hh * 0.82], [px + wd, py]], col);
+              ctx.save(); ctx.globalAlpha = .45;
+              poly(ctx, [[px - wd * 0.28, py], [px + lean, py - hh * 0.9], [px + wd * 0.32, py]], '#eaf9ff');
+              ctx.restore();
+            };
+            if (kind === 0) {
+              spire(x, base, h, 15, 0);
+            } else if (kind === 1) {
+              /* a clump: one tall, two short, all leaning off each other */
+              spire(x - 20, base, h * 0.55, 11, -5);
+              spire(x + 22, base, h * 0.7, 12, 6);
+              spire(x, base, h, 15, 0);
+            } else if (kind === 2) {
+              /* one that came down years ago and lies across the floor */
+              ctx.save(); ctx.translate(x, base); ctx.rotate(-0.42 + imod(i, 3) * 0.2);
+              spire(0, 0, h * 0.8, 14, 0);
+              ctx.restore();
+              spire(x + 30, base, h * 0.42, 10, 3);
+            } else {
+              /* a geode, split open in the rock face */
+              ctx.beginPath();
+              ctx.ellipse(x, base - h * 0.5, h * 0.34, h * 0.4, 0, 0, TAU);
+              ctx.fillStyle = '#6b6070'; ctx.fill();
+              ctx.save();
+              ctx.beginPath();
+              ctx.ellipse(x, base - h * 0.5, h * 0.26, h * 0.32, 0, 0, TAU);
+              ctx.clip();
+              ctx.fillStyle = shade(col, -.3);
+              ctx.fillRect(x - h, base - h, h * 2, h);
+              for (let q = 0; q < 9; q++) {
+                const a = (q / 9) * TAU;
+                poly(ctx, [[x, base - h * 0.5],
+                           [x + Math.cos(a) * h * 0.3, base - h * 0.5 + Math.sin(a) * h * 0.36],
+                           [x + Math.cos(a + 0.6) * h * 0.3, base - h * 0.5 + Math.sin(a + 0.6) * h * 0.36]],
+                     q % 2 ? col : shade(col, .25));
+              }
+              ctx.restore();
+            }
           });
           ctx.restore();
           /* the roof, lower here, with more stalactites */
