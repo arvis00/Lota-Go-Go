@@ -69,6 +69,12 @@ nupirkta. Kiek kartų lygis pereitas kuriuo būdu, matyti pradžios ekrane po lo
 Kai raktas uždirbamas, visos to lygio spynos atsirakina iš karto ir ekrane vieną kartą
 parodoma `🔑 N lygio raktas!`.
 
+> ⚠️ **Šiuo metu spynų nėra.** `js/levels.js` viršuje stovi `const UNLOCK_ALL = true` —
+> testavimo jungiklis, dėl kurio `Levels.unlocked()` visiems lygiams atsako „taip": lobby
+> be spynų, abu mygtukai veikia, visos aprangų lentynos pasiekiamos. Daugiau jis nekeičia
+> nieko — piniginės, kainos ir finišo priedai lieka tokie patys. Norint grąžinti tikrą
+> eigą, užtenka tą vieną eilutę pakeisti į `false`; niekur kitur apie ją nežinoma.
+
 **Kiekvienas lygis turi savo piniginę.** Kas surinkta lygyje, tame lygyje ir išleidžiama:
 pirmame lygyje pririnktais skaniukais trečio lygio aprangos nenusipirksi. Trečiame lygyje
 renkami abu dalykai, nes jo aprangos kainuoja ir skaniukų, ir žaisliukų — kiekviena

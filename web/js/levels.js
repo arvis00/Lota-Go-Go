@@ -10,6 +10,19 @@
    `playable: false` for the real start call.
 ----------------------------------------------------------------*/
 
+/* ---------------------------------------------------------------
+   TESTING SWITCH — every level open, no keys needed.
+
+   With this true `Levels.unlocked()` says yes to everything: no
+   padlocks in the lobby, no locked buttons, every wardrobe reachable.
+   It changes nothing else — the purses, the prices and the finish
+   bonuses all still work exactly as they do in a real save.
+
+   Put the progression back by setting it to false. That is the only
+   line that has to change; nothing anywhere else knows about it.
+----------------------------------------------------------------*/
+const UNLOCK_ALL = true;
+
 /* `bonus` is what reaching the finish is worth, and it is the whole reason to
    turn the checkpoints off: `cp` is what a run with them pays, `raw` is what
    the same finish pays when one mistake sends her back to the very start. The
@@ -117,7 +130,7 @@ const Levels = {
       switched off. Finishing it with checkpoints is worth treats, not a key:
       the way on is earned by running it clean from the start line. */
   unlocked(n) {
-    if (n <= 1) return true;
+    if (UNLOCK_ALL || n <= 1) return true;
     const p = n - 1;
     return Save.rawClears(p) > 0 && this.allOwned(p);
   },
