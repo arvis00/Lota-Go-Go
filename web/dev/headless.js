@@ -10,7 +10,8 @@ const el = () => ({ classList: { add: noop, remove: noop, toggle: noop, contains
 const sandbox = {
   console, Math, JSON, Date, TAU: undefined,
   performance: { now: () => Date.now() },
-  requestAnimationFrame: noop, setTimeout: noop, setInterval: noop, clearTimeout: noop,
+  requestAnimationFrame: noop, setTimeout: noop, setInterval: noop,
+  clearTimeout: noop, clearInterval: noop,
   localStorage: { getItem: () => null, setItem: noop, removeItem: noop },
   document: { getElementById: el, createElement: el, querySelector: el, body: el(),
               addEventListener: noop },
@@ -20,7 +21,7 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-['js/util.js', 'js/lota.js', 'js/props.js', 'js/props2.js',
+['js/util.js', 'js/music.js', 'js/lota.js', 'js/props.js', 'js/props2.js',
  'js/zones.js', 'js/zones2.js', 'js/level.js', 'js/levels.js', 'js/game.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), sandbox, { filename: f }));
 

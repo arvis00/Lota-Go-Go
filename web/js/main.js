@@ -3,12 +3,25 @@ window.__errs = [];
 window.addEventListener('error', e => {
   window.__errs.push((e.error && e.error.stack) || (e.message + ' @' + e.filename + ':' + e.lineno));
 });
+/* Bumped by hand whenever something ships. It is printed in the corner of the
+   lobby next to the ⟳ button, so an iPhone that kept an old copy of the game
+   in its home-screen cache can be told apart from one that did not. */
+const BUILD = '2026-08-30';
+
 Save.load();
 Sfx.on = !!Save.data.sound;
+Music.on = !!Save.data.music;
 window.addEventListener('load', () => {
   UI.init();
   Game.init();
 });
+/* pocketed phone, or a tab in the background: the song stops rather than
+   playing on to nobody, and picks up where it was when the game comes back */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) Music.pause();
+  else if (Game.state === 'run') Music.resume();
+});
+
 /* keep the page from bouncing/zooming on iOS */
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });

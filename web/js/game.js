@@ -16,6 +16,9 @@ const Game = {
   /* the lobby is a strip of four identical rooms, one per level; the view
      slides sideways between them and the locked ones are drained of colour */
   lobbyPage: 0, lobbyFrom: 0, lobbySlide: 1, lobbySwapped: true,
+  /* where in the room Lota sits, as a fraction of its width, and how big she
+     is allowed to be once she is over there — see resize() */
+  lobbyFocus: 0.5, lobbySize: 1,
   previewLevel: 2,
   cam: { x: 0, y: 0 },
   input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0 },
@@ -54,6 +57,22 @@ const Game = {
     this.ox = (cw - this.VW * this.scale) / 2;
     this.oy = (ch - this.VH * this.scale) / 2;
     this.groundY = Math.round(this.VH * 0.76);
+
+    /* The lobby's buttons run down the middle of the screen, and lying down
+       there is not much middle left: Lota used to sit right behind them. So
+       measure what the column leaves free to the left of it and, if she fits,
+       move her, her rug and the room's number over there instead. */
+    const col = Math.min(360, cw * 0.86) / 2 / this.scale;   // half the button column
+    const edge = 62 / this.scale;                            // the ‹ page arrow
+    const bandR = this.VW / 2 - col, band = bandR - edge;
+    if (!this.portrait && band > 90) {
+      this.lobbyFocus = ((edge + bandR) / 2) / this.VW;
+      this.lobbySize = clamp(band / 170, 0.62, 1);           // a narrow strip, a smaller dog
+    } else {
+      /* standing up the room is letterboxed and the buttons sit below it, so
+         the middle is hers again */
+      this.lobbyFocus = 0.5; this.lobbySize = 1;
+    }
   },
 
   /* ================= input ================= */
@@ -186,6 +205,7 @@ const Game = {
 
   lobby() {
     this.state = 'lobby'; this.stateT = 0;
+    Music.stop();
     this.fx.confetti.length = 0;
     this.lobbyFrom = this.lobbyPage; this.lobbySlide = 1; this.lobbySwapped = true;
     UI.showLobby();
@@ -257,6 +277,7 @@ const Game = {
     this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0; this.fx.spin = 0;
     this.fx.layerFade = 0; this.fx.fromLayer = 'main'; this.fx.fromX = sx;
     this.state = 'run'; this.stateT = 0;
+    Music.play(level);
     UI.showHud();
     UI.setBones(this.run.bones);
     UI.setKey(this.run.metroKey);
@@ -286,6 +307,7 @@ const Game = {
 
   crash(reason) {
     if (this.state !== 'run') return;
+    Music.stop();
     Sfx.crash();
     this.state = 'crash'; this.stateT = 0;
     this.lota.dead = true; this.lota.state = 'sit'; this.lota.sitT = 0;
@@ -297,6 +319,7 @@ const Game = {
   finish() {
     if (this.run.finished) return;
     this.run.finished = true;
+    Music.stop();
     Sfx.win();
     for (let i = 0; i < 130; i++) this.fx.confetti.push({
       x: Math.random() * this.VW, y: -Math.random() * 300,
@@ -642,7 +665,10 @@ const Game = {
     this.updateCam(dt);
     this.updateZone();
     this.run.dist = L.x;
-    UI.setProgress(clamp(L.x / this.world.finishX, 0, 1));
+    const done = clamp(L.x / this.world.finishX, 0, 1);
+    UI.setProgress(done);
+    /* she runs faster as the level goes on; the song leans forward with her */
+    Music.setRate(done);
   },
 
   /** How many friends are running behind her right now: the fox cave is the
@@ -1247,7 +1273,7 @@ const Game = {
       ctx.fillStyle = 'rgba(226,226,236,.13)'; ctx.fillRect(ox, 0, VW, VH);
       ctx.fillStyle = 'rgba(12,10,20,.20)'; ctx.fillRect(ox, 0, VW, VH);
       ctx.restore();
-      this.drawBigLock(ox + VW * 0.5, VH * 0.345, level);
+      this.drawBigLock(ox + VW * this.lobbyFocus, VH * 0.345, level);
     }
   },
 
@@ -1309,29 +1335,34 @@ const Game = {
     ctx.save(); ctx.globalAlpha = .35;
     for (let x = 0; x < VW; x += 90) line(ctx, x, floorY, x, VH, '#4f351d', 3);
     ctx.restore();
-    fillEll(ctx, VW * 0.5, floorY + 46, VW * 0.3, 40, '#8a4a63');
-    ctx.save(); ctx.globalAlpha = .5; fillEll(ctx, VW * 0.5, floorY + 46, VW * 0.24, 30, '#c96f8a'); ctx.restore();
+    /* her corner of the room: dead centre when there is room for her there,
+       off to one side when the buttons have taken the middle */
+    const fx = VW * this.lobbyFocus, side = this.lobbyFocus < 0.45;
+    const sz = side ? this.lobbySize : 1;
+    const rugR = side ? VW * 0.24 * sz : VW * 0.3;
+    fillEll(ctx, fx, floorY + 46, rugR, 40, '#8a4a63');
+    ctx.save(); ctx.globalAlpha = .5; fillEll(ctx, fx, floorY + 46, rugR * 0.8, 30, '#c96f8a'); ctx.restore();
 
     /* the level's number, painted on the wall above the rug */
     ctx.save(); ctx.globalAlpha = .12;
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '900 ' + Math.round(VH * 0.3) + 'px ' + 'system-ui, sans-serif';
-    ctx.fillText(String(level), VW * 0.5, floorY - VH * 0.13);
+    ctx.font = '900 ' + Math.round(VH * 0.3 * sz) + 'px ' + 'system-ui, sans-serif';
+    ctx.fillText(String(level), fx, floorY - VH * 0.13);
     ctx.restore();
 
     /* Lota, sitting and being cute. A locked room is one she has not been
        let into yet, so she only sits on the page you actually own. */
     if (!locked) {
       const cycle = (t * 0.5) % 4;
-      drawLota(ctx, VW * 0.5, floorY + 24, {
-        state: 'sit', t: t, skin: Save.data.skin, scale: 1.42,
+      drawLota(ctx, fx, floorY + 24, {
+        state: 'sit', t: t, skin: Save.data.skin, scale: 1.42 * sz,
         face: 'calm', paw: cycle > 2.4 && cycle < 3.4,
         tilt: Math.sin(t * 0.8) * 0.13
       });
       for (let i = 0; i < 3; i++) {
         const ph = (t * 0.35 + i * 0.33) % 1;
         ctx.save(); ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.55;
-        const hx = VW * 0.5 + 48 + Math.sin(ph * 6 + i) * 12, hy = floorY - 60 - ph * 130;
+        const hx = fx + 48 * sz + Math.sin(ph * 6 + i) * 12, hy = floorY - 60 * sz - ph * 130;
         ctx.translate(hx, hy); ctx.scale(1.1, 1.1);
         ctx.beginPath();
         ctx.moveTo(0, 4); ctx.bezierCurveTo(-7, -3, -3, -9, 0, -4);
@@ -1341,9 +1372,9 @@ const Game = {
     } else {
       /* an empty rug, with her collar left on it */
       ctx.save(); ctx.globalAlpha = .8;
-      ctx.beginPath(); ctx.ellipse(VW * 0.5, floorY + 40, 26, 9, -0.1, 0, TAU);
+      ctx.beginPath(); ctx.ellipse(fx, floorY + 40, 26, 9, -0.1, 0, TAU);
       ctx.strokeStyle = '#8a4a63'; ctx.lineWidth = 7; ctx.stroke();
-      circle(ctx, VW * 0.5 + 2, floorY + 49, 4.4, '#c9962c');
+      circle(ctx, fx + 2, floorY + 49, 4.4, '#c9962c');
       ctx.restore();
     }
 

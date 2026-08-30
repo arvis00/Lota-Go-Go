@@ -58,6 +58,16 @@ const UI = {
       Sfx.on = !!Save.data.sound; Sfx.init(); Sfx.resume(); if (Sfx.on) Sfx.click();
       this.syncSound();
     };
+    /* the songs have their own switch: turning them off leaves the barks,
+       the boings and the treats exactly where they were */
+    $('btnMusic').onclick   = () => {
+      Save.data.music = Save.data.music ? 0 : 1; Save.write();
+      Music.setOn(!!Save.data.music);
+      this.syncSound();
+      if (Music.on) { Sfx.init(); Sfx.resume(); Music.preview(Game.lobbyLevel()); }
+    };
+    $('btnReload').onclick  = () => { Sfx.click(); this.hardReload(); };
+    $('buildTag').textContent = BUILD;
     this.syncSound();
 
     /* portrait nudge */
@@ -73,7 +83,43 @@ const UI = {
     }, 500);
   },
 
-  syncSound() { $('btnSound').textContent = Save.data.sound ? '♪' : '✕'; $('btnSound').style.opacity = Save.data.sound ? 1 : .5; },
+  syncSound() {
+    $('btnSound').textContent = Save.data.sound ? '♪' : '✕';
+    $('btnSound').style.opacity = Save.data.sound ? 1 : .5;
+    $('btnMusic').textContent = Save.data.music ? '♫' : '✕';
+    $('btnMusic').style.opacity = Save.data.music ? 1 : .5;
+  },
+
+  /** Added to the home screen there is no address bar and no reload button,
+      so the lobby carries one: it throws away every cached copy of the game,
+      pulls each file down again and comes back on a fresh address. The date
+      next to it is the build that is actually running. */
+  hardReload() {
+    this.toast('Atnaujinama…', BUILD);
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
+      location.replace(location.pathname + '?v=' + Date.now());
+    };
+    const jobs = [];
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations()
+          .then(rs => Promise.all(rs.map(r => r.unregister()))));
+      }
+      if (window.caches) jobs.push(caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))));
+      /* `cache: 'reload'` is the part that matters: it refetches each script
+         past the cache and writes the new copy back, so the reload that
+         follows gets today's game and not last week's */
+      const urls = [location.pathname];
+      document.querySelectorAll('script[src], link[rel="stylesheet"]')
+        .forEach(el => urls.push(el.src || el.href));
+      urls.forEach(u => jobs.push(fetch(u, { cache: 'reload' }).catch(() => {})));
+    } catch (e) { /* an old browser: the plain reload below still happens */ }
+    Promise.all(jobs).catch(() => {}).then(go);
+    setTimeout(go, 4000);      // never hang on a dead connection
+  },
 
   hideAll() {
     ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview',
@@ -315,8 +361,8 @@ const UI = {
       row('Iš viso', '+' + earned + ' ' + ico, true);
   },
 
-  pause() { if (Game.state !== 'run') return; Game.state = 'pause'; $('screen-pause').classList.remove('hidden'); },
-  resume() { if (Game.state !== 'pause') return; $('screen-pause').classList.add('hidden'); Game.state = 'run'; Game.last = performance.now(); },
+  pause() { if (Game.state !== 'run') return; Game.state = 'pause'; Music.pause(); $('screen-pause').classList.remove('hidden'); },
+  resume() { if (Game.state !== 'pause') return; $('screen-pause').classList.add('hidden'); Game.state = 'run'; Music.resume(); Game.last = performance.now(); },
 
   setBones(n) { $('hudBones').textContent = n; },
   /* the metro key rides in the HUD once she has it, so it is never a mystery

@@ -102,7 +102,7 @@ const Save = {
     mode: {},
     owned: ['classic'], skin: 'classic',
     best: {}, far: {},
-    bestBones: 0, bestZone: 0, sound: 1
+    bestBones: 0, bestZone: 0, sound: 1, music: 1
   },
   load() {
     try {
@@ -146,6 +146,8 @@ const Save = {
     if (!d.far || typeof d.far !== 'object') d.far = {};
     if (!d.best[1] && d.bestBones) d.best[1] = d.bestBones;
     if (!d.far[1] && d.bestZone) d.far[1] = d.bestZone;
+    /* a save written before there were songs simply has them on */
+    if (d.music == null) d.music = 1;
     if (!Array.isArray(d.owned) || !d.owned.length) d.owned = ['classic'];
     if (d.owned.indexOf('classic') < 0) d.owned.unshift('classic');
   },

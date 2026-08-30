@@ -22,6 +22,14 @@ siunčia `Cache-Control: no-store`, kad naršyklė nerodytų senų `js/` failų.
 
 iPhone/iPad: Safari → Share → „Add to Home Screen" — žaidimas veiks per visą ekraną.
 
+**Atnaujinimas telefone (⟳).** Pridėtas į pradžios ekraną žaidimas neturi nei adreso
+juostos, nei perkrovimo mygtuko, todėl iPhone gali savaitėmis rodyti seną, savo talpykloje
+gulinčią versiją. Pradžios ekrano viršuje dešinėje yra **⟳**: jis išmeta visas talpyklas,
+iš naujo parsiunčia kiekvieną `js/` failą (`fetch(..., { cache: 'reload' })`) ir grįžta
+nauju adresu `?v=<laikas>`. Šalia jo maža data — tai `BUILD` iš `js/main.js`, t. y. versija,
+kuri iš tikrųjų veikia. **Keičiant žaidimą `BUILD` reikia pasikelti ranka** — kitaip data
+neparodys, kad atnaujinimas suveikė.
+
 ## Valdymas
 
 | Veiksmas | Telefonas / iPad | Kompiuteris |
@@ -79,6 +87,38 @@ parodoma `🔑 N lygio raktas!`.
 pirmame lygyje pririnktais skaniukais trečio lygio aprangos nenusipirksi. Trečiame lygyje
 renkami abu dalykai, nes jo aprangos kainuoja ir skaniukų, ir žaisliukų — kiekviena
 skirtingą kiekį, kad nė viena nebūtų uždirbama taip pat kaip kita.
+
+## Muzika ir garsai
+
+Viršutiniame dešiniajame pradžios ekrano kampe yra du atskiri jungikliai:
+
+| Mygtukas | Ką išjungia |
+|---|---|
+| **♫** | dainas (garsai lieka) |
+| **♪** | garsus: šuolius, kaulus, dūžius (daina lieka) |
+
+Kiekvienas lygis turi savo dainą, ir ji groja tol, kol Lota bėga: pauzė ją sustabdo toje
+pačioje vietoje, dūžis ir finišas — nutildo, kad būtų girdėti pats dūžis ar finišo melodija.
+Bėgant lygis greitėja, ir daina kartu su juo paskuba iki 14 % (`Music.setRate()`). Įjungus
+**♫** pradžios ekrane, kelios taktos pagrojamos iš karto — kad girdėtųsi, kas įjungta.
+
+Dainos gyvena `js/music.js` ir, kaip ir visa kita čia, jokių failų neturi: melodija —
+kvadratinė banga, bosas — trikampė, būgnai — triukšmo pliūpsniai. Daina užrašoma trimis
+eilutėmis aštuntinių tinklelyje:
+
+```js
+2: {
+  bpm: 126,
+  lead:  'f4 .  a4 .  c5 -  a4 . | ...',   // melodija
+  bass:  'f2 .  f2 .  c3 .  f2 . | ...',   // bosas
+  drums: 'k .  s h  k h  s . | ...'        // k bosinis būgnas, s būgnelis, h lėkštė
+}
+```
+
+`.` — pauzė, `-` — pratęsia prieš tai buvusią natą dar vienam aštuntiniui, `|` — taktos
+brūkšnys (skaitytojui, ne kodui). Natos rašomos `c5`, `fs5` (diezas), `bb4` (bemolis).
+Trys eilutės sukasi kiekviena savo ilgiu, tad vienos taktos būgnai po aštuonių taktų
+melodija patys grįžta į vietą. Naują dainą pakanka įrašyti į `SONGS` prie lygio numerio.
 
 ## Aprangos
 
@@ -427,6 +467,7 @@ skaniukais, antras — žaisliukais.
 | Failas | Ką daro |
 |---|---|
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
+| `js/music.js` | keturios dainos (po vieną lygiui) ir jas grojantis WebAudio grotuvas |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + visos aprangos |
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
@@ -455,6 +496,12 @@ Dažniausiai keičiami dalykai:
   `buildDuct()` (`js/level.js`), vamzdžio vaizdas — `BRANCHES.upstairs.duct` (`js/zones.js`).
   Lovos plotis (`bw`) valdo, koks platus yra nusileidimo langas; `BED_TOP` — kiek anksti
   reikia atsispirti
+- **Dainos** — `SONGS` (`js/music.js`): `bpm`, `lead`, `bass`, `drums`; bendras garsumas —
+  `Music.VOL`, greitėjimas bėgant — `Music.setRate()`
+- **Kur pradžios ekrane sėdi Lota** — `lobbyFocus` ir `lobbySize` (`js/game.js`,
+  `resize()`): gulsčiame ekrane mygtukai užima vidurį, tad ji, jos kilimėlis ir lygio
+  numeris nukeliauja į kairį kraštą ir, jei ten ankšta, susitraukia; stačiame ekrane
+  viskas lieka viduryje
 - **Kontroliniai taškai ir premijos už finišą** — `bonus: { cp, raw }` lygio įraše `LEVELS`
   ir `Levels.bonus()` (`js/levels.js`); `choose: false` reiškia, kad lygis pasirinkimo
   nesiūlo. Kas įsimenama — `Save.mode()` (`js/util.js`), klausimo ekranas — `UI.showMode()`
