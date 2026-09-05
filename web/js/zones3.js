@@ -417,7 +417,7 @@ const ZONES3 = [
   {
     /* ---- 1 · on top of the airship, at dawn, above the weather ---- */
     id: 'airspine', exit: 'hatchAir', name: 'Dirižablio nugara', sec: 11, diff: 0.2,
-    floor: 'envelope',
+    sub: 'aukščiau už debesis, ant dirižablio nugaros', floor: 'envelope',
     pal: { floorTop: '#e6ecf2', floorBody: '#98a5b2', accent: '#e2453c',
            treadTop: '#c8cfd8', treadSide: '#8b98a6' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -470,8 +470,8 @@ const ZONES3 = [
   },
   {
     /* ---- 2 · down inside her: the promenade salon ---- */
-    id: 'airsalon', exit: 'hatchAir', name: 'Dirižablio salonas', sec: 10, diff: 0.34,
-    floor: 'cabinFloor', branch: 'ballast',
+    id: 'airsalon', exit: 'gangway', name: 'Dirižablio salonas', sec: 10, diff: 0.34,
+    sub: 'pro liuką žemyn — į dirižablio vidų', floor: 'cabinFloor', branch: 'ballast',
     pal: { floorTop: '#a8834f', floorBody: '#7a5c3a', accent: '#c9a86a',
            treadTop: '#c9a86a', treadSide: '#8a6a45', rail: '#c9a86a', post: '#8a6a45' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -523,7 +523,7 @@ const ZONES3 = [
   {
     /* ---- 3 · off her and onto the mooring gantry of the sky tower ---- */
     id: 'mooring', exit: 'gantryGate', name: 'Švartavimo bokštas', sec: 10, diff: 0.44,
-    floor: 'steelGrate',
+    sub: 'lieptu iš dirižablio ant dangaus bokšto', floor: 'steelGrate',
     pal: { floorTop: '#c8cfd8', floorBody: '#4a5764', accent: '#f0c23a',
            treadTop: '#96a2b0', treadSide: '#5f6c7a', rail: '#c8cfd8', post: '#7f8b99' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -591,7 +591,8 @@ const ZONES3 = [
        Nothing here can be failed: the flight of glass steps is run, not
        jumped, and it is what takes her out of the sky and onto the ground. */
     id: 'terrace', name: 'Bokšto terasos', sec: 11, diff: 0.54, floor: 'glassDeck',
-    stairsDown: 9, stairProp: 'treadGlass', stairSign: 'downSign',
+    sub: 'stiklinėmis pakopomis žemyn, pro debesų sluoksnį',
+    exit: 'towerDoor', stairsDown: 9, stairProp: 'treadGlass', stairSign: 'downSign',
     pal: { floorTop: '#f4fbff', floorBody: '#6f9cb8', accent: '#4fc3ea',
            treadTop: '#e2f2fc', treadSide: '#9fc4dc', rail: '#dfeef7', post: '#96a2b0' },
     bg(ctx, VW, VH, camX, floorY, t, pal, baseY) {
@@ -642,6 +643,7 @@ const ZONES3 = [
   {
     /* ---- 5 · the ground at last: the orchard the tower stands in ---- */
     id: 'orchard', name: 'Žydintis sodas', sec: 11, diff: 0.62, floor: 'meadow', calm: 1,
+    sub: 'pagaliau žemė — bokšto papėdėje žydi vyšnios', exit: 'greenDoor',
     pal: { floorTop: '#8cc45c', floorBody: '#6b8a44', accent: '#ffd6e4',
            treadTop: '#8cc45c', treadSide: '#6b8a44' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -708,7 +710,7 @@ const ZONES3 = [
   {
     /* ---- 6 · the long glasshouses behind the orchard ---- */
     id: 'greenhouse', name: 'Šiltnamiai', sec: 10, diff: 0.7, floor: 'gravelPath',
-    branch: 'seedcellar',
+    sub: 'to paties sodo šiltnamiai', exit: 'fieldGate', branch: 'seedcellar',
     pal: { floorTop: '#b5a893', floorBody: '#8a7f6c', accent: '#4caf6d',
            treadTop: '#b5a893', treadSide: '#8a7f6c', rail: '#8a7f6c', post: '#6f6656' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -785,7 +787,8 @@ const ZONES3 = [
   {
     /* ---- 7 · the marble quarry, cut in white benches out of the hill ---- */
     id: 'quarry', name: 'Marmuro karjeras', sec: 28, diff: 0.78, floor: 'quarryStone',
-    branch: 'conveyor',
+    sub: 'už šiltnamių prasideda baltas marmuro karjeras',
+    exit: 'quarryRamp', branch: 'conveyor',
     pal: { floorTop: '#f4f1e8', floorBody: '#a8a294', accent: '#f0c23a',
            treadTop: '#eae6da', treadSide: '#b8b2a2', rail: '#96a2b0', post: '#7f8b99' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -857,7 +860,8 @@ const ZONES3 = [
     /* ---- 8 · the mine head at the foot of the quarry: this is where a
        jetpack ride comes back down, so its mouth is deliberately open ---- */
     id: 'minehead', name: 'Kasyklos aikštelė', sec: 14, diff: 0.8, floor: 'gravelPath',
-    jetLand: 1,
+    sub: 'karjero papėdė: kopimo bokštas ir kasyklos anga',
+    exit: 'aditMouth', jetLand: 1,
     pal: { floorTop: '#b5a893', floorBody: '#8a7f6c', accent: '#e2453c',
            treadTop: '#b5a893', treadSide: '#8a7f6c' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -928,6 +932,7 @@ const ZONES3 = [
   {
     /* ---- 9 · in under the hill: the salt mine ---- */
     id: 'saltmine', name: 'Druskos kasykla', sec: 11, diff: 0.84, floor: 'saltFloor', calm: 1,
+    sub: 'į kalno vidų — dabar jau po žeme', exit: 'blastDoor',
     pal: { floorTop: '#ffe4e6', floorBody: '#a8848c', accent: '#f6d0d4',
            treadTop: '#f6d0d4', treadSide: '#a8848c', rail: '#8a6a45', post: '#6b5c4c' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -988,6 +993,7 @@ const ZONES3 = [
     /* ---- 10 · the gallery opens into a silo, and the rocket is standing
        in it. The gantry stairs up to the hatch are run, never jumped ---- */
     id: 'silo', exit: 'rocketHatch', name: 'Raketos šachta', sec: 10, diff: 0.86,
+    sub: 'kasyklos galerija atsiveria į raketos šachtą',
     floor: 'plateFloor', stairsUp: 5, stairProp: 'treadSteel', stairSign: 'upSign',
     pal: { floorTop: '#8b98a6', floorBody: '#59636f', accent: '#f0c23a',
            treadTop: '#96a2b0', treadSide: '#5f6c7a', rail: '#c8cfd8', post: '#7f8b99' },
@@ -1041,12 +1047,18 @@ const ZONES3 = [
   {
     /* ---- 11 · inside the rocket, going up ---- */
     id: 'rocket', exit: 'airlock', name: 'Raketos viduje', sec: 9, diff: 0.88,
-    floor: 'deckShip',
+    sub: 'startas! pro langus žemė tolsta', launch: 1, floor: 'deckShip',
     pal: { floorTop: '#c8d4e0', floorBody: '#3f4a58', accent: '#4fc3ea',
            treadTop: '#c8d4e0', treadSide: '#7f8b99' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
+      /* How far up the rocket already is. Everything through the ports hangs
+         off this: at the bottom of the place it is still daylight outside, by
+         the top of it there is nothing but stars. That is what says the rocket
+         is going somewhere while she runs along inside it. */
+      const sp = this.span || { x0: camX, x1: camX + 6000 };
+      const up = clamp((camX + VW * 0.4 - sp.x0) / Math.max(1, sp.x1 - sp.x0), 0, 1);
       const g = ctx.createLinearGradient(0, 0, 0, floorY);
-      g.addColorStop(0, '#25303c'); g.addColorStop(1, '#516070');
+      g.addColorStop(0, mixHex('#25303c', '#12161f', up)); g.addColorStop(1, mixHex('#516070', '#2b3440', up));
       ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
       /* the curve of the hull: ribs, and the ports between them */
       tileLayer(camX * 0.4, 240, VW, (x, i) => {
@@ -1066,12 +1078,21 @@ const ZONES3 = [
           circle(ctx, px, py, 56, '#c8d4e0');
           ctx.save(); ctx.beginPath(); ctx.arc(px, py, 46, 0, TAU); ctx.clip();
           const sg = ctx.createLinearGradient(0, py - 46, 0, py + 46);
-          sg.addColorStop(0, '#0b1020'); sg.addColorStop(0.6, '#2f5a9c'); sg.addColorStop(1, '#a8d0e8');
+          sg.addColorStop(0, mixHex('#4f8cc8', '#04060f', up));
+          sg.addColorStop(0.6, mixHex('#a8d0e8', '#0a1024', up));
+          sg.addColorStop(1, mixHex('#dff0f8', '#131c34', up));
           ctx.fillStyle = sg; ctx.fillRect(px - 46, py - 46, 92, 92);
           ctx.translate(px - 46, 0);
-          BG3.stars(ctx, 92, py, camX * 0.05 + i * 40, t, 10, py + 10);
-          ctx.globalAlpha = .8;
-          fillEll(ctx, 46, py + 44, 60, 22, '#eef6fc');
+          ctx.save(); ctx.globalAlpha = up;
+          BG3.stars(ctx, 92, py, camX * 0.05 + i * 40, t, 12, py + 20); ctx.restore();
+          /* the cloud deck falling away, and then the curve of the world */
+          ctx.globalAlpha = .85 * (1 - up);
+          fillEll(ctx, 46, py + 30 + up * 46, 62, 20, '#ffffff');
+          fillEll(ctx, 18, py + 36 + up * 46, 34, 13, '#eef6fc');
+          ctx.globalAlpha = .9 * up;
+          fillEll(ctx, 46, py + 74 - up * 26, 76, 30, '#2f6bb0');
+          ctx.globalAlpha = .5 * up;
+          fillEll(ctx, 30, py + 66 - up * 26, 22, 8, '#5faf6a');
           ctx.restore();
           for (let k = 0; k < 8; k++) {
             const a = k * TAU / 8;
@@ -1083,8 +1104,12 @@ const ZONES3 = [
           for (let k = 0; k < 3; k++)
             fillRR(ctx, x + 38 + k * 46, floorY - 212, 38, 114, 4, '#66727e');
           fillRR(ctx, x + 44, floorY - 268, 112, 42, 5, '#12181f');
-          ctx.fillStyle = '#8fe0a8'; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
-          ctx.fillText('T-' + String(9 - imod(Math.floor(t * 1.5) + i, 10)), x + 100, floorY - 238);
+          ctx.fillStyle = up > 0.06 ? '#8fe0a8' : '#ffd870';
+          ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
+          /* the screens count down to the launch and then read off the height */
+          ctx.fillText(up > 0.06 ? (Math.round(up * 118 + imod(i, 3)) + ' km')
+                                 : 'T-' + Math.max(0, Math.ceil((0.06 - up) * 150)),
+                       x + 100, floorY - 238);
         }
       });
       /* the deckhead, cables and lights along it */
@@ -1094,9 +1119,16 @@ const ZONES3 = [
         circle(ctx, x, 34, 4, imod(i + Math.floor(t * 3), 3) ? '#4fc3ea' : '#dff0ff');
       });
       ctx.restore();
-      /* the whole picture trembles a little: she is under power */
-      ctx.save(); ctx.globalAlpha = .1 + Math.abs(Math.sin(t * 9)) * .06;
+      /* the whole picture trembles, and hardest right at the start: she is
+         under power, and the shudder is what tells you so */
+      ctx.save();
+      ctx.globalAlpha = (.1 + Math.abs(Math.sin(t * 9)) * .06) * (1.6 - up * 0.9);
       ctx.fillStyle = '#ffd0a8'; ctx.fillRect(0, 0, VW, VH); ctx.restore();
+      /* and the engines' light coming up the deck from below */
+      ctx.save(); ctx.globalAlpha = (.28 - up * .16) + Math.abs(Math.sin(t * 11)) * .07;
+      const eg = ctx.createLinearGradient(0, floorY - 90, 0, floorY + 20);
+      eg.addColorStop(0, 'rgba(255,160,90,0)'); eg.addColorStop(1, '#ffb060');
+      ctx.fillStyle = eg; ctx.fillRect(0, floorY - 90, VW, 110); ctx.restore();
     },
     pools: { hurdle: ['seatPod', 'lockerR', 'cargoNetR', 'tankR', 'consoleR'],
              over: ['pipeRun'], tunnel: ['hatchTunnel'],
@@ -1105,8 +1137,8 @@ const ZONES3 = [
   },
   {
     /* ---- 12 · out through the airlock and along the hull, in orbit ---- */
-    id: 'orbit', exit: 'airlock', name: 'Orbita', sec: 11, diff: 0.9, floor: 'hullPlate',
-    calm: 1,
+    id: 'orbit', exit: 'airlockIn', name: 'Orbita', sec: 11, diff: 0.9, floor: 'hullPlate',
+    sub: 'pro šliuzą laukan — bėga stoties korpusu', calm: 1,
     pal: { floorTop: '#f4f8fc', floorBody: '#8f9aa6', accent: '#4fc3ea',
            treadTop: '#e2e8ee', treadSide: '#8f9aa6', rail: '#c8cfd8', post: '#7f8b99' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1161,8 +1193,8 @@ const ZONES3 = [
   {
     /* ---- 13 · in through the airlock and along the station, with the Moon
        getting bigger in every window ---- */
-    id: 'station', exit: 'stationDoor', name: 'Kosminė stotis', sec: 10, diff: 0.95,
-    floor: 'stationFloor',
+    id: 'station', exit: 'landerDoor', name: 'Kosminė stotis', sec: 10, diff: 0.95,
+    sub: 'atgal į vidų: Mėnulis languose vis didesnis', floor: 'stationFloor',
     pal: { floorTop: '#eef2f6', floorBody: '#b9c4d0', accent: '#4fc3ea',
            treadTop: '#eef2f6', treadSide: '#9aa6b2' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1235,6 +1267,7 @@ const ZONES3 = [
   {
     /* ---- 14 · and out onto the Moon, where the finish stands ---- */
     id: 'moon', name: 'Mėnulis', sec: 14, diff: 1.0, floor: 'regolith', last: true, calm: 1,
+    sub: 'nusileidimo modulis pastatė ją čia — finišas priekyje',
     pal: { floorTop: '#e2ddd0', floorBody: '#6f6a60', accent: '#8fd6ff',
            treadTop: '#e2ddd0', treadSide: '#9c968a' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1326,7 +1359,7 @@ const BRANCHES3 = {
     shaft: 'hatchShaft', sign: 'ballastSign', exitSign: 'upOut', roomGate: 'roomGateA',
     rooms: [
       {
-        id: 'ballasthold', name: 'Balasto denis', share: 0.54, floor: 'ballastFloor', diff: 0.34,
+        id: 'ballasthold', name: 'Balasto denis', sub: 'po salonu — bakai ir vamzdžiai', share: 0.54, floor: 'ballastFloor', diff: 0.34,
         pal: { floorTop: '#8a6a45', floorBody: '#4f4438', accent: '#4fc3ea',
                treadTop: '#a8834f', treadSide: '#6f5232', rail: '#c8cfd8', post: '#8a6a45' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1382,7 +1415,7 @@ const BRANCHES3 = {
                  deco: ['rivets', 'oilStain'] }
       },
       {
-        id: 'enginebay', name: 'Variklių skyrius', share: 0.46, floor: 'ballastFloor', diff: 0.46,
+        id: 'enginebay', name: 'Variklių skyrius', sub: 'sraigtai suka už pat borto', share: 0.46, floor: 'ballastFloor', diff: 0.46,
         pal: { floorTop: '#a8834f', floorBody: '#4f4438', accent: '#f0c23a',
                treadTop: '#a8834f', treadSide: '#6f5232', rail: '#c8cfd8', post: '#8a6a45' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1435,7 +1468,7 @@ const BRANCHES3 = {
     shaft: 'cellarShaft', sign: 'cellarSign', exitSign: 'upOut', roomGate: 'roomGateW',
     rooms: [
       {
-        id: 'cellarhall', name: 'Sėklų rūsys', share: 0.52, floor: 'cellarFloor', diff: 0.4,
+        id: 'cellarhall', name: 'Sėklų rūsys', sub: 'po šiltnamiais — stiklainiai ir sėklos', share: 0.52, floor: 'cellarFloor', diff: 0.4,
         pal: { floorTop: '#7f7462', floorBody: '#4a4034', accent: '#f0c23a',
                treadTop: '#8a7f6c', treadSide: '#5f5448', rail: '#8a6a45', post: '#6f5232' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1500,7 +1533,7 @@ const BRANCHES3 = {
                  deco: ['spillDeco', 'leafDeco'] }
       },
       {
-        id: 'rootstore', name: 'Šaknų sandėlis', share: 0.48, floor: 'cellarFloor', diff: 0.52,
+        id: 'rootstore', name: 'Šaknų sandėlis', sub: 'dėžės šaknų ir svogūnų vainikai', share: 0.48, floor: 'cellarFloor', diff: 0.52,
         pal: { floorTop: '#8a7f6c', floorBody: '#4a4034', accent: '#e2884c',
                treadTop: '#8a7f6c', treadSide: '#5f5448', rail: '#8a6a45', post: '#6f5232' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1555,7 +1588,7 @@ const BRANCHES3 = {
       id: 'bunker', drop: -250, sec: 7.2, exitSign: 'upOut',
       shaft: 'deepShaft', sign: 'deepSign',
       room: {
-        id: 'bunker', name: 'Bandymų bunkeris', floor: 'bunkerFloor', diff: 0.5,
+        id: 'bunker', name: 'Bandymų bunkeris', sub: 'niekas čia nebuvo daug metų', floor: 'bunkerFloor', diff: 0.5,
         pal: { floorTop: '#5f6c7a', floorBody: '#2f3a48', accent: '#8fd6ff',
                treadTop: '#8b98a6', treadSide: '#4a5764', rail: '#c8cfd8', post: '#7f8b99' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1620,7 +1653,7 @@ const BRANCHES3 = {
     shaftProp: 'galleryShaft',
     rooms: [
       {
-        id: 'gallery', name: 'Transporterio galerija', share: 0.38, floor: 'galleryFloor', diff: 0.5,
+        id: 'gallery', name: 'Transporterio galerija', sub: 'juosta virš galvos veža akmenį laukan', share: 0.38, floor: 'galleryFloor', diff: 0.5,
         pal: { floorTop: '#7f8b99', floorBody: '#3f4a58', accent: '#f0c23a',
                treadTop: '#96a2b0', treadSide: '#5f6c7a', rail: '#c8cfd8', post: '#7f8b99' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1665,7 +1698,7 @@ const BRANCHES3 = {
                  deco: ['dustQ', 'trackQ'] }
       },
       {
-        id: 'crusher', name: 'Trupintuvas', share: 0.62, floor: 'galleryFloor', diff: 0.6,
+        id: 'crusher', name: 'Trupintuvas', sub: 'čia akmuo malamas — ir čia dar viena skylė', share: 0.62, floor: 'galleryFloor', diff: 0.6,
         pal: { floorTop: '#7f8b99', floorBody: '#3f4a58', accent: '#e2453c',
                treadTop: '#96a2b0', treadSide: '#5f6c7a', rail: '#c8cfd8', post: '#7f8b99' },
         bg(ctx, VW, VH, camX, floorY, t, pal) {
@@ -1727,7 +1760,7 @@ Object.keys(BRANCHES3).forEach(k => {
    whatever the ground below would have given her.
 ============================================================= */
 const SKY_ROOM = {
-  id: 'sky', name: 'Virš debesų', floor: 'envelope',
+  id: 'sky', name: 'Virš debesų', sub: 'kuprinė neša — kliūčių čia nėra', floor: 'envelope',
   pal: { floorTop: '#ffffff', floorBody: '#c8d8e8', accent: '#8fd6ff' },
   bg(ctx, VW, VH, camX, floorY, t, pal) {
     /* the sky is a great deal bigger up here, and completely still */

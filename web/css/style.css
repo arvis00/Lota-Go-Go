@@ -99,6 +99,8 @@ canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
 .skin-card.locked{opacity:.92}
 .skin-card canvas{width:100%;height:118px;display:block}
 .skin-name{font-weight:800;font-size:13px;line-height:1.2;font-family:var(--font);margin-top:4px}
+.skin-from{font-weight:700;font-size:10.5px;line-height:1.25;font-family:var(--font);
+  margin-top:2px;opacity:.62;letter-spacing:.2px}
 .skin-tag{margin-top:6px;font-weight:800;font-size:12px;line-height:1;font-family:var(--font);padding:6px 8px;border-radius:11px;background:rgba(0,0,0,.3)}
 .skin-tag.buy{background:linear-gradient(180deg,#ffd870,#f9ac2e);color:#3a2508}
 .skin-tag.own{background:rgba(255,255,255,.16);color:#dcd2ff}

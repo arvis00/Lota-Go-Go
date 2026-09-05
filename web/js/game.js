@@ -267,6 +267,7 @@ const Game = {
     }
     this.run.diving = null;
     this.run.fly = 0; this.run.glide = 0;
+    this.shownPlace = null;
     this.world.spins.forEach(sp => { sp.used = false; });
     this.trail.length = 0; this.foxes.length = 0;
     const sx = cp ? cp.x : 60;
@@ -397,6 +398,34 @@ const Game = {
     this.fx.fromX = L.x;
     this.fx.layerFade = 1;
     L.layer = to;
+    /* Say where she has just gone. Dropping through a hole in the floor into
+       a place that has a name of its own is exactly the moment it is worth
+       spending a caption on. */
+    if (to !== 'main' && this.state === 'run') {
+      const rm = this.roomAt(to, L.x);
+      if (rm && rm.name) UI.toast(rm.name, rm.sub || '');
+    }
+  },
+
+  /** the room of a branch (or of the sky) she is over right now */
+  roomAt(layerId, x) {
+    const lay = this.world.layers[layerId];
+    if (!lay || !lay.rooms || !lay.rooms.length) return null;
+    let rm = lay.rooms[0];
+    for (let i = 0; i < lay.rooms.length; i++) if (x >= lay.rooms[i].x0) rm = lay.rooms[i];
+    return rm.room || null;
+  },
+
+  /** What the HUD calls the place she is in. On the street that is the zone;
+      down a hole it is the room, which is a different place with a different
+      name and should say so. */
+  placeName() {
+    const L = this.lota;
+    if (L.layer !== 'main') {
+      const rm = this.roomAt(L.layer, L.x);
+      if (rm && rm.name) return rm.name;
+    }
+    return this.zoneAt(L.x).zone.name;
   },
 
   step(dt) {
@@ -712,7 +741,7 @@ const Game = {
       life: .8, c: k % 2 ? '#8fd6ff' : '#ffffff'
     });
     this.run.warpTo = { x: W.jet.x0, y: W.jet.base + SKY_HOVER, fly: 1 };
-    UI.toast('🚀 Raketinė kuprinė!', 'virš debesų');
+    UI.toast('🚀 Raketinė kuprinė!', 'aukštyn pro uolą, virš debesų');
   },
 
   /** Flying, and then coming down again.
@@ -748,7 +777,7 @@ const Game = {
         L.vy = 0; L.grounded = true; L.landY = L.y;
         this.baseRef = L.y;
         Sfx.land(); this.puff(L.x - 8, L.y, 9);
-        UI.toast('Nusileido', 'kuprinė baigėsi');
+        UI.toast('Kuprinė baigėsi', 'nusileido kasyklos aikštelėje');
       }
     }
     /* the treats still count up here — flying through them is how she gets
@@ -848,17 +877,26 @@ const Game = {
     const zs = this.world.zones;
     let idx = 0;
     for (let i = 0; i < zs.length; i++) if (this.lota.x >= zs[i].x0) idx = i;
+    /* the HUD always names the place she is actually in, branch rooms and the
+       sky included, and it updates the moment she goes down a hole */
+    const nm = this.placeName();
+    if (nm !== this.shownPlace) { this.shownPlace = nm; UI.setZone(nm); }
     if (idx !== this.run.zoneIdx) {
       const resumed = this.run.zoneIdx < 0;
+      const z = zs[idx].zone;
       this.run.zoneIdx = idx;
-      UI.setZone(zs[idx].zone.name);
+      /* one line saying what this place is and how she got into it — a level
+         that changes scenery every twenty seconds has to explain itself */
+      const sub = z.sub || '';
+      /* the rocket does not simply appear in space: it goes */
+      if (z.launch && !resumed) { this.fx.shake = 0.9; this.fx.flash = 0.3; }
       /* only a place she has never reached before plants a new checkpoint */
       if (idx > this.checkpoint.zoneIdx && this.run.mode !== 'raw'
           && !this.run.fly && !this.run.glide) {
         this.setCheckpoint(idx);
-        if (idx > 0) UI.toast(zs[idx].zone.name, '✓ KONTROLINIS TAŠKAS');
+        if (idx > 0) UI.toast(z.name, sub ? '✓ ' + sub : '✓ KONTROLINIS TAŠKAS');
       } else if (!resumed && idx > 0) {
-        Sfx.zone(); UI.toast(zs[idx].zone.name, '');
+        Sfx.zone(); UI.toast(z.name, sub);
       }
     }
   },

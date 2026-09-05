@@ -2192,3 +2192,213 @@ Object.assign(PROP_SIZE, PROP_SIZE3);
 Object.keys(PROP_SIZE3).forEach(k => {
   if (!PROP_NATURAL[k]) PROP_NATURAL[k] = PROP_SIZE3[k][0] + 16;
 });
+
+/* ---------------------------------------------------------------
+   THE DOORWAYS BETWEEN PLACES
+
+   Every place on level 3 now ends in something you visibly run
+   through, and it says where it goes. That is the whole difference
+   between "the picture changed" and "she went somewhere".
+----------------------------------------------------------------*/
+/** the shared frame: a lit opening with a sign over it */
+function doorway(ctx, x, y, w, h, frame, inner, glow, label, labelCol) {
+  fillRR(ctx, x, y, w, h, 10, frame);
+  fillRR(ctx, x + 10, y + 10, w - 20, h - 18, 7, inner);
+  ctx.save(); ctx.globalAlpha = .35;
+  const g = ctx.createLinearGradient(0, y + 10, 0, y + h);
+  g.addColorStop(0, glow); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(x + 10, y + 10, w - 20, h - 18);
+  ctx.restore();
+  fillRR(ctx, x - 6, y - 26, w + 12, 30, 7, frame);
+  ctx.fillStyle = labelCol || '#2b2634';
+  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(label, x + w * .5, y - 5);
+}
+
+Object.assign(PROPS, {
+  /* off the airship and onto the tower: a gangway with handrails */
+  gangway(ctx, x, y, w, h, t, pal, seed, o) {
+    const fy = (o && o.floorY) || (y + h);
+    /* the plank itself, running out of the picture to the right */
+    fillRR(ctx, x - 10, fy - 16, w + 60, 14, 4, '#96a2b0');
+    ctx.save(); ctx.globalAlpha = .5;
+    for (let px = x; px < x + w + 50; px += 22) line(ctx, px, fy - 16, px, fy - 2, '#5f6c7a', 3);
+    ctx.restore();
+    [fy - 78, fy - 46].forEach(yy => line(ctx, x - 10, yy, x + w + 50, yy, '#c8cfd8', 4));
+    for (let px = x; px < x + w + 50; px += 40) line(ctx, px, fy - 84, px, fy - 16, '#8b98a6', 4);
+    doorway(ctx, x + w * .16, y + 26, w * .68, h * .62, '#8b98a6', '#2f3a48', '#8fd6ff',
+            'BOKŠTAS →', '#dff0ff');
+  },
+  /* out of the tower at ground level, into the orchard */
+  towerDoor(ctx, x, y, w, h, t, pal, seed, o) {
+    fillRR(ctx, x - 8, y, w + 16, h, 10, '#dfe8ee');
+    ctx.save(); ctx.globalAlpha = .9;
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, '#eaf6fc'); g.addColorStop(1, '#c2dcea');
+    fillRR(ctx, x + 6, y + 12, w - 12, h - 22, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.restore();
+    /* the orchard showing through the glass */
+    ctx.save(); rr(ctx, x + 10, y + 16, w - 20, h - 30, 5); ctx.clip();
+    ctx.fillStyle = '#cfe8f4'; ctx.fillRect(x + 10, y + 16, w - 20, h - 30);
+    ctx.fillStyle = '#8cc45c'; ctx.fillRect(x + 10, y + h - 48, w - 20, 32);
+    for (let k = 0; k < 3; k++) {
+      fillRR(ctx, x + 22 + k * 30, y + h - 78, 7, 34, 3, '#6b4a2c');
+      leafy(ctx, x + 25 + k * 30, y + h - 84, 17, 13, '#ffd6e4', '#fff0f6', k * 5);
+    }
+    ctx.restore();
+    line(ctx, x + w * .5, y + 14, x + w * .5, y + h - 12, '#dfe8ee', 5);
+    circle(ctx, x + w * .5 - 9, y + h * .58, 4, '#96a2b0');
+    fillRR(ctx, x - 12, y - 28, w + 24, 30, 7, '#96a2b0');
+    ctx.fillStyle = '#eef6fc'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Į SODĄ →', x + w * .5, y - 7);
+  },
+  /* the door at the end of the glasshouse */
+  greenDoor(ctx, x, y, w, h, t, pal, seed, o) {
+    fillRR(ctx, x, y, w, h, 6, '#8a7f6c');
+    ctx.save(); ctx.globalAlpha = .85;
+    fillRR(ctx, x + 8, y + 10, w - 16, h - 20, 4, 'rgba(214,238,240,.9)');
+    ctx.restore();
+    ctx.save(); rr(ctx, x + 8, y + 10, w - 16, h - 20, 4); ctx.clip();
+    for (let k = 0; k < 4; k++) {
+      leafy(ctx, x + 20 + (k % 2) * 34, y + 34 + k * 34, 19, 14, '#3f8a5c', '#5fbf7a', k * 3);
+      if (k % 2) circle(ctx, x + 24 + (k % 2) * 34, y + 40 + k * 34, 4, '#e2453c');
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .6;
+    for (let k = 1; k < 4; k++) line(ctx, x + 8, y + 10 + k * (h - 20) / 4, x + w - 8, y + 10 + k * (h - 20) / 4, '#8a7f6c', 3);
+    line(ctx, x + w * .5, y + 10, x + w * .5, y + h - 10, '#8a7f6c', 3);
+    ctx.restore();
+    fillRR(ctx, x - 10, y - 28, w + 20, 30, 7, '#4a9d6e');
+    ctx.fillStyle = '#eafbf0'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ŠILTNAMIAI →', x + w * .5, y - 7);
+  },
+  /* a five-bar gate at the top of the nursery, with the quarry beyond it */
+  fieldGate(ctx, x, y, w, h, t, pal, seed, o) {
+    const fy = (o && o.floorY) || (y + h);
+    [x - 4, x + w - 10].forEach(px => fillRR(ctx, px, y + h * .18, 14, fy - y - h * .18, 4, '#7a5c3a'));
+    ctx.save(); ctx.globalAlpha = .95;
+    for (let k = 0; k < 5; k++)
+      fillRR(ctx, x + 6, y + h * .3 + k * (h * .52 / 5), w - 12, 9, 3, '#c9a86a');
+    line(ctx, x + 10, y + h * .82, x + w - 10, y + h * .3, '#c9a86a', 9);
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = .45;
+    for (let px = x + 8; px < x + w; px += 26) leafy(ctx, px, y + h * .28, 12, 8, '#4caf6d', '#7fd493', px | 0);
+    ctx.restore();
+    fillRR(ctx, x - 12, y - 24, w + 24, 30, 7, '#8a7f6c');
+    ctx.fillStyle = '#f6f2e6'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('KARJERAS →', x + w * .5, y - 3);
+  },
+  /* the haul ramp out of the quarry, down to the mine yard */
+  quarryRamp(ctx, x, y, w, h, t, pal, seed, o) {
+    const fy = (o && o.floorY) || (y + h);
+    [x, x + w - 20].forEach(px => {
+      fillRR(ctx, px, y + 20, 20, fy - y - 20, 4, '#f0c23a');
+      ctx.save(); ctx.globalAlpha = .5;
+      for (let k = 0; k < 7; k++) {
+        line(ctx, px, y + 26 + k * 26, px + 20, y + 44 + k * 26, '#a8862c', 2.4);
+        line(ctx, px + 20, y + 26 + k * 26, px, y + 44 + k * 26, '#a8862c', 2.4);
+      }
+      ctx.restore();
+    });
+    fillRR(ctx, x - 10, y, w + 20, 22, 5, '#f0c23a');
+    hazardTape(ctx, x - 6, y + 24, w + 12, 11);
+    ctx.save(); ctx.globalAlpha = .35;
+    fillRR(ctx, x + 20, y + 40, w - 40, h - 50, 4, '#e6e2d6'); ctx.restore();
+    fillRR(ctx, x - 12, y - 28, w + 24, 30, 7, '#2f3a48');
+    ctx.fillStyle = '#f0c23a'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Į AIKŠTELĘ →', x + w * .5, y - 7);
+  },
+  /* the timbered mouth of the adit, going in under the hill */
+  aditMouth(ctx, x, y, w, h, t, pal, seed, o) {
+    const fy = (o && o.floorY) || (y + h);
+    ctx.beginPath();
+    ctx.moveTo(x + 6, fy); ctx.lineTo(x + 6, y + h * .34);
+    ctx.quadraticCurveTo(x + w * .5, y - h * .06, x + w - 6, y + h * .34);
+    ctx.lineTo(x + w - 6, fy); ctx.closePath();
+    const g = ctx.createLinearGradient(0, y, 0, fy);
+    g.addColorStop(0, '#4a3a30'); g.addColorStop(1, '#181310');
+    ctx.fillStyle = g; ctx.fill();
+    /* the timber set holding it open */
+    fillRR(ctx, x - 6, y + h * .3, 20, fy - y - h * .3, 4, '#8a6a45');
+    fillRR(ctx, x + w - 14, y + h * .3, 20, fy - y - h * .3, 4, '#7a5c3a');
+    fillRR(ctx, x - 14, y + h * .2, w + 28, 22, 5, '#8a6a45');
+    ctx.save(); ctx.globalAlpha = .55;
+    for (let px = x + 4; px < x + w; px += 22) circle(ctx, px, y + h * .31, 3, '#5f4429');
+    ctx.restore();
+    /* the rails running in, and one lamp over the mouth */
+    ctx.save(); ctx.globalAlpha = .6;
+    line(ctx, x + 16, fy - 8, x + w - 16, fy - 8, '#96a2b0', 3);
+    line(ctx, x + 16, fy - 20, x + w - 16, fy - 20, '#96a2b0', 3);
+    ctx.restore();
+    circle(ctx, x + w * .5, y + h * .38, 7, '#fff3c4');
+    ctx.save(); ctx.globalAlpha = .3 + Math.sin(t * 2) * .1;
+    circle(ctx, x + w * .5, y + h * .38, 30, '#ffd0a8'); ctx.restore();
+    fillRR(ctx, x - 16, y - 20, w + 32, 30, 7, '#4a3a30');
+    ctx.fillStyle = '#f6d0d4'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('KASYKLA →', x + w * .5, y + 1);
+  },
+  /* the blast door between the mine and the silo */
+  blastDoor(ctx, x, y, w, h, t, pal, seed, o) {
+    fillRR(ctx, x - 8, y - 6, w + 16, h + 8, 8, '#5f6c7a');
+    steelBox(ctx, x, y, w, h, 6, '#c8cfd8', '#8b98a6');
+    ctx.save(); ctx.globalAlpha = .55;
+    line(ctx, x + w * .5, y + 8, x + w * .5, y + h - 8, '#5f6c7a', 4);
+    for (let k = 1; k < 5; k++) line(ctx, x + 8, y + k * h / 5, x + w - 8, y + k * h / 5, '#7f8b99', 2.4);
+    ctx.restore();
+    for (let k = 0; k < 6; k++) {
+      const a = k * TAU / 6 + t * .25;
+      circle(ctx, x + w * .5 + Math.cos(a) * w * .26, y + h * .46 + Math.sin(a) * w * .26, 4, '#eef2f6');
+    }
+    circle(ctx, x + w * .5, y + h * .46, w * .12, '#f0c23a');
+    hazardTape(ctx, x + 6, y + h - 30, w - 12, 13);
+    fillRR(ctx, x - 12, y - 30, w + 24, 30, 7, '#2f3a48');
+    ctx.fillStyle = '#8fe0a8'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('RAKETOS ŠACHTA →', x + w * .5, y - 9);
+  },
+  /* the same airlock, seen from outside: this one goes back in */
+  airlockIn(ctx, x, y, w, h, t, pal, seed, o) {
+    fillRR(ctx, x, y, w, h, 10, '#b9c4d0');
+    fillRR(ctx, x + 9, y + 9, w - 18, h - 18, 7, '#e8eef4');
+    ctx.save(); ctx.globalAlpha = .8;
+    fillRR(ctx, x + 16, y + 16, w - 32, h * .3, 6, '#f6f9fc');
+    ctx.globalAlpha = .5;
+    for (let i = 0; i < 3; i++) fillRR(ctx, x + 20, y + h * .5 + i * 12, w - 40, 5, 2, '#4fc3ea');
+    ctx.restore();
+    circle(ctx, x + w * .5, y + h * .42, w * .2, '#cfd8e2');
+    ctx.save(); ctx.globalAlpha = .55; circle(ctx, x + w * .44, y + h * .36, w * .07, '#fff'); ctx.restore();
+    for (let i = 0; i < 6; i++) {
+      const a = i * TAU / 6 - t * .4;
+      circle(ctx, x + w * .5 + Math.cos(a) * w * .34, y + h * .42 + Math.sin(a) * w * .34, 3.4, '#9aa6b2');
+    }
+    hazardTape(ctx, x + 8, y + h - 26, w - 16, 11);
+    fillRR(ctx, x - 10, y - 30, w + 20, 30, 7, '#2f3a48');
+    ctx.fillStyle = '#8fd6ff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Į STOTĮ →', x + w * .5, y - 9);
+  },
+
+  /* the lander docked on the far end of the station */
+  landerDoor(ctx, x, y, w, h, t, pal, seed, o) {
+    fillRR(ctx, x - 6, y, w + 12, h, 12, '#c8d4e0');
+    ctx.save(); ctx.globalAlpha = .9;
+    fillRR(ctx, x + 6, y + 10, w - 12, h - 22, 8, '#e8eef4'); ctx.restore();
+    /* the little ship's own nose, seen through the collar */
+    ctx.save(); rr(ctx, x + 10, y + 14, w - 20, h - 30, 6); ctx.clip();
+    ctx.fillStyle = '#05080f'; ctx.fillRect(x + 10, y + 14, w - 20, h - 30);
+    for (let i = 0; i < 22; i++) {
+      const r = makeRng(i * 37 + 11);
+      circle(ctx, x + 14 + r() * (w - 28), y + 18 + r() * (h - 40), 1.2, '#fff');
+    }
+    circle(ctx, x + w * .58, y + h * .66, w * .3, '#e6e2d8');
+    ctx.save(); ctx.globalAlpha = .45;
+    circle(ctx, x + w * .48, y + h * .58, w * .07, '#c2bcae');
+    circle(ctx, x + w * .68, y + h * .74, w * .05, '#c2bcae'); ctx.restore();
+    ctx.restore();
+    for (let k = 0; k < 8; k++) {
+      const a = k * TAU / 8 + t * .3;
+      circle(ctx, x + w * .5 + Math.cos(a) * w * .38, y + h * .48 + Math.sin(a) * w * .38, 3.4, '#9aa6b2');
+    }
+    fillRR(ctx, x - 10, y - 30, w + 20, 30, 7, '#2f6b9c');
+    ctx.fillStyle = '#dff0ff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('NUSILEIDIMO MODULIS →', x + w * .5, y - 9);
+  }
+});

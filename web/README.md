@@ -94,8 +94,8 @@ jos net panorėti.
 | Lygis | Vienas tobulas bėgimas | Brangiausia apranga | Visa lentyna |
 |---|---|---|---|
 | 1 | 80 🦴 | 140 🦴 (1,8×) | 600 🦴 (7,5×) |
-| 2 | 140 🧸 | 260 🧸 (1,9×) | 740 🧸 (5,3×) |
-| 3 | 156 🦴 / 144 🧸 | 285 🦴 + 265 🧸 (1,8×) | 615 🦴 + 610 🧸 (~4×) |
+| 2 | 140 🧸 | 260 🧸 (1,9×) | 825 🧸 (5,9×) |
+| 3 | 156 🦴 / 144 🧸 | 260 🦴 + 245 🧸 (1,7×) | 745 🦴 + 715 🧸 (~4,9×) |
 
 **Kiekvienas lygis turi savo piniginę.** Kas surinkta lygyje, tame lygyje ir išleidžiama:
 pirmame lygyje pririnktais skaniukais trečio lygio aprangos nenusipirksi. Trečiame lygyje
@@ -136,15 +136,32 @@ melodija patys grįžta į vietą. Naują dainą pakanka įrašyti į `SONGS` pr
 
 ## Aprangos
 
-Iš viso jų 22, po vieną lentyną kiekviename lygyje. Kiekvienos lygio aprangos gražesnės už
-ankstesniojo: 1 lygyje — kasdieniai kostiumai, 2 — audiniai ir sparnai, 3 — brangakmeniai
-ir švytėjimas.
+Iš viso jų 25. **Kiekviena apranga priklauso konkrečiai vietai tame lygyje**, ir
+parduotuvėje po pavadinimu parašyta, kuriai: Senelė — iš Senelės namo, Piratė — iš
+nuskendusio laivo, Astronautė — iš raketos ir orbitos. Lentyna sudėliota ta pačia tvarka,
+kuria bėgamas lygis: pigiausia yra iš pirmųjų vietų, brangiausia — iš paskutinių. Taip
+matyti ne tik kiek kainuoja, bet ir *iš kur ji*.
 
-- **1 lygis** (25–140 🦴): Pilotė, Autobuso vairuotoja, Kadetė, Senelė, Futbolininkė,
-  Detektyvė, Karalienė, Astronautė, Vienaragė
-- **2 lygis** (50–260 🧸): Baletė, Piratė, Fėja, Roko žvaigždė, Snieguolė
-- **3 lygis** (65🦴+25🧸 … 285🦴+265🧸): Auksinė princesė, Undinė, Ugnies paukštė,
-  Žvaigždžių burtininkė, Krištolo šokėja
+- **1 lygis — Kelias į Londoną** (25–140 🦴): Pižamos *(Lotos namai)*, Rudeninė
+  *(Rudens kiemas)*, Senelė *(Senelės namas)*, Futbolininkė *(Parkas)*, Autobuso
+  vairuotoja *(Autobusas)*, Skrydžio palydovė *(Oro uostas)*, Pilotė *(Lėktuvas)*,
+  Detektyvė *(Londonas)*, Karalienė *(Londonas)*
+- **2 lygis — Nuo viešbučio iki miško** (40–260 🧸): Pokylių suknelė *(Viešbučio fojė)*,
+  Pajūrio žvaigždė *(Promenada)*, Piratė *(Nuskendęs laivas)*, Undinė *(Jūros dugnas)*,
+  Miško fėja *(Miškas)*, Miško vienaragė *(Tankus miškas)*
+- **3 lygis — Nuo debesų iki žvaigždžių** (50🦴+20🧸 … 260🦴+245🧸): Auksinė princesė
+  *(Dirižablio salonas)*, Sodininkė *(Žydintis sodas ir šiltnamiai)*, Ugnies paukštė
+  *(Raketinė kuprinė)*, Druskos karalienė *(Druskos kasykla)*, Astronautė *(Raketa ir
+  orbita)*, Žvaigždžių burtininkė *(Kosminė stotis)*, Krištolo šokėja *(Mėnulis)*
+
+**Kas pasikeitė.** Anksčiau aprangos su lygiais nesisiejo: pirmame lygyje, kuris baigiasi
+Londone, buvo parduodama Astronautė, o antrame, kuriame nėra nė snaigės, — Snieguolė.
+Dabar Astronautė persikėlė į trečią lygį, kur yra tikra raketa; Snieguolė tapo **Druskos
+karaliene** druskos kasykloje (tie patys kristalai, tik rausvi); Undinė iš trečio lygio
+persikėlė į antrą, kur yra jūros dugnas; Vienaragė — į antro lygio tankų mišką; Kadetė
+tapo **Skrydžio palydove** oro uoste, Baletė — **Pokylių suknele** viešbučio fojė, Roko
+žvaigždė — **Pajūrio žvaigžde** promenadoje, o Fėja — **Miško fėja**. Trys nupieštos iš
+naujo: **Pižamos**, **Rudeninė** ir **Sodininkė**.
 - **4 lygis** — **neparduodamos**. Įveikus bosą abi atiduodamos iš karto:
   **Vaivorykštės suknelė** (mirguliuojanti suknelė, skrybėlaitė su žiedu ir šydu, batukai
   ir ilga pirštinaitė ant vienos priekinės letenos) ir prie jos derantis
@@ -155,6 +172,34 @@ ir švytėjimas.
 parodoma to lygio nuotrauka (piešiama kodu, kaip ir visa kita) ir paaiškinama, kas ten
 bus. Aprangos jau veikia. Kai trasa atsiras, `js/levels.js` faile užtenka
 `playable: false` pakeisti į `true` ir prirašyti tam lygiui `TRACKS` įrašą.
+
+## Kad būtų aišku, kas vyksta
+
+Trasa, kuri kas dvidešimt sekundžių pakeičia vietą, privalo pati pasiaiškinti — kitaip
+lieka jausmas, kad tiesiog pasikeitė paveikslėlis. Todėl:
+
+**Kiekviena vieta baigiasi durimis, pro kurias iš tikrųjų prabėgama, ir ant jų parašyta,
+kur jos veda.** Trečiame lygyje jų yra visur: liukas žemyn į dirižablio saloną, lieptas
+`BOKŠTAS →` iš dirižablio ant bokšto, `TERASOS →`, stiklinės durys `Į SODĄ →`,
+`ŠILTNAMIAI →`, laukų vartai `KARJERAS →`, rampa `Į AIKŠTELĘ →`, medžiais paremta
+kasyklos anga `KASYKLA →`, sprogimų durys `RAKETOS ŠACHTA →`, `RAKETA →`, `Į KOSMOSĄ →`,
+`Į STOTĮ →` ir galiausiai `NUSILEIDIMO MODULIS →`.
+
+**Kiekviena vieta pasako viena eilute, kas ji tokia.** Įbėgus rodomas ne tik pavadinimas,
+bet ir paaiškinimas: *„Bokšto terasos — stiklinėmis pakopomis žemyn, pro debesų
+sluoksnį"*, *„Druskos kasykla — į kalno vidų, dabar jau po žeme"*. Jei toje vietoje dar ir
+užsidega kontrolinis taškas, prieš eilutę atsiranda ✓.
+
+**HUD'as visada rodo tikrąją vietą.** Nusileidus pro skylę grindyse viršuje užsirašo ne
+zonos, o kambario vardas — *Balasto denis*, *Sėklų rūsys*, *Transporterio galerija*,
+*Bandymų bunkeris*, *Virš debesų* — ir tas pats pavadinimas trumpam parodomas ekrane, kad
+būtų aišku, kad ji nuėjo kitur, o ne pasiklydo.
+
+**Raketa iš tikrųjų kyla.** Įbėgus į ją ekranas krusteli, apačioje šviečia varikliai, o
+pro iliuminatorius matyti, kaip debesys lieka žemai, dangus tamsėja, atsiranda žvaigždės
+ir pasirodo mėlynas Žemės kraštas. Ekranai viduje pirma skaičiuoja `T-7`, `T-6`, o paskui
+rodo aukštį: `12 km`, `48 km`, `106 km`. Tarp „raketos šachtos" ir „orbitos" nebėra jokio
+šuolio — visą kelią ji tiesiog kyla.
 
 ## Kaip veikia trasa
 
@@ -618,6 +663,15 @@ Dažniausiai keičiami dalykai:
   `dropEnd` / `dropTo` / `dropProp` / `dropRoom` zonos įraše (`js/zones2.js`); pačios
   pakopos — `P.riser()` ir `flight()` (`js/level.js`)
 - **Jūros lygis seklumoje** — `surfaceY` ir `climb` zonoje `shallows` (`js/zones2.js`)
+- **Vietos paaiškinimas** — `sub:` zonos arba kambario įraše (`js/zones3.js`); rodo
+  `updateZone()` ir `switchLayer()` (`js/game.js`)
+- **Durys tarp vietų** — `exit:` zonoje; jų dydžiai — `GATEWAY_SIZE` (`js/level.js`),
+  patys piešiniai — `doorway()` ir jo vartotojai (`js/props3.js`)
+- **Raketos kilimas** — `launch: 1` zonoje (`js/game.js` krusteli ekraną) ir `up`
+  reikšmė `rocket` zonos `bg()` viduje (`js/zones3.js`)
+- **Aprangos ir jų vietos** — `SKINS` (`js/lota.js`): `level`, `cost: {b, t}` ir `from:`,
+  kuris parduotuvėje rodomas po pavadinimu; lentyna rikiuojama pagal kainą
+  `Levels.shop()` (`js/levels.js`)
 - **Trys skylės 3 lygyje** — `BRANCHES3` (`js/zones3.js`): `drop`, `enterSec`, `sec`,
   `rooms[].share`
 - **Gilesnė skylė ir bunkeris** — `BRANCHES3.conveyor.deep` + `deepRoom` (`js/zones3.js`);
@@ -634,7 +688,6 @@ Dažniausiai keičiami dalykai:
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį, o `rest` ir `minRest`
   lygio įraše — kiek reakcijos laiko lieka tarp jų
 - **Šuolis** — `PHYS.JUMP_V`, `PHYS.GRAV`
-- **Aprangos ir kainos** — `SKINS` masyvas (`js/lota.js`): `level` ir `cost: {b, t}`
 - **Lygiai ir jų atrakinimas** — `LEVELS` ir `Levels.unlocked()` (`js/levels.js`)
 - **Lygių nuotraukos** — `Levels.picToys` / `picFestival` / `picBoss` (`js/levels.js`)
 

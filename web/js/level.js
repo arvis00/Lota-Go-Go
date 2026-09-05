@@ -82,6 +82,16 @@ const SKY_HOVER = 46;     // and how far over that she actually flies
 const JET_GLIDE = 1500;   // px of gentle descent between the flight and the floor
 const JET_SPEED = 1.55;   // and how much faster than running the pack actually is
 
+/* How wide and how tall each doorway between two places is drawn. A door has
+   to be big enough to read as a door she runs through — that is the whole
+   difference between "the picture changed" and "she went somewhere". */
+const GATEWAY_SIZE = {
+  jetbridge: [190, 190], planeDoor: [110, 205],
+  gangway: [210, 200], towerDoor: [130, 215], greenDoor: [124, 200],
+  fieldGate: [156, 150], quarryRamp: [164, 210], aditMouth: [186, 190],
+  blastDoor: [140, 210], landerDoor: [156, 200], airlockIn: [124, 200]
+};
+
 /* ---- staircases ---- */
 const STAIR_RISE = 42;    // one step
 const STAIR_UP   = 48;    // riser she runs straight up: stairs are never a jump
@@ -734,8 +744,8 @@ function buildWorld(track) {
     mainBase = curBase;
     P.flat(1.1);
     if (z.exit) {
-      const gw = z.exit === 'jetbridge' ? 190 : z.exit === 'planeDoor' ? 110 : 118;
-      const gh = z.exit === 'jetbridge' ? 190 : 205;
+      const gs = GATEWAY_SIZE[z.exit] || [118, 205];
+      const gw = gs[0], gh = gs[1];
       W.deco.push(stamp({ x: x - gw - 40, y: curBase, prop: z.exit, w: gw, h: gh, gateway: true }));
       P.flat(0.55);
     }

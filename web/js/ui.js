@@ -461,6 +461,15 @@ const UI = {
       nm.className = 'skin-name'; nm.textContent = sk.name;
       card.appendChild(nm);
 
+      /* which place on this level the outfit comes from. Every costume on a
+         shelf belongs to somewhere the level actually goes through, and
+         saying so is what turns a row of dresses into a row of souvenirs. */
+      if (sk.from) {
+        const fr = document.createElement('div');
+        fr.className = 'skin-from'; fr.textContent = sk.from;
+        card.appendChild(fr);
+      }
+
       const tag = document.createElement('div');
       if (sel) { tag.className = 'skin-tag sel'; tag.textContent = 'DĖVIMA'; }
       else if (owned) { tag.className = 'skin-tag own'; tag.textContent = 'Apsirengti'; }

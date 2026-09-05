@@ -635,9 +635,89 @@ function glove(ctx, rig, cuffCol, clothCol, t) {
 }
 
 const SKINS = [
-  { id: 'classic', name: 'Lota', level: 1, cost: { b: 0 }, note: 'Tokia, kokia yra', draw: null },
+  { id: 'classic', name: 'Lota', level: 1, cost: { b: 0 }, from: 'Kaip yra',
+    note: 'Tokia, kokia yra', draw: null },
 
-  { id: 'pilot', name: 'Pilotė', level: 1, cost: { b: 25 }, note: 'Skrydis į Londoną',
+  /* ============================================================
+     LEVEL 1 — every one of them comes from a place on the road to
+     London, and the shop says which. They go up in price in the
+     order the level runs: home first, London last.
+  ============================================================ */
+  { id: 'pyjama', name: 'Pižamos', level: 1, cost: { b: 25 }, from: 'Lotos namai',
+    note: 'Dar tik keliasi',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        c.save(); c.globalAlpha = .96;
+        ell(c, -1, 1, rx * .9, ry * .95, 0); c.fillStyle = '#bcd6f2'; c.fill(); c.restore();
+        c.save(); c.globalAlpha = .5;
+        for (let i = -2; i <= 2; i++) line(c, i * 7 + 2, -ry * .8, i * 7 - 2, ry * .85, '#8fb4e0', 3);
+        c.restore();
+        /* a breast pocket with a biscuit saved in it */
+        fillRR(c, -13, -1, 12, 10, 3, '#a8c8ea');
+        c.save(); c.globalAlpha = .9; circle(c, -7, 3, 2.4, '#fff3d8'); c.restore();
+        /* the collar of the jacket */
+        c.beginPath(); c.moveTo(15, -ry * .55); c.lineTo(6, -ry * .1); c.lineTo(16, -ry * .05);
+        c.closePath(); c.fillStyle = '#dbe9f8'; c.fill();
+      });
+      atHead(ctx, rig, c => {
+        /* nightcap: it flops back behind her and the pompom swings */
+        const sw = Math.sin(t * 3) * 3;
+        c.beginPath();
+        c.moveTo(-17, -8); c.quadraticCurveTo(-4, -23, 15, -13);
+        c.quadraticCurveTo(-2, -13, -17, -8); c.closePath();
+        c.fillStyle = '#7fa8dc'; c.fill();
+        c.beginPath();
+        c.moveTo(-15, -9); c.quadraticCurveTo(-26, -16 + sw, -34, -6 + sw);
+        c.strokeStyle = '#7fa8dc'; c.lineWidth = 9; c.lineCap = 'round'; c.stroke();
+        fillRR(c, -18, -12, 34, 6, 3, '#eef4fb');
+        circle(c, -35, -5 + sw, 5.5, '#eef4fb');
+      });
+      shoes(ctx, rig, '#e8c8dc', '#c99ab8');
+    } },
+
+  { id: 'autumn', name: 'Rudeninė', level: 1, cost: { b: 30 }, from: 'Rudens kiemas',
+    note: 'Šalikas iki pat ausų',
+    draw(ctx, rig, t) {
+      /* the long end of the scarf streaming behind her */
+      flutter(ctx, rig.bodyX - 6, rig.bodyY - 10, 42, 8, '#d2643a', 7, t, 0.4);
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        c.save(); c.globalAlpha = .95;
+        ell(c, -1, 2, rx * .86, ry * .9, 0); c.fillStyle = '#8a6a45'; c.fill(); c.restore();
+        c.save(); c.globalAlpha = .45;
+        for (let i = -2; i <= 2; i++) line(c, -10, i * 6, 12, i * 6 - 2, '#6f5232', 2.4);
+        c.restore();
+        /* two wooden buttons */
+        circle(c, 8, -4, 2.6, '#c9a86a'); circle(c, 6, 5, 2.6, '#c9a86a');
+        /* one leaf that landed on her and stayed */
+        c.save(); c.translate(-6, -8); c.rotate(-0.5 + Math.sin(t * 1.4) * 0.08);
+        c.beginPath();
+        c.moveTo(0, -6); c.quadraticCurveTo(7, 0, 0, 7); c.quadraticCurveTo(-7, 0, 0, -6);
+        c.closePath(); c.fillStyle = '#e08a2c'; c.fill();
+        line(c, 0, -5, 0, 6, '#a8621c', 1.2);
+        c.restore();
+      });
+      atHead(ctx, rig, c => {
+        /* a knitted scarf wound twice round her neck */
+        fillRR(c, -20, -2, 26, 11, 5, '#d2643a');
+        fillRR(c, -19, -8, 24, 9, 4, '#e8834c');
+        c.save(); c.globalAlpha = .4;
+        for (let i = 0; i < 5; i++) line(c, -18 + i * 5, -8, -19 + i * 5, 8, '#a8481c', 2);
+        c.restore();
+        /* a beret, tipped over one ear */
+        c.save(); c.rotate(-0.14);
+        c.beginPath(); c.ellipse(-1, -16, 16, 8, 0, 0, TAU);
+        c.fillStyle = '#6f4a7a'; c.fill();
+        c.beginPath(); c.ellipse(-1, -19, 12.5, 6.5, 0, 0, TAU);
+        c.fillStyle = '#845a90'; c.fill();
+        circle(c, -1, -24, 3, '#6f4a7a');
+        c.restore();
+      });
+    } },
+
+  { id: 'pilot', name: 'Pilotė', level: 1, cost: { b: 85 }, from: 'Lėktuvas',
+    note: 'Skrydis į Londoną',
     draw(ctx, rig, t) {
       flutter(ctx, rig.bodyX + 12, rig.bodyY - 6, 44, 7, '#f4efe4', 7, t, 0);
       atHead(ctx, rig, c => {
@@ -657,7 +737,8 @@ const SKINS = [
       atBody(ctx, rig, c => { fillRR(c, 6, -4, 16, 12, 5, '#f4efe4'); });
     } },
 
-  { id: 'driver', name: 'Autobuso vairuotoja', level: 1, cost: { b: 30 }, note: 'Kitas sustojimas — parkas',
+  { id: 'driver', name: 'Autobuso vairuotoja', level: 1, cost: { b: 55 }, from: 'Autobusas',
+    note: 'Kitas sustojimas — parkas',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .95;
@@ -674,7 +755,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'cadet', name: 'Kadetė', level: 1, cost: { b: 40 }, note: 'Pasiruošusi nuotykiui',
+  { id: 'cadet', name: 'Skrydžio palydovė', level: 1, cost: { b: 70 }, from: 'Oro uostas',
+    note: 'Sagtis prisegta, kylame',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(10, -10); c.quadraticCurveTo(20, -2, 10, 8);
@@ -690,7 +772,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'granny', name: 'Senelė', level: 1, cost: { b: 45 }, note: 'Šiltai ir jaukiai',
+  { id: 'granny', name: 'Senelė', level: 1, cost: { b: 40 }, from: 'Senelės namas',
+    note: 'Šiltai ir jaukiai',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .96;
@@ -722,7 +805,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'football', name: 'Futbolininkė', level: 1, cost: { b: 55 }, note: 'Sudėtingas kampas',
+  { id: 'football', name: 'Futbolininkė', level: 1, cost: { b: 45 }, from: 'Parkas',
+    note: 'Sudėtingas kampas',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); ell(c, 0, 0, rig.bodyRX * .85, rig.bodyRY * .9, 0); c.clip();
@@ -740,7 +824,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'detective', name: 'Detektyvė', level: 1, cost: { b: 70 }, note: 'Londono paslaptys',
+  { id: 'detective', name: 'Detektyvė', level: 1, cost: { b: 110 }, from: 'Londonas',
+    note: 'Londono paslaptys',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(14, -12); c.quadraticCurveTo(-16, -14, -22, 12);
@@ -759,7 +844,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'queen', name: 'Karalienė', level: 1, cost: { b: 85 }, note: 'God save the Lota',
+  { id: 'queen', name: 'Karalienė', level: 1, cost: { b: 140 }, from: 'Londonas',
+    note: 'God save the Lota',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.beginPath(); c.moveTo(12, -12); c.quadraticCurveTo(-18, -16, -26, 14);
@@ -780,7 +866,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'astro', name: 'Astronautė', level: 1, cost: { b: 110 }, note: 'Iki žvaigždžių',
+  { id: 'astro', name: 'Astronautė', level: 3, cost: { b: 130, t: 80 },
+    from: 'Raketa ir orbita', note: 'Iki žvaigždžių ir dar toliau',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         c.save(); c.globalAlpha = .95;
@@ -802,7 +889,8 @@ const SKINS = [
       });
     } },
 
-  { id: 'unicorn', name: 'Vienaragė', level: 1, cost: { b: 140 }, note: 'Slapta Lotos galia',
+  { id: 'unicorn', name: 'Miško vienaragė', level: 2, cost: { t: 260 },
+    from: 'Tankus miškas', note: 'Slapta Lotos galia',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const cols = ['#ff7b8a', '#ffb84d', '#ffe95c', '#7be08a', '#6fc9ff', '#b48bff'];
@@ -831,7 +919,8 @@ const SKINS = [
      everything on this shelf moves a little.
   ============================================================ */
 
-  { id: 'ballerina', name: 'Baletė', level: 2, cost: { t: 50 }, note: 'Kiekvienas šuolis — piruetas',
+  { id: 'ballerina', name: 'Pokylių suknelė', level: 2, cost: { t: 40 },
+    from: 'Viešbučio fojė', note: 'Po sietynais, tarp kolonų',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -869,7 +958,8 @@ const SKINS = [
       shoes(ctx, rig, '#ff9fc4', '#e8639a');
     } },
 
-  { id: 'pirate', name: 'Piratė', level: 2, cost: { t: 90 }, note: 'Lobis — po kilimu',
+  { id: 'pirate', name: 'Piratė', level: 2, cost: { t: 105 },
+    from: 'Nuskendęs laivas', note: 'Lobis — laivo triume',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -916,7 +1006,8 @@ const SKINS = [
       shoes(ctx, rig, '#3a2a20', '#e8c15e');
     } },
 
-  { id: 'fairy', name: 'Fėja', level: 2, cost: { t: 140 }, note: 'Sparnai iš vaikiškos svajonės',
+  { id: 'fairy', name: 'Miško fėja', level: 2, cost: { t: 200 },
+    from: 'Miškas', note: 'Sparnai tarp paparčių',
     draw(ctx, rig, t) {
       /* wings first — they belong behind her */
       atBody(ctx, rig, c => {
@@ -968,7 +1059,8 @@ const SKINS = [
       shoes(ctx, rig, '#7fd6a8', '#eafff2');
     } },
 
-  { id: 'popstar', name: 'Roko žvaigždė', level: 2, cost: { t: 200 }, note: 'Lojimas per garsiakalbį',
+  { id: 'popstar', name: 'Pajūrio žvaigždė', level: 2, cost: { t: 70 },
+    from: 'Promenada', note: 'Dainuoja visam pajūriui',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1011,42 +1103,43 @@ const SKINS = [
       shoes(ctx, rig, '#2a2733', '#ff4f9a', '#ff4f9a');
     } },
 
-  { id: 'snow', name: 'Snieguolė', level: 2, cost: { t: 260 }, note: 'Šerkšnas ant ūsų',
+  { id: 'snow', name: 'Druskos karalienė', level: 3, cost: { b: 70, t: 105 },
+    from: 'Druskos kasykla', note: 'Druskos kristalai ant ūsų',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
         /* long ice cape trailing behind */
         c.save(); c.globalAlpha = .62;
         const g = c.createLinearGradient(rx * .4, 0, -rx * 1.6, ry);
-        g.addColorStop(0, '#eafaff'); g.addColorStop(1, 'rgba(150,215,255,.15)');
+        g.addColorStop(0, '#fff0f2'); g.addColorStop(1, 'rgba(230,160,175,.18)');
         c.beginPath();
         c.moveTo(rx * .45, -ry * .85);
         c.quadraticCurveTo(-rx * .7, -ry * .9, -rx * 1.55, ry * 1.1 + Math.sin(t * 3) * 3);
         c.quadraticCurveTo(-rx * .5, ry * .55, rx * .45, ry * .3);
         c.closePath(); c.fillStyle = g; c.fill(); c.restore();
         /* frosted gown */
-        c.save(); c.globalAlpha = .93; tulle(c, -5, ry * .16, rx * .86, ry * .7, 8, '#d6f0ff', t * 1.2); c.restore();
+        c.save(); c.globalAlpha = .93; tulle(c, -5, ry * .16, rx * .86, ry * .7, 8, '#f8dde1', t * 1.2); c.restore();
         c.beginPath();
         c.moveTo(13, -ry * .72); c.quadraticCurveTo(-2, -ry, -11, -ry * .15);
         c.quadraticCurveTo(0, ry * .4, 13, ry * .3); c.closePath();
-        c.fillStyle = '#8fc8ee'; c.fill();
+        c.fillStyle = '#d894a2'; c.fill();
         c.save(); c.globalAlpha = .8;
-        for (let i = 0; i < 4; i++) snowflake(c, 6 - i * 8, -ry * .5 + i * 6, 3.2 - i * .3, '#fbffff', t + i);
+        for (let i = 0; i < 4; i++) snowflake(c, 6 - i * 8, -ry * .5 + i * 6, 3.2 - i * .3, '#fffafb', t + i);
         c.restore();
-        sparkle(c, 7, t, -5, 0, rx, ry, 11, '#eafaff');
+        sparkle(c, 7, t, -5, 0, rx, ry, 11, '#fff0f2');
       });
       atHead(ctx, rig, c => {
         /* snowflake crown */
         c.beginPath(); c.moveTo(-14, -11); c.quadraticCurveTo(0, -18, 14, -11);
-        c.strokeStyle = '#dff4ff'; c.lineWidth = 2.6; c.stroke();
+        c.strokeStyle = '#ffe2e6'; c.lineWidth = 2.6; c.stroke();
         for (let i = -2; i <= 2; i++) {
           const h = 20 - Math.abs(i) * 3.4;
-          line(c, i * 6, -13, i * 6, -h, '#eafaff', 2);
-          snowflake(c, i * 6, -h - 1, 3 - Math.abs(i) * .4, '#fbffff', t + i);
+          line(c, i * 6, -13, i * 6, -h, '#fff0f2', 2);
+          snowflake(c, i * 6, -h - 1, 3 - Math.abs(i) * .4, '#fffafb', t + i);
         }
         sparkle(c, 4, t, 0, -18, 15, 7, 13, '#fff');
       });
-      shoes(ctx, rig, '#8fc8ee', '#eafaff', '#9be8ff');
+      shoes(ctx, rig, '#d894a2', '#fff0f2', '#ffb8c4');
     } },
 
   /* ============================================================
@@ -1054,7 +1147,56 @@ const SKINS = [
      proportions, so no two are earned the same way.
   ============================================================ */
 
-  { id: 'golden', name: 'Auksinė princesė', level: 3, cost: { b: 65, t: 25 }, note: 'Aukso siūlai, tikri',
+  { id: 'gardener', name: 'Sodininkė', level: 3, cost: { b: 35, t: 60 },
+    from: 'Žydintis sodas ir šiltnamiai', note: 'Šiaudinė skrybėlė ir sauja sėklų',
+    draw(ctx, rig, t) {
+      atBody(ctx, rig, c => {
+        const rx = rig.bodyRX, ry = rig.bodyRY;
+        /* a canvas apron, tied at the back */
+        c.beginPath();
+        c.moveTo(14, -ry * .55); c.quadraticCurveTo(-4, -ry * .75, -12, -ry * .05);
+        c.quadraticCurveTo(-2, ry * .55, 14, ry * .4); c.closePath();
+        c.fillStyle = '#dcc79c'; c.fill();
+        c.strokeStyle = 'rgba(90,70,40,.4)'; c.lineWidth = 1.6; c.stroke();
+        /* the big front pocket, and what is in it */
+        fillRR(c, -9, -2, 19, 13, 3, '#c9b184');
+        c.save(); c.globalAlpha = .95;
+        line(c, 4, -2, 8, -13, '#4caf6d', 2.4);
+        leafy(c, 8, -15, 6, 5, '#5fc47e', '#8fe0a8', 3);
+        circle(c, -4, 4, 2, '#8a6a45'); circle(c, 0, 6, 2, '#8a6a45');
+        c.restore();
+        /* the strap over her shoulder */
+        line(c, 13, -ry * .5, 2, -ry * .05, '#c9b184', 3.4);
+        /* a sprig of blossom tucked into the tie */
+        c.save(); c.translate(-11, -ry * .1); c.rotate(0.5 + Math.sin(t * 1.2) * .06);
+        line(c, 0, 0, -9, -7, '#6b4a2c', 2);
+        leafy(c, -10, -8, 6, 5, '#ffd6e4', '#fff0f6', 5);
+        leafy(c, -4, -4, 5, 4, '#ffd6e4', '#ffeaf2', 9);
+        c.restore();
+      });
+      atHead(ctx, rig, c => {
+        /* a wide straw hat with a ribbon round it */
+        c.save(); c.rotate(-0.06);
+        c.beginPath(); c.ellipse(-1, -13, 23, 7.5, 0, 0, TAU);
+        c.fillStyle = '#e0c07a'; c.fill();
+        c.strokeStyle = 'rgba(120,90,30,.45)'; c.lineWidth = 1.6; c.stroke();
+        c.beginPath(); c.ellipse(-1, -18, 12, 7, 0, Math.PI, 0);
+        c.fillStyle = '#eccf8e'; c.fill();
+        fillRR(c, -13, -17, 24, 5, 2.5, '#4caf6d');
+        c.save(); c.globalAlpha = .4;
+        for (let i = -3; i <= 3; i++) line(c, i * 6, -13.5, i * 6 + 2, -20, '#c9a45a', 1.4);
+        c.restore();
+        /* a daisy on the band */
+        for (let k = 0; k < 5; k++)
+          circle(c, 9 + Math.cos(k * 1.26) * 3, -15 + Math.sin(k * 1.26) * 3, 2.2, '#fff6ea');
+        circle(c, 9, -15, 1.8, '#ffd870');
+        c.restore();
+      });
+      shoes(ctx, rig, '#4caf6d', '#2f7a4c');
+    } },
+
+  { id: 'golden', name: 'Auksinė princesė', level: 3, cost: { b: 50, t: 20 },
+    from: 'Dirižablio salonas', note: 'Aukso siūlai, tikri',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1087,7 +1229,8 @@ const SKINS = [
       shoes(ctx, rig, '#f2c34a', '#fff2c0', '#ffd870');
     } },
 
-  { id: 'mermaid', name: 'Undinė', level: 3, cost: { b: 35, t: 90 }, note: 'Uodega vietoj sijono',
+  { id: 'mermaid', name: 'Undinė', level: 2, cost: { t: 150 },
+    from: 'Jūros dugnas', note: 'Uodega vietoj sijono',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1148,7 +1291,8 @@ const SKINS = [
       shoes(ctx, rig, '#3fa8d8', '#7fe8d8', '#7fe8d8');
     } },
 
-  { id: 'phoenix', name: 'Ugnies paukštė', level: 3, cost: { b: 140, t: 65 }, note: 'Plunksnos, kurios dega',
+  { id: 'phoenix', name: 'Ugnies paukštė', level: 3, cost: { b: 95, t: 45 },
+    from: 'Raketinė kuprinė', note: 'Plunksnos, kurios dega',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1197,7 +1341,8 @@ const SKINS = [
       shoes(ctx, rig, '#d8331e', '#ffd34a', '#ff8f2e');
     } },
 
-  { id: 'sorceress', name: 'Žvaigždžių burtininkė', level: 3, cost: { b: 90, t: 165 }, note: 'Naktis, susiūta į apsiaustą',
+  { id: 'sorceress', name: 'Žvaigždžių burtininkė', level: 3, cost: { b: 105, t: 160 },
+    from: 'Kosminė stotis', note: 'Naktis, susiūta į apsiaustą',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1245,7 +1390,8 @@ const SKINS = [
       shoes(ctx, rig, '#2b2166', '#bfa8ff', '#8f7fe8');
     } },
 
-  { id: 'crystal', name: 'Krištolo šokėja', level: 3, cost: { b: 285, t: 265 }, note: 'Suknelė, iškalta iš šviesos',
+  { id: 'crystal', name: 'Krištolo šokėja', level: 3, cost: { b: 260, t: 245 },
+    from: 'Mėnulis', note: 'Suknelė, iškalta iš šviesos',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1299,7 +1445,8 @@ const SKINS = [
      the dress or the tailcoat. They share one rainbow.
   ============================================================ */
 
-  { id: 'rainbow', name: 'Vaivorykštės suknelė', level: 4, cost: null, note: 'Boso prizas',
+  { id: 'rainbow', name: 'Vaivorykštės suknelė', level: 4, cost: null,
+    from: 'Boso prizas', note: 'Už Didįjį Siurblį',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1404,7 +1551,8 @@ const SKINS = [
       }
     } },
 
-  { id: 'tailcoat', name: 'Vaivorykštės frakas', level: 4, cost: null, note: 'Boso prizas',
+  { id: 'tailcoat', name: 'Vaivorykštės frakas', level: 4, cost: null,
+    from: 'Boso prizas', note: 'Už Didįjį Siurblį',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;

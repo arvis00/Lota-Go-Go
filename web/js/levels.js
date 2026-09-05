@@ -132,8 +132,13 @@ const Levels = {
   modeName(mode) { return mode === 'raw' ? 'Be kontrolinių taškų' : 'Su kontroliniais taškais'; },
   modeShort(mode) { return mode === 'raw' ? 'BE K.T.' : 'SU K.T.'; },
 
-  /** the outfits sold on level n's home page (level 4 sells nothing) */
-  shop(n) { return SKINS.filter(s => (s.level || 1) === n && s.cost); },
+  /** The outfits sold on level n's home page (level 4 sells nothing), always
+      cheapest first — the shelf is a ladder, and it should look like one
+      however the costumes happen to sit in the SKINS array. */
+  shop(n) {
+    const price = s => (s.cost.b || 0) + (s.cost.t || 0);
+    return SKINS.filter(s => (s.level || 1) === n && s.cost).sort((a, b) => price(a) - price(b));
+  },
   /** what beating the boss hands over */
   prize(n) { return SKINS.filter(s => (s.level || 1) === n && !s.cost && s.draw); },
 
