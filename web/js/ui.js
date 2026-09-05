@@ -277,15 +277,18 @@ const UI = {
     /* the HUD counts whatever this level collects, and says how many of them
        there are — level 1 hides bones, level 2 hides toys */
     const W = Game.world;
+    const two = W.toys > 0;
     $('hudIco').className = W.currency === 't' ? 'toy-ico' : 'bone-ico';
-    $('hudTotal').textContent = '/' + W.treats;
+    $('hudTotal').textContent = '/' + (two ? W.collectibles : W.treats);
+    $('hudToysBox').classList.toggle('hidden', !two);
+    if (two) $('hudToysTotal').textContent = '/' + W.toys;
     /* the question is only ever asked once, so the answer rides in the HUD:
        which way this run is being played, and what the finish is worth */
     const m = (Game.run && Game.run.mode) || 'cp', badge = $('hudMode');
     badge.classList.toggle('raw', m === 'raw');
     badge.innerHTML = Levels.modeShort(m) +
       '<span class="pay">' + payHtml(Game.run.level || 1, Levels.bonus(Game.run.level || 1, m)) + '</span>';
-    this.setBones(0); this.setProgress(0);
+    this.setBones(0, 0, 0); this.setProgress(0);
   },
 
   /** Treats are paid out once, when the run actually ends — otherwise every
@@ -300,25 +303,39 @@ const UI = {
     if (!r || r.banked) return 0;
     r.banked = true;
     const W = Game.world, level = r.level || 1;
-    const base = r.bones === W.treats ? W.treats * 2 : r.bones;
+    const dbl = r.bones === W.treats ? 2 : 1;
+    const gotB = (r.gotB || 0) * dbl, gotT = (r.gotT || 0) * dbl;
     const bonus = finished ? Levels.bonus(level, r.mode) : 0;
-    Save.earn(level, W.currency, base + bonus);
-    (Levels.get(level).picks || '').split('').forEach(k => {
-      if (k !== W.currency && bonus) Save.earn(level, k, bonus);
-    });
-    Save.best(level, base + bonus);
+    const picks = Levels.get(level).picks || 'b';
+    r.paid = { b: picks.indexOf('b') >= 0 ? gotB + bonus : 0,
+               t: picks.indexOf('t') >= 0 ? gotT + bonus : 0 };
+    if (r.paid.b) Save.earn(level, 'b', r.paid.b);
+    if (r.paid.t) Save.earn(level, 't', r.paid.t);
+    const total = r.paid.b + r.paid.t;
+    Save.best(level, total);
     Save.write();
-    return base + bonus;
+    return total;
+  },
+
+  /** what a run actually paid, written out per purse — on level 3 one number
+      would be two different things added together */
+  paidHtml(r) {
+    const p = r.paid || { b: 0, t: 0 }, out = [];
+    if (p.b) out.push('+' + p.b + ' 🦴');
+    if (p.t) out.push('+' + p.t + ' 🧸');
+    return out.join(' · ') || '+0';
   },
 
   showOver() {
     const r = Game.run, W = Game.world;
     const cp = Game.checkpoint || { start: true, name: W.zoneList[0].name };
     const zoneName = Game.zoneAt(Game.lota.x).zone.name;
-    const ico = W.currency === 't' ? '🧸' : '🦴';
+    const two = W.toys > 0;
+    const ico = two ? '🦴🧸' : (W.currency === 't' ? '🧸' : '🦴');
     const what = W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai';
     Save.far(r.level || 1, zoneName);
-    const pending = (r.bones === W.treats ? W.treats * 2 : r.bones);
+    const dbl = r.bones === W.treats ? 2 : 1;
+    const pending = ((r.gotB || 0) + (r.gotT || 0)) * dbl;
 
     this.hideAll();
     $('screen-over').classList.remove('hidden');
@@ -326,21 +343,28 @@ const UI = {
       Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
     const raw = r.mode === 'raw';
     $('overStats').innerHTML =
-      row(what, r.bones + ' / ' + W.treats) +
+      (two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
+             row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
+           : row(what, r.bones + ' / ' + W.treats)) +
       (raw ? row('Be kontrolinių taškų', 'viskas iš naujo', true)
            : row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true));
     $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
-    $('btnLobby').textContent = pending ? 'Baigti · +' + pending + ' ' + ico : 'Grįžti į Lobby';
+    const pB = (r.gotB || 0) * dbl, pT = (r.gotT || 0) * dbl;
+    $('btnLobby').textContent = pending
+      ? 'Baigti · ' + (two ? '+' + pB + ' 🦴 +' + pT + ' 🧸' : '+' + pending + ' ' + ico)
+      : 'Grįžti į Lobby';
   },
 
   showWin() {
     this.winShown = true;
     const r = Game.run, W = Game.world;
-    const all = W.treats, ico = W.currency === 't' ? '🧸' : '🦴';
+    const all = W.treats, two = W.toys > 0;
+    const ico = two ? '🦴🧸' : (W.currency === 't' ? '🧸' : '🦴');
     const what = W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai';
-    const base = r.bones === all ? all * 2 : r.bones;
+    const dbl = r.bones === all ? 2 : 1;
+    const base = ((r.gotB || 0) + (r.gotT || 0)) * dbl;
     const bonus = Levels.bonus(r.level || 1, r.mode);
-    const earned = this.bank(true);
+    this.bank(true);
     const last = W.zoneList[W.zoneList.length - 1].name;
     Save.markCleared(r.level || 1, r.mode);
     Save.far(r.level || 1, last + ' — finišas!');
@@ -349,22 +373,36 @@ const UI = {
     this.hideAll();
     $('screen-win').classList.remove('hidden');
     const mins = Math.floor(r.time / 60), secs = Math.round(r.time % 60);
-    const trip = (r.level || 1) === 1 ? 'Nuo namų iki Londono per ' : 'Nuo viešbučio iki miško per ';
+    const lvl = r.level || 1;
+    const trip = lvl === 1 ? 'Nuo namų iki Londono per '
+               : lvl === 2 ? 'Nuo viešbučio iki miško per '
+               : 'Nuo debesų iki Mėnulio per ';
     $('winSub').textContent = trip + mins + ':' + String(secs).padStart(2, '0') +
       (r.mode === 'raw' ? ' · be kontrolinių taškų' : '') +
       (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
       (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
     $('winStats').innerHTML =
-      row(what, r.bones + ' / ' + all) +
+      (two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
+             row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
+           : row(what, r.bones + ' / ' + all)) +
       (r.bones === all ? row('Visi ' + all + ' — dvigubai!', r.bones + ' → ' + base) : '') +
       row('Už finišą ' + (r.mode === 'raw' ? 'be kontrolinių taškų' : 'su kontroliniais taškais'), '+' + bonus) +
-      row('Iš viso', '+' + earned + ' ' + ico, true);
+      row('Iš viso', this.paidHtml(r), true);
   },
 
   pause() { if (Game.state !== 'run') return; Game.state = 'pause'; Music.pause(); $('screen-pause').classList.remove('hidden'); },
   resume() { if (Game.state !== 'pause') return; $('screen-pause').classList.add('hidden'); Game.state = 'run'; Music.resume(); Game.last = performance.now(); },
 
-  setBones(n) { $('hudBones').textContent = n; },
+  /** On a level that collects one thing this is one number. On level 3 it is
+      two, because the balls are worth a different purse and are found in a
+      completely different way. */
+  setBones(n, b, t) {
+    const W = Game.world;
+    if (W && W.toys) {
+      $('hudBones').textContent = b || 0;
+      $('hudToys').textContent = t || 0;
+    } else $('hudBones').textContent = n;
+  },
   /* the metro key rides in the HUD once she has it, so it is never a mystery
      why the bars in London are open */
   setKey(on) { $('hudKey').classList.toggle('hidden', !on); },

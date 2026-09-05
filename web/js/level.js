@@ -67,6 +67,21 @@ const VENT_RISE = 300;
 const BED_TOP = 140;
 const BED_BODY = 46;
 
+/* ---- the jetpack ----
+   The pack is lying at the bottom of the deepest thing on any track: down a
+   branch, and then down a second hole inside that branch. Picking it up puts
+   her on the `sky` layer — a stretch of track with nothing on it at all, a
+   long way above the place she took off from — and she flies it faster than
+   she could run the ground below. When it cuts out she comes down again, and
+   the glide is long and gentle rather than a fall.
+
+   Everything the ground would have given her over that stretch is laid out
+   again up in the sky, so taking the pack never costs a treat or a toy. */
+const SKY_RISE  = 640;    // how far over the ground the cloud deck sits
+const SKY_HOVER = 46;     // and how far over that she actually flies
+const JET_GLIDE = 1500;   // px of gentle descent between the flight and the floor
+const JET_SPEED = 1.55;   // and how much faster than running the pack actually is
+
 /* ---- staircases ---- */
 const STAIR_RISE = 42;    // one step
 const STAIR_UP   = 48;    // riser she runs straight up: stairs are never a jump
@@ -80,7 +95,10 @@ function assertPropRoles(track) {
   const hits = new Set(), all = [], rooms = [];
   track.zones.forEach(z => { rooms.push(z); if (z.gulls) all.push([z.id, 'gull']); });
   const brs = track.branches || {};
-  Object.keys(brs).forEach(b => brs[b].rooms.forEach(r => rooms.push(r)));
+  Object.keys(brs).forEach(b => {
+    brs[b].rooms.forEach(r => rooms.push(r));
+    if (brs[b].deep) rooms.push(brs[b].deep.room);
+  });
   rooms.forEach(r => {
     ['hurdle', 'over', 'tunnel', 'ledge', 'step'].forEach(k =>
       (r.pools[k] || []).forEach(p => { hits.add(p); all.push([r.id, p]); }));
@@ -109,7 +127,9 @@ function buildWorld(track) {
     ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [],
     spins: [], dives: [],
     zones: [], layers: { main: { id: 'main', base: 0, rooms: [] } },
-    level: track.level, currency: track.currency, treats: track.treats,
+    level: track.level, currency: track.currency,
+    treats: track.treats + (track.toys || 0), collectibles: track.treats, toys: track.toys || 0,
+    jet: null, jetItemX: 0, jetLandX: 0, jetLandBase: 0,
     phys: track.phys, zoneList: ZL, branches: BR,
     finishX: 0, totalX: 0
   };
@@ -478,7 +498,7 @@ function buildWorld(track) {
 
     place('vent', ventBase, room);
     openGround(vx0);
-    W.items.push(stamp({ x: bx + bw + dx(ventSec) * 0.55, y: ventBase + 40, kind: 'metroKey', got: false }));
+    W.items.push(stamp({ x: bx + bw + dx(ventSec) * 0.55, y: ventBase + 40, kind: 'metroKey', id: 'metroKey', got: false }));
     x = vx1;
     closeGround(x);
     /* off the end of it she simply falls, and lands back in the bedroom */
@@ -489,6 +509,77 @@ function buildWorld(track) {
     place(keep.l, keep.b, keep.r); segStart = keep.seg;
     x = vx1;
     P.flat(dropSec);                    /* clear floor under the drop */
+  }
+
+  /** A second hole, in the floor of a branch this time.
+
+      The choice it puts is exactly the one the branch itself put — run
+      straight over it, or drop in — except that hardly anyone is down here to
+      be asked. Lying at the far end of it, on its stand, is the jetpack.
+
+      Laid out like a branch in miniature: the mouth and its portal go on the
+      branch's own layer, the steps and the room below go on a layer of their
+      own, and the branch above is filled over the same span so both ways come
+      out at the same place at the same time. */
+  function buildDeep(br, rec, roomEndX) {
+    const D = br.deep, room = D.room, id = D.id;
+    const B = rec.base;                     // the branch floor we are cutting into
+    const base = B + D.drop;
+    const keep = { l: curLayer, b: curBase, r: curRoom };
+    const n = Math.ceil(-D.drop / STAIR_RISE);
+    const run = Math.max(96, reachAt(x) * 0.2);
+    /* Whatever is down here has to fit inside what is left of the room above
+       it, or the two routes stop covering the same ground and the way out
+       comes up somewhere else entirely. Two flights, the calm at each end and
+       the mouth are fixed; the bunker itself gets whatever remains. */
+    const fixed = 2 * n * run + dx(0.8 + 1.0 + 0.8 + 1.1) + Math.round(reachAt(x) * 0.40) + 320;
+    const room4 = (roomEndX || (x + fixed + dx(D.sec))) - x;
+    const bodySec = clamp((room4 - fixed) / speed(), 1.6, D.sec);
+
+    P.flat(0.8);
+    const mouthX = x, mouth = Math.round(reachAt(x) * 0.40);
+    closeGround(x);
+    W.deco.push(stamp({ x: x, y: B, prop: D.shaft, w: mouth, h: 130, shaft: true }));
+    W.deco.push(stamp({ x: x - 14, y: B, prop: D.sign, w: mouth + 28, h: 158, sign: true }));
+    portal(x - 4, mouth + 30, base - 90, B - 8, rec.id, id);
+    x += mouth;
+    openGround(x);
+    const afterMouth = x;
+
+    /* ---- and now the way down, and what is at the bottom of it ---- */
+    W.layers[id] = { id: id, base: base, x0: mouthX, x1: 0, rooms: [] };
+    place(id, B, room);
+    x = mouthX;
+    flight(n, run, B, -1, room.pal);
+    place(id, base, room);
+    openGround(x - 40);
+    P.flat(1.0);
+    fill(room, bodySec, { tail: 1.0 });
+    P.flat(0.8);
+    W.items.push(stamp({ x: x, y: base + 30, kind: 'jetpack', id: 'jetpack', got: false }));
+    W.jetItemX = x;
+    P.flat(1.1);
+    /* the steps back up, for anyone who decides to leave it where it is */
+    W.deco.push(stamp({ x: x - 24, y: B, prop: D.exitSign || 'upOut',
+                        w: n * run + 48, h: 104, sign: true }));
+    flight(n, run, base, 1, room.pal);
+    const outX = x;
+    closeGround(x + 60);
+    portal(x + 8, 200, B - 70, B + 220, id, rec.id);
+    W.layers[id].x1 = outX + 240;
+    W.layers[id].rooms.push({ x0: mouthX - 240, x1: outX + 240, room: room });
+
+    /* ---- the branch above, over exactly the same stretch ---- */
+    place(keep.l, keep.b, keep.r);
+    segStart = afterMouth;
+    x = afterMouth;
+    const spanSec = (outX + 240 - afterMouth) / speed();
+    if (spanSec > 1.6) {
+      P.flat(0.7);
+      fill(keep.r, spanSec - 1.5, { tail: 0.9 });
+    }
+    if (x < outX + 240) P.flat((outX + 240 - x) / speed());
+    x = outX + 240;
   }
 
   /** The rooms of a branch, laid out across the same span of track the main
@@ -517,6 +608,10 @@ function buildWorld(track) {
       if (br.duct && room.id === br.ductRoom) {
         fill(room, Math.max(0.3, (rx1 - x) / speed() * 0.36), { tail: 0.7 });
         buildDuct(br, rec);
+      }
+      if (br.deep && room.id === br.deepRoom) {
+        fill(room, Math.max(0.3, (rx1 - x) / speed() * 0.2), { tail: 0.8 });
+        buildDeep(br, rec, rx1);
       }
       fill(room, Math.max(0.3, (rx1 - x) / speed()), { tail: 0.7 });
       if (x < rx1) P.flat((rx1 - x) / speed());
@@ -563,6 +658,29 @@ function buildWorld(track) {
       place('main', mainBase, null);
       openGround(x);
       P.flat(0.9);
+    }
+    /* ---- a flight DOWN out of a place that stands higher ----
+       The mirror of the one above, and every bit as safe: she runs off the
+       top tread and lands on the next one, all the way to the bottom. It is
+       what takes her out of the sky and puts her on the ground. */
+    if (z.stairsDown) {
+      const n = z.stairsDown, run = Math.max(88, reachAt(x) * 0.2);
+      closeGround(x);
+      if (z.stairSign) W.deco.push(stamp({ x: x - 24, y: curBase, prop: z.stairSign,
+                                           w: n * run + 60, h: 150, sign: true }));
+      flight(n, run, mainBase, -1, z.pal, z.stairProp);
+      mainBase -= n * STAIR_RISE;
+      place('main', mainBase, null);
+      openGround(x);
+      P.flat(0.9);
+    }
+    /* where a jetpack ride comes back down: the mouth of this place is left
+       deliberately empty so there is never anything to land on top of */
+    if (z.jetLand && !W.jetLandX) {
+      P.flat(3.2);
+      W.jetLandX = x;
+      W.jetLandBase = curBase;
+      P.flat(1.6);
     }
     /* the one place the view swings round: she comes off the beach, turns
        right and the pier is suddenly ahead of her */
@@ -698,11 +816,12 @@ function buildWorld(track) {
      A place with two routes spends one of its treats on *both* of them, so the
      count is the same whichever way she goes: 15 either way, 15 in total. */
   const perZone = track.perZone;
-  const TREATS = W.treats;
+  const TREATS = track.treats;
   const pairs = [];
   function takeBone(a, extra) {
     a.taken = 1;
-    const b = { x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: a.layer, got: false };
+    const b = { x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: a.layer,
+                cur: track.currency, got: false };
     if (extra) Object.assign(b, extra);
     W.bones.push(b);
     return b;
@@ -770,7 +889,7 @@ function buildWorld(track) {
     const a = (sp.length ? sp : cand)[Math.floor((sp.length ? sp.length : cand.length) * 0.5)];
     a.taken = 1;
     W.bones.push({ x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: p.layer,
-                   i: p.bone.i, got: false, twin: 1 });
+                   cur: p.bone.cur, i: p.bone.i, got: false, twin: 1 });
   });
 
   /* Whatever the train skips past, it also carries a copy of: every treat on
@@ -787,8 +906,92 @@ function buildWorld(track) {
       const a = cand.splice(clamp(Math.floor(cand.length * ((k + 0.5) / missed.length)), 0, cand.length - 1), 1)[0];
       a.taken = 1; have[b.i] = 1;
       W.bones.push({ x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: 'metro',
-                     i: b.i, got: false, twin: 1 });
+                     cur: b.cur, i: b.i, got: false, twin: 1 });
     });
+  }
+
+  /* ---------- the toys ----------
+     Level 3 collects two things, and the second one is not lying about on the
+     main route at all: every ball on that track is down one of the second
+     routes — the ballast deck, the seed cellar, the conveyor gallery or the
+     bunker under it. Running the level straight through gets the treats and
+     none of the toys, which is the whole point of the holes in the floor. */
+  const TOYS = W.toys;
+  if (TOYS) {
+    let next = W.bones.length ? W.bones.reduce((m, b) => Math.max(m, b.i), 0) + 1 : 0;
+    const ids = Object.keys(W.layers).filter(k => k !== 'main');
+    const pools = ids.map(k => anchors.filter(a => a.layer === k && !a.taken)
+                                      .sort((p, q) => p.x - q.x))
+                     .filter(pl => pl.length);
+    if (pools.length) {
+      /* share them out a layer at a time, and never ask a layer for more
+         places than it actually has: the twelfth ball has to exist */
+      const want = pools.map(() => 0);
+      let left = TOYS;
+      while (left > 0) {
+        let any = false;
+        for (let i = 0; i < pools.length && left > 0; i++)
+          if (want[i] < pools[i].length) { want[i]++; left--; any = true; }
+        if (!any) break;
+      }
+      pools.forEach((pool, pi) => {
+        const nWant = want[pi];
+        if (!nWant) return;
+        const sp = pool.filter(a => a.special);
+        const use = sp.length >= nWant ? sp : pool;
+        for (let k = 0; k < nWant; k++) {
+          const f = nWant === 1 ? 0.5 : k / (nWant - 1);
+          let a = use[clamp(Math.round((use.length - 1) * f), 0, use.length - 1)];
+          if (!a || a.taken) a = use.find(q => !q.taken) || pool.find(q => !q.taken);
+          if (!a) break;
+          a.taken = 1;
+          W.bones.push({ x: a.x, y: a.y, kind: a.kind, zone: a.zone, layer: a.layer,
+                         cur: 't', i: next++, got: false });
+        }
+      });
+    }
+  }
+
+  /* ---------- above the clouds ----------
+     Where the jetpack flies her, and what is laid out along the way. The sky
+     is not a place she can walk to: nothing but the pack ever puts her on it,
+     and there is nothing up there to hit. */
+  if (W.jetItemX && W.jetLandX) {
+    const sx0 = W.jetItemX + 60, sx1 = W.jetLandX - JET_GLIDE;
+    if (sx1 > sx0 + 900) {
+      const base = W.jetLandBase + SKY_RISE;
+      W.jet = { itemX: W.jetItemX, x0: sx0, x1: sx1, base: base,
+                landX: W.jetLandX, landY: W.jetLandBase };
+      W.layers.sky = { id: 'sky', base: base, x0: sx0, x1: sx1,
+                       rooms: [{ x0: sx0 - 3000, x1: sx1 + 3000, room: SKY_ROOM }] };
+      /* every treat and every toy the flight goes over, laid out again along
+         it — so choosing the pack never costs her a single one */
+      const have = {}, seen = {}, missed = [];
+      W.bones.forEach(b => {
+        if (b.layer === 'sky') { have[b.i] = 1; return; }
+        if (b.x <= W.jetItemX || b.x >= W.jetLandX || seen[b.i]) return;
+        seen[b.i] = 1; missed.push(b);
+      });
+      missed.sort((a, b) => a.x - b.x);
+      const span = sx1 - sx0;
+      /* and if the stretch she flew over happened to be carrying nothing at
+         all, borrow the next few from the ground she is about to land on: a
+         copy in the sky is the same treat, so a run that never finds the pack
+         picks them up on foot instead and neither way is short of one */
+      if (missed.length < 3) {
+        W.bones.filter(b => b.layer === 'main' && b.x >= W.jetLandX && !have[b.i])
+          .sort((a, b) => a.x - b.x)
+          .slice(0, 3 - missed.length)
+          .forEach(b => { if (!have[b.i]) { have[b.i] = 0; missed.push(b); } });
+      }
+      missed.forEach((b, k) => {
+        if (have[b.i]) return;
+        have[b.i] = 1;
+        W.bones.push({ x: sx0 + span * ((k + 0.6) / (missed.length + 0.2)),
+                       y: base + SKY_HOVER + 26, kind: 'fly', zone: b.zone,
+                       layer: 'sky', cur: b.cur, i: b.i, got: false, twin: 1 });
+      });
+    }
   }
 
   /* split ground at zone borders so every stretch gets its own floor style */

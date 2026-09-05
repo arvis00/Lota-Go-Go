@@ -36,9 +36,10 @@ const LEVELS = [
     picks: 't', playable: true, bonus: { cp: 30, raw: 100 },
     collect: 'Žaisliukai — 20 visoje trasoje.' },
 
-  { n: 3, name: 'Šviesų šventė', sub: '3 lygis · skaniukai ir žaisliukai',
-    picks: 'bt', playable: false, bonus: { cp: 50, raw: 200 },
-    collect: 'Renkami ir skaniukai, ir žaisliukai — aprangoms reikia abiejų.' },
+  { n: 3, name: 'Nuo debesų iki žvaigždžių', sub: '3 lygis · skaniukai ir žaisliukai',
+    picks: 'bt', playable: true, bonus: { cp: 35, raw: 120 },
+    collect: 'Skaniukai — 18 trasoje. Žaisliukai — 12, ir visi paslėpti žemiau: '
+           + 'kamuoliuką gausi tik nusileidusi pro skylę grindyse.' },
 
   { n: 4, name: 'Bosas: Didysis Siurblys', sub: '4 lygis · boso kova',
     picks: '', playable: false, choose: false, bonus: { cp: 0, raw: 0 },
@@ -73,6 +74,20 @@ const TRACKS = {
     perZone: [1, 1, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // = 20
     shortcuts: [],
     phys: { V_MIN: 400, V_MAX: 880, X_FULL: 104000 }
+  },
+  3: {
+    /* The hardest and the fastest of the three: it opens at 460 px/s — faster
+       than level 2 ever runs at its very end — tops out at 1010, and at the
+       tightest leaves 0.36 s to read what is coming instead of 0.40.
+
+       `treats` is what lies on the track itself; `toys` is the twelve balls,
+       and not one of them is on the main route — they are all down the three
+       holes in the floor and in the bunker under the third one. */
+    level: 3, seed: 20260905, zones: ZONES3, branches: BRANCHES3,
+    treats: 18, toys: 12, currency: 'b', minRest: 0.36, rest: [0.74, 0.38],
+    perZone: [1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1],            // = 18
+    shortcuts: [],
+    phys: { V_MIN: 460, V_MAX: 1010, X_FULL: 116000 }
   }
 };
 

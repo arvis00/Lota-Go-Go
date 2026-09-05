@@ -21,8 +21,8 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-['js/util.js', 'js/music.js', 'js/lota.js', 'js/props.js', 'js/props2.js',
- 'js/zones.js', 'js/zones2.js', 'js/level.js', 'js/levels.js', 'js/game.js']
+['js/util.js', 'js/music.js', 'js/lota.js', 'js/props.js', 'js/props2.js', 'js/props3.js',
+ 'js/zones.js', 'js/zones2.js', 'js/zones3.js', 'js/level.js', 'js/levels.js', 'js/game.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), sandbox, { filename: f }));
 
 /* a UI that does nothing, so the engine can run with no screen */

@@ -12,8 +12,10 @@
 <script src="../js/lota.js"></script>
 <script src="../js/props.js"></script>
 <script src="../js/props2.js"></script>
+<script src="../js/props3.js"></script>
 <script src="../js/zones.js"></script>
 <script src="../js/zones2.js"></script>
+<script src="../js/zones3.js"></script>
 <script src="../js/level.js"></script>
 <script src="../js/levels.js"></script>
 <script>
@@ -57,4 +59,10 @@ ZONES2.forEach(z => draw('2 · ' + z.id + ' — ' + z.name, z));
 Object.keys(BRANCHES2).forEach(b => {
   BRANCHES2[b].rooms.forEach(r => draw('2 · ' + b + '/' + r.id + ' — ' + r.name, r));
 });
+ZONES3.forEach(z => draw('3 · ' + z.id + ' — ' + z.name, z));
+Object.keys(BRANCHES3).forEach(b => {
+  BRANCHES3[b].rooms.forEach(r => draw('3 · ' + b + '/' + r.id + ' — ' + r.name, r));
+  if (BRANCHES3[b].deep) draw('3 · ' + b + '/' + BRANCHES3[b].deep.id, BRANCHES3[b].deep.room);
+});
+draw('3 · virš debesų (raketinė kuprinė)', SKY_ROOM);
 </script></body></html>

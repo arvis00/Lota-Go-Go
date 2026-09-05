@@ -1,10 +1,10 @@
 # Lota Go 🐾
 
-2D endless-runner stiliaus žaidimas su juoda šnaucere Lota. Du lygiai jau turi tikras
-trasas — **1: nuo namų iki Londono**, **2: nuo viešbučio iki miško** — o už jų dar du,
-kurių kol kas parodomos tik nuotraukos ir aprangos (žr. „Keturi lygiai"). Grynas
-HTML5 + Canvas, be jokių bibliotekų ir be paveikslėlių: visa grafika piešiama kodu
-(vektoriai).
+2D endless-runner stiliaus žaidimas su juoda šnaucere Lota. Trys lygiai jau turi tikras
+trasas — **1: nuo namų iki Londono**, **2: nuo viešbučio iki miško**, **3: nuo debesų iki
+žvaigždžių** — o už jų dar boso lygis, kurio kol kas parodoma tik nuotrauka ir aprangos
+(žr. „Keturi lygiai"). Grynas HTML5 + Canvas, be jokių bibliotekų ir be paveikslėlių:
+visa grafika piešiama kodu (vektoriai).
 
 ## Paleidimas
 
@@ -65,7 +65,7 @@ ant kilimo guli tik jos antkaklis.
 |---|---|---|---|---|
 | 1 | Kelias į Londoną | skaniukai 🦴 (15) | +10 / +50 | atviras nuo pradžios |
 | 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | +30 / +100 | pereiti 1 lygį **be kontrolinių taškų** ir atrakinti visas 1 lygio aprangas |
-| 3 | Šviesų šventė | skaniukai **ir** žaisliukai | +50 / +200 | pereiti 2 lygį **be kontrolinių taškų** ir atrakinti visas 2 lygio aprangas |
+| 3 | Nuo debesų iki žvaigždžių | skaniukai 🦴 (18) **ir** žaisliukai 🧸 (12) | +35 / +120 | pereiti 2 lygį **be kontrolinių taškų** ir atrakinti visas 2 lygio aprangas |
 | 4 | Bosas: Didysis Siurblys | nieko | visada su K.T. | pereiti 3 lygį **be kontrolinių taškų** ir atrakinti visas 3 lygio aprangas |
 
 **Raktą duoda tik bėgimas be kontrolinių taškų.** Finišas su vėliavėlėmis moka skaniukais
@@ -82,6 +82,20 @@ parodoma `🔑 N lygio raktas!`.
 > be spynų, abu mygtukai veikia, visos aprangų lentynos pasiekiamos. Daugiau jis nekeičia
 > nieko — piniginės, kainos ir finišo priedai lieka tokie patys. Norint grąžinti tikrą
 > eigą, užtenka tą vieną eilutę pakeisti į `false`; niekur kitur apie ją nežinoma.
+
+**Kainos suderintos su tuo, kiek per bėgimą uždirbama.** Vienas tobulas bėgimas be
+kontrolinių taškų duoda: 1 lygyje 30 🦴 + 50 = **80**, 2 lygyje 40 🧸 + 100 = **140**,
+3 lygyje 36 🦴 + 120 = **156** ir 24 🧸 + 120 = **144**. Brangiausia kiekvieno lygio
+apranga kainuoja maždaug **pusantro–du tokius bėgimus**, o visa lentyna — keturis ar
+penkis. Anksčiau antrame lygyje buvo atvirkščiai: už vieną bėgimą duodavo 140 🧸, o
+brangiausia to lygio apranga kainavo 85, tad visą spintą buvo galima nupirkti nespėjus
+jos net panorėti.
+
+| Lygis | Vienas tobulas bėgimas | Brangiausia apranga | Visa lentyna |
+|---|---|---|---|
+| 1 | 80 🦴 | 140 🦴 (1,8×) | 600 🦴 (7,5×) |
+| 2 | 140 🧸 | 260 🧸 (1,9×) | 740 🧸 (5,3×) |
+| 3 | 156 🦴 / 144 🧸 | 285 🦴 + 265 🧸 (1,8×) | 615 🦴 + 610 🧸 (~4×) |
 
 **Kiekvienas lygis turi savo piniginę.** Kas surinkta lygyje, tame lygyje ir išleidžiama:
 pirmame lygyje pririnktais skaniukais trečio lygio aprangos nenusipirksi. Trečiame lygyje
@@ -128,8 +142,8 @@ ir švytėjimas.
 
 - **1 lygis** (25–140 🦴): Pilotė, Autobuso vairuotoja, Kadetė, Senelė, Futbolininkė,
   Detektyvė, Karalienė, Astronautė, Vienaragė
-- **2 lygis** (20–85 🧸): Baletė, Piratė, Fėja, Roko žvaigždė, Snieguolė
-- **3 lygis** (30🦴+12🧸 … 80🦴+80🧸): Auksinė princesė, Undinė, Ugnies paukštė,
+- **2 lygis** (50–260 🧸): Baletė, Piratė, Fėja, Roko žvaigždė, Snieguolė
+- **3 lygis** (65🦴+25🧸 … 285🦴+265🧸): Auksinė princesė, Undinė, Ugnies paukštė,
   Žvaigždžių burtininkė, Krištolo šokėja
 - **4 lygis** — **neparduodamos**. Įveikus bosą abi atiduodamos iš karto:
   **Vaivorykštės suknelė** (mirguliuojanti suknelė, skrybėlaitė su žiedu ir šydu, batukai
@@ -137,11 +151,10 @@ ir švytėjimas.
   **Vaivorykštės frakas** (frakas su uodegomis, cilindras, peteliškė, batai ir lazdelė).
   Spalvos tos pačios, tad galima rinktis moterišką arba vyrišką variantą.
 
-**Kol kas 3 ir boso lygiai yra tik nuotraukos.** Trasų juose dar nėra: paspaudus
-mygtuką parodoma to lygio nuotrauka (piešiama kodu, kaip ir visa kita) ir paaiškinama, kas
-ten bus renkama. Aprangų lentynos jau veikia — tik piniginės tuščios, nes jų dar nėra kur
-prisirinkti. Kai trasa atsiras, `js/levels.js` faile užtenka `playable: false` pakeisti į
-`true` ir prirašyti tam lygiui `TRACKS` įrašą.
+**Kol kas tik boso lygis yra nuotrauka.** Trasos jame dar nėra: paspaudus mygtuką
+parodoma to lygio nuotrauka (piešiama kodu, kaip ir visa kita) ir paaiškinama, kas ten
+bus. Aprangos jau veikia. Kai trasa atsiras, `js/levels.js` faile užtenka
+`playable: false` pakeisti į `true` ir prirašyti tam lygiui `TRACKS` įrašą.
 
 ## Kaip veikia trasa
 
@@ -177,8 +190,8 @@ darė gatvę panašią į užtvindytą.
 
 Prasideda prašmatnaus viešbučio apartamente ir eina per koridorių su numeruotomis
 durimis, per fojė su kolonomis ir arkiniais langais į jūrą, pro baseiną, pro viešbučio
-vartus į promenadą ir paplūdimį. **Ant tilto ekranas pasisuka** — Lota pasuka į dešinę ir
-nubėga tiltu (kaip Palangoje) iki pat galo, o nuo galo **šoka į vandenį**. Po vandeniu ji
+vartus į promenadą ir paplūdimį. Nuo paplūdimio ji išbėga ant **tilto** (kaip Palangoje),
+nubėga juo iki pat galo, o nuo galo **šoka į vandenį**. Po vandeniu ji
 bėga dugnu pro koralus, **įbėga į nuskendusį laivą** ir išlipa ant jo denio (žr. „Nuskendęs
 laivas" žemiau), paskui rifas; seklumoje **jūros dugnas pakyla**, ir ji išbėga į krantą.
 Toliau trumpa pajūrio gatvė ir miškas, kuriame stovi finišas.
@@ -193,13 +206,6 @@ Lotai ties galva: **po ja galima pralįsti pasilenkus, per ją galima peršokti,
 užšokti negalima** — vienintelis daiktas visame žaidime, kuris neturi viršaus. Jos juosta
 (50–116 px nuo grindų) parinkta taip, kad abu keliai visada tilptų: pasilenkusi Lota yra
 30 px aukščio, o šuolio viršūnė — 188 px.
-
-**Posūkis ant tilto.** Nuo paplūdimio ji pasuka į dešinę, ir kamera pasisuka paskui ją.
-Užrašo, kad taip nutiko, nebėra — apie posūkį pasako tik pats vaizdas: Lota pasisuka
-vietoje (jos siluetas per akimirką susiaurėja iki briaunos ir vėl išsiskleidžia), o kamera
-nusiveja ją pusę akimirkos vėliau — pasvyra, prisitraukia ir per ekraną nubėga greito
-posūkio dryžiai. Kadras visą laiką lieka užpildytas — anksčiau vaizdas būdavo suplojamas
-horizontaliai ir pro jo kampus prasišviesdavo fonas. Trukmė ~1,1 s (`fx.spin`, `js/game.js`).
 
 **Nuskendęs laivas.** Trys vietos iš eilės, ir jokio pasirinkimo tarp jų nėra:
 
@@ -311,6 +317,80 @@ Mirtinas lieka tik per vėlai pradėtas šuolis, kai Lota jau nebespėja pasiekt
 Kadangi iš kliūties viršaus tenka dar nukristi, generatorius prie tarpo po kiekvieno
 šablono prideda kritimo laiką, kad reakcijos atsarga galiotų ir aukštuoju keliu.
 
+### 3 lygis — Nuo debesų iki žvaigždžių
+
+Seed `20260905`, **14 vietų**, ir jos kyla: iš oro į žemę, iš žemės po žeme, o iš ten į
+kosmosą.
+
+`Dirižablio nugara → Dirižablio salonas → Švartavimo bokštas → Bokšto terasos →
+Žydintis sodas → Šiltnamiai → Marmuro karjeras → Kasyklos aikštelė → Druskos kasykla →
+Raketos šachta → Raketos viduje → Orbita → Kosminė stotis → Mėnulis`
+
+Nė viena iš jų nėra pasiskolinta iš ankstesnių lygių, ir perėjimas iš vienos į kitą visada
+yra tikras: **ant dirižablio nugaros** ji bėga virš debesų ir pro liuką nulipa **į jo
+saloną**; salonas baigiasi ties **švartavimo bokšto** gembe, prie kurios dirižablis
+pririštas; nuo gembės **stikliniais laiptais** ji nusileidžia bokšto terasomis pro debesų
+sluoksnį **į žemę**; po bokštu stovi **žydintis vyšnių sodas**, už jo — sodo
+**šiltnamiai**, už šiltnamių — **marmuro karjeras**, karjero papėdėje — **kasyklos
+aikštelė** su kopimo bokštu, o pro jos angą einama **į druskos kasyklą**. Kasyklos galerija
+atsiveria į **raketos šachtą**; laiptais užbėgama pro liuką **į raketą**; raketa pakyla, ir
+Lota išlipa **ant stoties korpuso orbitoje**, iš ten pro šliuzą **į stotį**, o iš stoties —
+**į Mėnulį**, kur stovi finišas.
+
+**Sunkiausias ir greičiausias iš trijų.** Pradeda 460 px/s — greičiau, negu antras lygis
+bėga pačioje pabaigoje — ir įsibėgėja iki 1010 px/s (antras — iki 880). Sunkiausiose
+vietose reakcijai lieka 0,36 s vietoj 0,40 s. Trunka **~3 min 30 s**.
+
+**Kliūtys visos naujos.** Nė vienos iš pirmo ar antro lygio: ventiliacijos gaubtai,
+takelažo kilpos ir saulės plokštės ant dirižablio nugaros; pintos kėdės, arbatos vežimėlis
+ir gaublys salone; įrankių skrynios, kabelio ritės ir vėjo rankovė ant gembės; vazonai,
+stiklinės staliukai ir skėčiai terasose; aviliai, kopėčios ir dėžės sode; sėklų padėklai,
+laistytuvai ir vazonų bokštai šiltnamyje; marmuro blokai, pjūklas ir kaušas karjere;
+druskos luitai ir vagonėliai kasykloje; kuro statinės ir roboto ranka šachtoje; sėdynės ir
+pultai raketoje; antenos, varikliukai ir lėkštės ant korpuso; maišai ir stelažai stotyje;
+Mėnulio uolos, nusileidimo modulio koja ir gręžinys Mėnulyje.
+
+**Trijose vietose grindyse yra skylė.** Kiekvieną kartą pasirinkimas tas pats ir jis
+niekada nebaudžia: **peršok ją ir nieko neatsitiks**, arba **nusileisk į ją** ir bėk žemesniu
+keliu, kuris trunka lygiai tiek pat ir baigiasi toje pačioje vietoje.
+
+| Kur | Kas apačioje | Kodėl ten yra skylė |
+|---|---|---|
+| Dirižablio salonas | **Balasto denis** ir **Variklių skyrius** | liukas grindyse — po salonu tikrai yra balasto bakai ir varikliai |
+| Šiltnamiai | **Sėklų rūsys** ir **Šaknų sandėlis** | po šiltnamiais laikomos sėklos ir šaknys |
+| Marmuro karjeras | **Transporterio galerija** ir **Trupintuvas** | akmuo iš karjero išvežamas juosta, o juosta eina po žeme |
+
+**O galerijoje yra antra skylė, dar giliau.** Trupintuvo gale grindyse žioji dar viena
+anga su užrašu *BANDYMŲ BUNKERIS — užverstas nuo seno*. Į ją nusileidus atsiduriama
+betoniniame vamzdyje su senais raketų bandymų stendais, ant kurių raketos taip ir liko
+pritvirtintos, o gale — nuolat mirksinčios avarinės lempos ir užgriuvusi lubų dalis.
+Ten niekas neveda ir niekas apie tai neužsimena: reikia nusileisti pro vieną skylę, o
+paskui — pro kitą.
+
+**Ir ten guli raketinė kuprinė.** Ją palietus:
+
+- ekranas nuplauna baltai, ir Lota **iškyla virš debesų** — į `sky` sluoksnį, kurio nėra
+  kur kitur pasiekti;
+- ji **skrenda greičiau, negu bėgtų apačia** (`JET_SPEED` = 1,55×), ir aukštai jokių
+  kliūčių nėra: nei nuo ko pasilenkti, nei per ką šokti. Spaudyti irgi nieko nereikia;
+- matyti tik vėjas: ilgi minkšti dryžiai ir pro šalį nuplėšti debesų skiautės. Tyliai,
+  ne kaip greitkelyje;
+- paskui kuprinė **užgęsta**, ir Lota **ramiai nusileidžia** ilgu slėniu iki pat kasyklos
+  aikštelės — ne krisdama, o palengva leisdamasi (`JET_GLIDE` = 1500 px), ir aikštelės
+  pradžia specialiai palikta tuščia, kad būtų kur nusileisti.
+
+**Kuprinė nieko neatima.** Visa, ką ta trasos atkarpa būtų davusi, padedama antrą kartą
+danguje, ant skrydžio kelio — pasiimtas skaniukas danguje yra tas pats skaniukas, tad ir
+skridusi, ir nubėgusi Lota gali surinkti visus 30. Skrendant kontroliniai taškai
+nestatomi: taškas ore grąžintų ją ant žemės, o skaniukai liktų danguje.
+
+**Kamuoliukus reikia rasti, o ne prabėgti.** Nė vieno iš dvylikos žaisliukų pagrindiniame
+kelyje nėra — visi jie guli **žemesniuose keliuose** (balasto denyje, sėklų rūsyje,
+transporterio galerijoje) ir **bunkeryje**. Pralėkus lygį tiesiai, nieko nesustabdant,
+gaunami 18 skaniukų ir **nulis** žaisliukų. Skaniukai savo ruožtu padėti sunkiau nei
+ankstesniuose lygiuose: pirmenybė teikiama vietoms, kurias pasiekia tik šuolis ant lentynos,
+ant kliūties viršaus arba pro tunelį.
+
 ## Du keliai
 
 **Pirmame lygyje** trasa trijose vietose šakojasi. Du iš tų kelių — kaimynų antras aukštas ir ventiliacija virš
@@ -318,6 +398,11 @@ mergaitės kambario — nutiesti virš to paties trasos ruožo, tik kitame aukš
 **trunka lygiai tiek pat** ir baigiasi toje pačioje vietoje. Trečias, Londono metro, yra
 **trumpinys**: jis trasos ruožą ne pakartoja, o praleidžia, ir todėl užrakintas, kol
 nerandamas raktas.
+
+**Antrame lygyje** šakojimasis vienas — lapių urvas po mišku. **Trečiame** jų trys, ir
+visi vienodo pavidalo: skylė grindyse, kurią galima peršokti arba į kurią galima
+nusileisti (žr. „3 lygis" aukščiau). Trečioji jų turi savyje dar vieną, gilesnę, o jos gale
+guli raketinė kuprinė.
 
 Aukštus jungia tikri laiptai: jais ne šokinėjama, o *bėgama* — pakopa yra pakopa, ant laiptų
 mirti neįmanoma. Bėgant laiptais aukštyn ar žemyn kamera juda kartu, Lota visada matoma.
@@ -414,7 +499,7 @@ bėgimą — bet už finišą mokama kelis kartus daugiau:
 |---|---|---|
 | 1 · Kelias į Londoną | +10 🦴 | **+50 🦴** |
 | 2 · Nuo viešbučio iki miško | +30 🧸 | **+100 🧸** |
-| 3 · Šviesų šventė | +50 🦴 ir 🧸 | **+200 🦴 ir 🧸** |
+| 3 · Nuo debesų iki žvaigždžių | +35 🦴 ir 🧸 | **+120 🦴 ir 🧸** |
 | 4 · Bosas | visada su jais | — |
 
 Boso lygyje pasirinkimo nėra: jis visada žaidžiamas su kontroliniais taškais. Trečiame
@@ -444,9 +529,14 @@ buvo surinkta iki žūties — premija už finišą yra tai, ko negaunama.
 
 ## Skanėstai ir žaisliukai
 
-Pirmo lygio trasoje paslėpta lygiai **15 kaulų**, antro — lygiai **20 žaisliukų**.
-Kiekvienoje vietoje bent po vieną. Dauguma jų — ant alternatyvių kelių, ant lentynų arba
-virš žuvėdrų, todėl reikia rizikuoti.
+Pirmo lygio trasoje paslėpta lygiai **15 kaulų**, antro — lygiai **20 žaisliukų**,
+trečio — **18 kaulų ir 12 kamuoliukų**. Kiekvienoje vietoje bent po vieną. Dauguma jų —
+ant alternatyvių kelių, ant lentynų arba virš žuvėdrų, todėl reikia rizikuoti.
+
+**Trečiame lygyje renkami abu dalykai, ir jie renkami skirtingai.** Kaulai guli trasoje,
+tik sunkiau pasiekiamose vietose. Kamuoliukų pagrindiniame kelyje nėra išvis: visi dvylika
+laukia žemesniuose keliuose ir bunkeryje po jais, tad kiekvienas kamuoliukas reiškia
+apsisprendimą nusileisti. HUD'e tada rodomi du skaitikliai — 🦴 ir 🧸 atskirai.
 
 **Nesvarbu, kurį kelią pasirinksi.** Ten, kur trasa šakojasi, tos vietos kaulas padėtas
 **abiejuose** keliuose — tai tas pats kaulas, pasiimtas bet kurioje pusėje jis užsiskaito
@@ -455,12 +545,15 @@ trumpiniui: viskas, ką traukinys prašoka, dar kartą padedama stotyje arba vag
 surinkti visus 15 galima ir viršumi, ir apačia, ir per ventiliaciją, ir per metro.
 
 - surinkti ne visi → gauni tiek, kiek surinkai
-- surinkti visi → **dvigubai** (1 lygis 15 → 30, 2 lygis 20 → 40)
+- surinkti visi → **dvigubai** (1 lygis 15 → 30, 2 lygis 20 → 40, 3 lygis 18 🦴 → 36 ir
+  12 🧸 → 24)
 - pasiekus finišą → premija, priklausanti nuo to, ar bėgta su kontroliniais taškais
-  (1 lygis +10 arba +50, 2 lygis +30 arba +100 — žr. „Kontroliniai taškai")
+  (1 lygis +10 arba +50, 2 lygis +30 arba +100, 3 lygis +35 arba +120 — žr. „Kontroliniai
+  taškai")
 
 Visa tai keliauja į **to lygio** piniginę ir kitiems lygiams netinka: pirmas lygis moka
-skaniukais, antras — žaisliukais.
+skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija už finišą
+įskaitoma į abi jo pinigines).
 
 ## Failai
 
@@ -471,8 +564,10 @@ skaniukais, antras — žaisliukais.
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + visos aprangos |
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
+| `js/props3.js` | ~90 trečio lygio piešinių: dirižablis, bokštas, sodas, šiltnamiai, karjeras, kasykla, raketa, stotis, Mėnulis + raketinė kuprinė |
 | `js/zones.js` | 1 lygio 13 vietų + `BRANCHES` (metro, antras aukštas, ventiliacija); `BG` ir grindų piešimas |
 | `js/zones2.js` | 2 lygio 17 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
+| `js/zones3.js` | 3 lygio 14 vietų + `BRANCHES3` (trys skylės grindyse, bunkeris po viena iš jų) + `SKY_ROOM`; `BG3` ir grindys |
 | `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
@@ -517,11 +612,23 @@ Dažniausiai keičiami dalykai:
   (`js/level.js`)
 - **Šuolis nuo tilto** — `dive: 1` zonoje ir `z.dive` blokas `buildWorld()` viduje
 - **Ekrano pasisukimas** — `turn: 1` zonoje; pats efektas — `fx.spin` ir `drawTurnBlur()`
-  (`js/game.js`)
+  (`js/game.js`). Nė vienoje trasoje jis dabar nenaudojamas: antrame lygyje posūkio į
+  dešinę nebėra, Lota tiesiog išbėga ant tilto
 - **Trasos aukštis** — `stairsUp` / `stairProp`, `climb: {n, h}` / `riseProp`,
   `dropEnd` / `dropTo` / `dropProp` / `dropRoom` zonos įraše (`js/zones2.js`); pačios
   pakopos — `P.riser()` ir `flight()` (`js/level.js`)
 - **Jūros lygis seklumoje** — `surfaceY` ir `climb` zonoje `shallows` (`js/zones2.js`)
+- **Trys skylės 3 lygyje** — `BRANCHES3` (`js/zones3.js`): `drop`, `enterSec`, `sec`,
+  `rooms[].share`
+- **Gilesnė skylė ir bunkeris** — `BRANCHES3.conveyor.deep` + `deepRoom` (`js/zones3.js`);
+  ją stato `buildDeep()` (`js/level.js`), kuris pats susitraukia iki to, kiek vietos
+  likę viršuje esančiame kambaryje
+- **Raketinė kuprinė** — `SKY_RISE`, `SKY_HOVER`, `JET_GLIDE`, `JET_SPEED`
+  (`js/level.js`); skrydis ir nusileidimas — `Game.liftOff()` ir `Game.stepFly()`
+  (`js/game.js`); kur nusileidžiama — `jetLand: 1` zonoje (`js/zones3.js`)
+- **Kamuoliukai 3 lygyje** — `toys:` lygio įraše `TRACKS` (`js/levels.js`); jie dedami tik
+  ant ne `main` sluoksnių, `buildWorld()` pabaigoje
+- **Laiptai žemyn** — `stairsDown` / `stairProp` / `stairSign` zonoje (`js/zones3.js`)
 - **Greitis** — `phys` lygio įraše `TRACKS` (`js/levels.js`); numatytasis — `PHYS`
   (`js/level.js`)
 - **Sunkumas** — `diff:` zonoje (0…1) valdo kliūčių tipų dažnį, o `rest` ir `minRest`

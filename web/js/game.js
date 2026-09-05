@@ -243,11 +243,14 @@ const Game = {
       const kept = new Set(cp.bones);
       this.world.bones.forEach(b => { b.got = kept.has(b.i); });
       this.world.warps.forEach(w => { if (w.x >= cp.x) w.used = false; });
-      /* once found, the key is hers for good; if the checkpoint is from before
-         she found it, it is lying back in the duct waiting to be found again */
-      this.world.items.forEach(it => { it.got = !!cp.key; });
-      this.run.metroKey = !!cp.key;
+      /* once found, a thing is hers for good; if the checkpoint is from before
+         she found it, it is lying back where it was waiting to be found again */
+      const keptI = new Set(cp.items || []);
+      this.world.items.forEach(it => { it.got = keptI.has(it.id); });
+      this.run.metroKey = keptI.has('metroKey');
       this.run.bones = cp.count;
+      this.run.gotB = cp.b || 0;
+      this.run.gotT = cp.t || 0;
       this.run.zoneIdx = -1;
       this.run.finished = false;
       this.run.warpTo = null;
@@ -256,12 +259,14 @@ const Game = {
       this.world.bones.forEach(b => { b.got = false; });
       this.world.items.forEach(it => { it.got = false; });
       this.world.warps.forEach(w => { w.used = false; });
-      this.run = { level: level, bones: 0, zoneIdx: -1, dist: 0, time: 0, shortcuts: 0,
-                   finished: false, warpTo: null, deaths: 0, banked: false, metroKey: false,
-                   mode: mode || Levels.mode(level) || 'cp' };
-      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, bones: [], name: ZL[0].name, start: true };
+      this.run = { level: level, bones: 0, gotB: 0, gotT: 0, zoneIdx: -1, dist: 0, time: 0,
+                   shortcuts: 0, finished: false, warpTo: null, deaths: 0, banked: false,
+                   metroKey: false, mode: mode || Levels.mode(level) || 'cp' };
+      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, b: 0, t: 0, bones: [], items: [],
+                          name: ZL[0].name, start: true };
     }
     this.run.diving = null;
+    this.run.fly = 0; this.run.glide = 0;
     this.world.spins.forEach(sp => { sp.used = false; });
     this.trail.length = 0; this.foxes.length = 0;
     const sx = cp ? cp.x : 60;
@@ -289,11 +294,16 @@ const Game = {
     /* played without them, the only checkpoint there has ever been is the
        start line: one mistake and the whole run goes again */
     if (idx > 0 && this.run.mode === 'raw') return;
+    /* never in mid-air on the pack: a checkpoint taken up there would put her
+       back on the ground with the treats still in the sky and no way to them */
+    if (this.run.fly || this.run.glide) return;
     const z = this.world.zones[idx];
     this.checkpoint = {
       x: z.x0 + 24, zoneIdx: idx, name: z.zone.name, start: idx === 0,
       bones: this.world.bones.filter(b => b.got).map(b => b.i),
-      count: this.run.bones, key: !!this.run.metroKey
+      count: this.run.bones, b: this.run.gotB, t: this.run.gotT,
+      items: this.world.items.filter(it => it.got).map(it => it.id),
+      key: !!this.run.metroKey
     };
     if (idx === 0) return;
     Sfx.checkpoint();
@@ -394,6 +404,7 @@ const Game = {
     const SUB = Math.ceil(dt / (1 / 240));
     const h = dt / SUB;
     this.run.time += dt;
+    if (this.run.fly || this.run.glide) { this.stepFly(dt); return; }
 
     I.jumpBuf = Math.max(0, I.jumpBuf - dt);
     if (I.duckTimer > 0) I.duckTimer -= dt;
@@ -573,15 +584,7 @@ const Game = {
       near.bones.forEach(bn => {
         if (bn.got || bn.layer !== LY) return;
         const cx = L.x, cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
-        if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) {
-          W.bones.forEach(o => { if (o.i === bn.i) o.got = true; });
-          this.run.bones++;
-          Sfx.bone();
-          for (let k = 0; k < 10; k++) this.fx.sparks.push({
-            x: bn.x, y: bn.y, vx: (Math.random() - .5) * 160, vy: 60 + Math.random() * 160, life: .55, c: '#ffe8a8'
-          });
-          UI.setBones(this.run.bones);
-        }
+        if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) this.claim(bn);
       });
 
       /* --- the metro key, lying in the duct over the girl's room --- */
@@ -590,6 +593,7 @@ const Game = {
         const cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
         if (Math.abs(it.x - L.x) > 52 || Math.abs(it.y - cy) > 74) return;
         it.got = true;
+        if (it.kind === 'jetpack') { this.liftOff(it); return; }
         this.run.metroKey = true;
         Sfx.unlock();
         this.fx.flash = 0.45;
@@ -648,11 +652,20 @@ const Game = {
 
     /* warp teleport once the wipe has covered the screen */
     if (this.run.warpTo && this.fx.warp < 0.21) {
-      L.x = this.run.warpTo.x;
-      L.y = groundYAt(W, L.x, 'main') || 0;
-      this.baseRef = L.y;
-      L.vy = 0; L.grounded = true;
-      L.layer = 'main';
+      const wt = this.run.warpTo;
+      L.x = wt.x;
+      if (wt.fly) {
+        /* the pack does not put her down anywhere — it puts her up */
+        L.layer = 'sky'; L.y = wt.y;
+        this.baseRef = this.layerBase('sky'); this.camBase = this.baseRef;
+        L.vy = 0; L.grounded = false;
+        this.run.fly = 1; this.run.glide = 0;
+      } else {
+        L.y = groundYAt(W, L.x, 'main') || 0;
+        this.baseRef = L.y;
+        L.vy = 0; L.grounded = true;
+        L.layer = 'main';
+      }
       this.cam.x = L.x - this.VW * 0.30;
       this.run.warpTo = null;
     }
@@ -669,6 +682,93 @@ const Game = {
     UI.setProgress(done);
     /* she runs faster as the level goes on; the song leans forward with her */
     Music.setRate(done);
+  },
+
+  /** A treat is one treat wherever it was picked up: a copy of it on another
+      route, or up in the sky, carries the same number, and claiming any copy
+      claims all of them. Which purse it pays into is the treat's own. */
+  claim(bn) {
+    this.world.bones.forEach(o => { if (o.i === bn.i) o.got = true; });
+    this.run.bones++;
+    if (bn.cur === 't') this.run.gotT++; else this.run.gotB++;
+    Sfx.bone();
+    for (let k = 0; k < 10; k++) this.fx.sparks.push({
+      x: bn.x, y: bn.y, vx: (Math.random() - .5) * 160, vy: 60 + Math.random() * 160,
+      life: .55, c: bn.cur === 't' ? '#ffd0dc' : '#ffe8a8'
+    });
+    UI.setBones(this.run.bones, this.run.gotB, this.run.gotT);
+  },
+
+  /** The pack goes off. She is thrown up out of the rock, the screen washes
+      white, and she comes out over the top of the weather. */
+  liftOff(it) {
+    const W = this.world;
+    if (!W.jet) return;
+    Sfx.boing(); Sfx.warp();
+    this.fx.flash = 0.6;
+    this.fx.warp = 0.62; this.fx.warpFull = 0.62; this.fx.warpCol = '#eaf6ff';
+    for (let k = 0; k < 26; k++) this.fx.sparks.push({
+      x: it.x, y: it.y, vx: (Math.random() - .5) * 200, vy: 120 + Math.random() * 320,
+      life: .8, c: k % 2 ? '#8fd6ff' : '#ffffff'
+    });
+    this.run.warpTo = { x: W.jet.x0, y: W.jet.base + SKY_HOVER, fly: 1 };
+    UI.toast('🚀 Raketinė kuprinė!', 'virš debesų');
+  },
+
+  /** Flying, and then coming down again.
+
+      Nothing up here can hurt her and nothing she presses does anything: the
+      pack is what she gets for having found it, not another thing to be good
+      at. She goes faster than she could ever run, the treats the ground would
+      have given her are strung out along the way, and when it runs out she
+      comes down on a long, easy slope rather than falling. */
+  stepFly(dt) {
+    const L = this.lota, W = this.world, J = W.jet;
+    if (!J) { this.run.fly = 0; this.run.glide = 0; return; }
+    if (this.run.warpTo) return;
+    if (this.run.fly) {
+      L.x += speedAt(L.x) * JET_SPEED * dt;
+      L.y = J.base + SKY_HOVER;
+      L.layer = 'sky'; L.grounded = false; L.vy = 0; L.duck = false;
+      if (L.x >= J.x1) {
+        this.run.fly = 0; this.run.glide = 1;
+        this.switchLayer('main');
+        this.camBase = J.landY;
+        Sfx.duck();
+      }
+    } else {
+      L.x += speedAt(L.x) * dt;
+      const k = clamp((L.x - J.x1) / Math.max(1, J.landX - J.x1), 0, 1);
+      L.y = lerp(J.base + SKY_HOVER, J.landY, smooth(k));
+      L.layer = 'main'; L.grounded = false; L.vy = 0; L.duck = false;
+      if (k >= 1) {
+        this.run.glide = 0;
+        const gy = groundYAt(W, L.x, 'main');
+        L.y = gy == null ? J.landY : gy;
+        L.vy = 0; L.grounded = true; L.landY = L.y;
+        this.baseRef = L.y;
+        Sfx.land(); this.puff(L.x - 8, L.y, 9);
+        UI.toast('Nusileido', 'kuprinė baigėsi');
+      }
+    }
+    /* the treats still count up here — flying through them is how she gets
+       everything the stretch below would have given her */
+    const near = queryCells(W, L.x - 300, L.x + 460), LY = L.layer;
+    near.bones.forEach(bn => {
+      if (bn.got || bn.layer !== LY) return;
+      const cy = L.y + LOTA.STAND_H * 0.5;
+      if (Math.abs(bn.x - L.x) < 56 && Math.abs(bn.y - cy) < 78) this.claim(bn);
+    });
+    L.runPhase += dt * 9;
+    L.state = this.run.fly ? 'jump' : 'fall';
+    this.trail.length = 0; this.foxes.length = 0;
+    this.updateCam(dt);
+    this.updateZone();
+    this.run.dist = L.x;
+    const done = clamp(L.x / W.finishX, 0, 1);
+    UI.setProgress(done);
+    Music.setRate(done);
+    if (L.x >= W.finishX) this.finish();
   },
 
   /** How many friends are running behind her right now: the fox cave is the
@@ -753,7 +853,8 @@ const Game = {
       this.run.zoneIdx = idx;
       UI.setZone(zs[idx].zone.name);
       /* only a place she has never reached before plants a new checkpoint */
-      if (idx > this.checkpoint.zoneIdx && this.run.mode !== 'raw') {
+      if (idx > this.checkpoint.zoneIdx && this.run.mode !== 'raw'
+          && !this.run.fly && !this.run.glide) {
         this.setCheckpoint(idx);
         if (idx > 0) UI.toast(zs[idx].zone.name, '✓ KONTROLINIS TAŠKAS');
       } else if (!resumed && idx > 0) {
@@ -1050,13 +1151,17 @@ const Game = {
     /* ---- treats ---- */
     near.bones.forEach(b => {
       if (b.got || !mine(b)) return;
-      this.drawTreat(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5);
+      this.drawTreat(this.sx(b.x), this.sy(b.y) + Math.sin(this.t * 3 + b.i) * 5, b.cur);
     });
 
     /* ---- the key ---- */
     near.items.forEach(it => {
       if (it.got || !mine(it)) return;
       const bob = Math.sin(this.t * 2.6) * 6;
+      if (it.kind === 'jetpack') {
+        drawProp(ctx, 'jetpack', this.sx(it.x) - 34, this.sy(it.y) - 46 + bob, 68, 86, this.t, {}, it.x);
+        return;
+      }
       drawProp(ctx, 'keyMetro', this.sx(it.x) - 27, this.sy(it.y) - 18 + bob, 54, 36, this.t, {}, it.x);
     });
 
@@ -1090,10 +1195,14 @@ const Game = {
         ctx.scale(Math.max(0.1, Math.abs(Math.cos(pl * Math.PI))), 1);
         ctx.translate(-lx, -ly);
       }
+      const flying = this.run && (this.run.fly || this.run.glide);
+      if (flying) this.drawPack(this.sx(L.x), this.sy(L.y), !!this.run.fly);
       drawLota(ctx, this.sx(L.x), this.sy(L.y), {
         state: L.state, t: this.t, run: L.runPhase, skin: Save.data.skin,
-        face: this.state === 'crash' ? 'sad' : undefined,
-        tilt: this.state === 'crash' ? Math.sin(L.sitT * 3) * 0.22 - 0.08 : undefined
+        face: this.state === 'crash' ? 'sad' : (flying ? 'happy' : undefined),
+        shadow: flying ? false : undefined,
+        tilt: this.state === 'crash' ? Math.sin(L.sitT * 3) * 0.22 - 0.08
+              : (flying ? (this.run.fly ? -0.1 : 0.06) : undefined)
       });
       ctx.restore();
       if (this.state === 'crash' && this.stateT > 0.35) {
@@ -1135,6 +1244,36 @@ const Game = {
       ctx.restore();
     }
 
+    /* ---- the wind ----
+       While the pack is running this is the only thing that says how fast she
+       is going, and it has to say it quietly: long, soft, unhurried streaks
+       and a few wisps of cloud tearing past, not the hard white dashes the
+       street uses. ---- */
+    if (this.run && (this.run.fly || this.run.glide)) {
+      const k = this.run.fly ? 1 : 0.45;
+      ctx.save();
+      for (let i = 0; i < 16; i++) {
+        const r = makeRng(i * 53 + Math.floor(this.t * 6) * 29);
+        const yy = r() * VH, len = VW * (0.25 + r() * 0.6);
+        const x0 = imod(r() * VW * 1.4 - this.t * (620 + r() * 500), VW + len) - len;
+        const g2 = ctx.createLinearGradient(x0, 0, x0 + len, 0);
+        g2.addColorStop(0, 'rgba(255,255,255,0)');
+        g2.addColorStop(0.5, i % 3 ? 'rgba(255,255,255,.55)' : 'rgba(200,230,255,.5)');
+        g2.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.globalAlpha = k * (0.25 + r() * 0.35);
+        ctx.fillStyle = g2; ctx.fillRect(x0, yy, len, 1.4 + r() * 2.6);
+      }
+      /* and torn wisps of the cloud she is skimming */
+      for (let i = 0; i < 5; i++) {
+        const r = makeRng(i * 97 + Math.floor(this.t * 1.5) * 13);
+        const yy = VH * (0.55 + r() * 0.4);
+        const x0 = imod(r() * VW * 2 - this.t * (300 + r() * 260), VW + 340) - 170;
+        ctx.globalAlpha = k * 0.22;
+        fillEll(ctx, x0, yy, 90 + r() * 90, 12 + r() * 10, '#ffffff');
+      }
+      ctx.restore();
+    }
+
     /* ---- confetti ---- */
     this.fx.confetti.forEach(c => {
       ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.r);
@@ -1154,6 +1293,41 @@ const Game = {
     const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.42, VW / 2, VH / 2, VH * 0.95);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,6,20,.34)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  },
+
+  /** The pack strapped to her back, and what is coming out of the bottom of
+      it. Drawn under her, so it reads as being on her rather than in front. */
+  drawPack(x, y, hot) {
+    const ctx = this.ctx, t = this.t;
+    ctx.save(); ctx.translate(x - 24, y - 42);
+    /* the two bottles */
+    fillRR(ctx, -17, -30, 17, 44, 8, '#e8eef4');
+    fillRR(ctx, 1, -27, 17, 41, 8, '#c2ccd6');
+    ctx.strokeStyle = 'rgba(24,16,34,.42)'; ctx.lineWidth = 2.2; ctx.stroke();
+    fillRR(ctx, -18, -9, 37, 9, 4, '#e2453c');
+    fillRR(ctx, -18, -35, 37, 9, 4, '#f0c23a');
+    ctx.save(); ctx.globalAlpha = .5;
+    fillRR(ctx, -14, -25, 6, 32, 3, '#ffffff'); ctx.restore();
+    /* the nozzles, and the flame */
+    [-9, 10].forEach(px => {
+      poly(ctx, [[px - 7, 14], [px + 7, 14], [px + 9, 25], [px - 9, 25]], '#8b98a6');
+      const f = (hot ? 1 : 0.4) * (0.82 + Math.sin(t * 22 + px) * 0.18);
+      ctx.save(); ctx.globalAlpha = .8;
+      poly(ctx, [[px - 8, 25], [px + 8, 25], [px, 25 + 46 * f]], '#8fd6ff');
+      ctx.globalAlpha = .92;
+      poly(ctx, [[px - 4, 25], [px + 4, 25], [px, 25 + 26 * f]], '#ffffff');
+      ctx.restore();
+      ctx.save(); ctx.globalAlpha = .2 * f;
+      circle(ctx, px, 34, 24, '#8fd6ff'); ctx.restore();
+    });
+    ctx.restore();
+    /* a thin trail of it hanging in the air behind her */
+    for (let i = 0; i < 7; i++) {
+      const ph = ((t * 1.6) + i * 0.14) % 1;
+      ctx.save(); ctx.globalAlpha = (1 - ph) * (hot ? .4 : .18);
+      circle(ctx, x - 24 - ph * 190, y - 24 + Math.sin(ph * 6 + i) * 9, 4 + ph * 11, '#dff0ff');
+      ctx.restore();
+    }
   },
 
   drawFlag(x, y, lit) {
@@ -1196,8 +1370,9 @@ const Game = {
 
   /** the thing this level's track is littered with: a bone on level 1, one of
       her squeaky balls on level 2 */
-  drawTreat(x, y) {
-    if (!this.world || this.world.currency !== 't') { this.drawBone(x, y); return; }
+  drawTreat(x, y, cur) {
+    const c = cur || (this.world && this.world.currency) || 'b';
+    if (c !== 't') { this.drawBone(x, y); return; }
     const ctx = this.ctx, r = 15;
     ctx.save(); ctx.translate(x, y);
     ctx.save(); ctx.globalAlpha = .35 + Math.sin(this.t * 4) * .12;

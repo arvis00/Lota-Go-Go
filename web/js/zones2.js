@@ -3,10 +3,10 @@
    zones2.js — level 2: "Nuo viešbučio iki miško".
 
    Fifteen places in a row: a grand hotel from the inside out, the
-   promenade and the beach, the pier — where the view swings round
-   and Lota turns right — a dive off the end of it, the sea floor,
-   the climb back out onto the shore, a short street, and the forest
-   the finish stands in. One branch: the fox cave under the forest.
+   promenade and the beach, the pier she runs the length of, a dive
+   off the end of it, the sea floor, the climb back out onto the
+   shore, a short street, and the forest the finish stands in.
+   One branch: the fox cave under the forest.
 ----------------------------------------------------------------*/
 
 /* ================= backgrounds shared by level 2 ================= */
@@ -1010,14 +1010,14 @@ const ZONES2 = [
   },
   {
     id: 'pier', name: 'Tiltas', sec: 13, diff: 0.66, floor: 'planks', gulls: 3,
-    turn: 1, dive: 1,
+    dive: 1,
     pal: { sky1: '#6fcfea', sky2: '#d8f0f8', far: '#a8c9d6', mid: '#7fa8bc',
            floorTop: '#d8b98a', floorBody: '#9a7550', accent: '#3f4a5c', cloud: '#ffffff' },
     bg(ctx, VW, VH, camX, floorY, t, pal) {
       BG.sky(ctx, VW, VH, pal.sky1, pal.sky2);
       BG.sun(ctx, VW, VH, VW * 0.2, 62, 30, '#fff6d8');
       BG.clouds(ctx, VW, VH, camX * 0.035, t, pal.cloud, 34, 1.2);
-      /* the shore falling away behind, now that she has turned */
+      /* the shore falling away behind her */
       ctx.save(); ctx.globalAlpha = .55;
       BG.buildings(ctx, VW, VH, camX * 0.06, floorY - 206, ['#e2e8ee', '#d2dce4'], '#ffe7b0', 40, 90, 210, true);
       ctx.restore();

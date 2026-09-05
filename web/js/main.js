@@ -6,7 +6,7 @@ window.addEventListener('error', e => {
 /* Bumped by hand whenever something ships. It is printed in the corner of the
    lobby next to the ⟳ button, so an iPhone that kept an old copy of the game
    in its home-screen cache can be told apart from one that did not. */
-const BUILD = '2026-08-30';
+const BUILD = '2026-09-05';
 
 Save.load();
 Sfx.on = !!Save.data.sound;

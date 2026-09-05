@@ -831,7 +831,7 @@ const SKINS = [
      everything on this shelf moves a little.
   ============================================================ */
 
-  { id: 'ballerina', name: 'Baletė', level: 2, cost: { t: 20 }, note: 'Kiekvienas šuolis — piruetas',
+  { id: 'ballerina', name: 'Baletė', level: 2, cost: { t: 50 }, note: 'Kiekvienas šuolis — piruetas',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -869,7 +869,7 @@ const SKINS = [
       shoes(ctx, rig, '#ff9fc4', '#e8639a');
     } },
 
-  { id: 'pirate', name: 'Piratė', level: 2, cost: { t: 32 }, note: 'Lobis — po kilimu',
+  { id: 'pirate', name: 'Piratė', level: 2, cost: { t: 90 }, note: 'Lobis — po kilimu',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -916,7 +916,7 @@ const SKINS = [
       shoes(ctx, rig, '#3a2a20', '#e8c15e');
     } },
 
-  { id: 'fairy', name: 'Fėja', level: 2, cost: { t: 46 }, note: 'Sparnai iš vaikiškos svajonės',
+  { id: 'fairy', name: 'Fėja', level: 2, cost: { t: 140 }, note: 'Sparnai iš vaikiškos svajonės',
     draw(ctx, rig, t) {
       /* wings first — they belong behind her */
       atBody(ctx, rig, c => {
@@ -968,7 +968,7 @@ const SKINS = [
       shoes(ctx, rig, '#7fd6a8', '#eafff2');
     } },
 
-  { id: 'popstar', name: 'Roko žvaigždė', level: 2, cost: { t: 62 }, note: 'Lojimas per garsiakalbį',
+  { id: 'popstar', name: 'Roko žvaigždė', level: 2, cost: { t: 200 }, note: 'Lojimas per garsiakalbį',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1011,7 +1011,7 @@ const SKINS = [
       shoes(ctx, rig, '#2a2733', '#ff4f9a', '#ff4f9a');
     } },
 
-  { id: 'snow', name: 'Snieguolė', level: 2, cost: { t: 85 }, note: 'Šerkšnas ant ūsų',
+  { id: 'snow', name: 'Snieguolė', level: 2, cost: { t: 260 }, note: 'Šerkšnas ant ūsų',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1054,7 +1054,7 @@ const SKINS = [
      proportions, so no two are earned the same way.
   ============================================================ */
 
-  { id: 'golden', name: 'Auksinė princesė', level: 3, cost: { b: 30, t: 12 }, note: 'Aukso siūlai, tikri',
+  { id: 'golden', name: 'Auksinė princesė', level: 3, cost: { b: 65, t: 25 }, note: 'Aukso siūlai, tikri',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1087,7 +1087,7 @@ const SKINS = [
       shoes(ctx, rig, '#f2c34a', '#fff2c0', '#ffd870');
     } },
 
-  { id: 'mermaid', name: 'Undinė', level: 3, cost: { b: 15, t: 40 }, note: 'Uodega vietoj sijono',
+  { id: 'mermaid', name: 'Undinė', level: 3, cost: { b: 35, t: 90 }, note: 'Uodega vietoj sijono',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1148,7 +1148,7 @@ const SKINS = [
       shoes(ctx, rig, '#3fa8d8', '#7fe8d8', '#7fe8d8');
     } },
 
-  { id: 'phoenix', name: 'Ugnies paukštė', level: 3, cost: { b: 55, t: 24 }, note: 'Plunksnos, kurios dega',
+  { id: 'phoenix', name: 'Ugnies paukštė', level: 3, cost: { b: 140, t: 65 }, note: 'Plunksnos, kurios dega',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1197,7 +1197,7 @@ const SKINS = [
       shoes(ctx, rig, '#d8331e', '#ffd34a', '#ff8f2e');
     } },
 
-  { id: 'sorceress', name: 'Žvaigždžių burtininkė', level: 3, cost: { b: 34, t: 66 }, note: 'Naktis, susiūta į apsiaustą',
+  { id: 'sorceress', name: 'Žvaigždžių burtininkė', level: 3, cost: { b: 90, t: 165 }, note: 'Naktis, susiūta į apsiaustą',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1245,7 +1245,7 @@ const SKINS = [
       shoes(ctx, rig, '#2b2166', '#bfa8ff', '#8f7fe8');
     } },
 
-  { id: 'crystal', name: 'Krištolo šokėja', level: 3, cost: { b: 80, t: 80 }, note: 'Suknelė, iškalta iš šviesos',
+  { id: 'crystal', name: 'Krištolo šokėja', level: 3, cost: { b: 285, t: 265 }, note: 'Suknelė, iškalta iš šviesos',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
