@@ -59,7 +59,7 @@ const SONGS = {
     drums: 'k h h s k h h s | k h s h k s s h'
   },
 
-  /* 4 — Bosas: Didysis Siurblys. A minor, fast, and it does not let up. */
+  /* 4 — Didysis pabėgimas. A minor, fast, and it does not let up. */
   4: {
     bpm: 152,
     lead: 'a4 -  c5 .  a4 .  e5 . | f5 -  e5 .  c5 -  .  . | ' +

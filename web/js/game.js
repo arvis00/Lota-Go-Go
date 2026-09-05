@@ -80,14 +80,19 @@ const Game = {
     const jump = () => this.onJump();
     const duckOn = () => this.onDuck(true);
     const duckOff = () => this.onDuck(false);
+    const boost = () => this.onBoost();
 
     window.addEventListener('keydown', e => {
       if (e.repeat) return;
       const k = e.code;
       if (k === 'ArrowUp' || k === 'KeyW' || k === 'Space') { e.preventDefault(); jump(); }
       else if (k === 'ArrowDown' || k === 'KeyS') { e.preventDefault(); duckOn(); }
+      else if (k === 'KeyX' || k === 'KeyE' || k === 'ShiftLeft' || k === 'ShiftRight') {
+        e.preventDefault(); boost();
+      }
       else if (k === 'Escape' || k === 'KeyP') {
-        if (this.state === 'run') UI.pause();
+        if (this.state === 'cut') this.skipCut();
+        else if (this.state === 'run') UI.pause();
         else if (this.state === 'pause') UI.resume();
         else if (this.state === 'preview') UI.backFromPreview();
         else if (this.state === 'mode') UI.showLobby();
@@ -148,6 +153,7 @@ const Game = {
     };
     hold(document.getElementById('btnUp'), jump);
     hold(document.getElementById('btnDown'), () => duckOn(), () => duckOff());
+    hold(document.getElementById('btnBoost'), boost);
 
     /* the lobby is a strip of level pages — drag it sideways to see the rest */
     let lx = 0, ly = 0, lActive = false, lFired = false;
@@ -188,6 +194,12 @@ const Game = {
     if (this.state !== 'run') return;
     this.input.jumpBuf = 0.14;
   },
+  /** the third control, and only the boss level has one: spend a charge */
+  onBoost() {
+    Sfx.init(); Sfx.resume();
+    if (this.state !== 'run') return;
+    Boss.fire(this);
+  },
   onDuck(on) {
     if (this.state !== 'run') return;
     this.input.duckHeld = on;
@@ -224,6 +236,16 @@ const Game = {
     UI.lobbyFade(true);
   },
 
+  /** The boss level opens on a film. It is not playable and it is not long,
+      and there is a Skip on the screen the whole time it is running. */
+  showCut(level, mode) {
+    this.state = 'cut'; this.stateT = 0;
+    Boss.startCut(level, mode);
+    Music.play(level);
+    UI.showCut();
+  },
+  skipCut() { if (this.state === 'cut') Boss.endCut(this); },
+
   /** the picture standing in for a level that has no arena yet */
   showPreview(level) {
     this.previewLevel = level;
@@ -238,6 +260,10 @@ const Game = {
     if (!cp || !this.world || this.world.level !== level) this.world = this.worldFor(level);
     useSpeed(this.world.phys);
     const ZL = this.world.zoneList;
+    /* whatever the last burst of energy went through is standing again, and
+       every symbol she ran past is waiting to be run past again */
+    this.world.hazards.forEach(h => { if (h.smashed) h.smashed = 0; });
+    this.world.bones.forEach(b => { if (b.missed) b.missed = 0; });
     if (cp) {
       /* keep the treats picked up before the checkpoint, hand back the rest */
       const kept = new Set(cp.bones);
@@ -262,8 +288,9 @@ const Game = {
       this.run = { level: level, bones: 0, gotB: 0, gotT: 0, zoneIdx: -1, dist: 0, time: 0,
                    shortcuts: 0, finished: false, warpTo: null, deaths: 0, banked: false,
                    metroKey: false, mode: mode || Levels.mode(level) || 'cp' };
-      this.checkpoint = { x: 60, zoneIdx: 0, count: 0, b: 0, t: 0, bones: [], items: [],
-                          name: ZL[0].name, start: true };
+      const s0 = this.world.stops[0];
+      this.checkpoint = { k: 0, x: s0.x, y: s0.y, zoneIdx: 0, count: 0, b: 0, t: 0,
+                          bones: [], items: [], name: ZL[0].name, start: true };
     }
     this.run.diving = null;
     this.run.fly = 0; this.run.glide = 0;
@@ -285,34 +312,39 @@ const Game = {
     this.state = 'run'; this.stateT = 0;
     Music.play(level);
     UI.showHud();
+    /* the boss level's energy, and whoever is coming up the road behind her */
+    Boss.reset(this.world);
     UI.setBones(this.run.bones);
     UI.setKey(this.run.metroKey);
     UI.toast(cp && !cp.start ? cp.name : 'Pirmyn, Lota!', cp && !cp.start ? 'nuo kontrolinio taško' : '');
     if (!cp) { UI.tut(true); setTimeout(() => UI.tut(false), 4200); }
   },
 
-  setCheckpoint(idx) {
+  /** `k` indexes W.stops: the mouth of every place, plus the extra ones the
+      boss level puts inside its longest arenas. */
+  setCheckpoint(k) {
     /* played without them, the only checkpoint there has ever been is the
        start line: one mistake and the whole run goes again */
-    if (idx > 0 && this.run.mode === 'raw') return;
+    if (k > 0 && this.run.mode === 'raw') return;
     /* never in mid-air on the pack: a checkpoint taken up there would put her
        back on the ground with the treats still in the sky and no way to them */
     if (this.run.fly || this.run.glide) return;
-    const z = this.world.zones[idx];
+    const st = this.world.stops[k];
+    if (!st) return;
     this.checkpoint = {
-      x: z.x0 + 24, zoneIdx: idx, name: z.zone.name, start: idx === 0,
+      k: k, x: st.x, y: st.y, zoneIdx: st.zone, name: st.name, start: k === 0,
       bones: this.world.bones.filter(b => b.got).map(b => b.i),
       count: this.run.bones, b: this.run.gotB, t: this.run.gotT,
       items: this.world.items.filter(it => it.got).map(it => it.id),
       key: !!this.run.metroKey
     };
-    if (idx === 0) return;
+    if (k === 0) return;
     Sfx.checkpoint();
     this.fx.flash = 0.5;
-    for (let k = 0; k < 22; k++) this.fx.sparks.push({
-      x: z.x0 + 24 + (Math.random() - .5) * 40, y: 60 + Math.random() * 90,
+    for (let q = 0; q < 22; q++) this.fx.sparks.push({
+      x: st.x + (Math.random() - .5) * 40, y: st.y + 60 + Math.random() * 90,
       vx: (Math.random() - .5) * 150, vy: 40 + Math.random() * 190,
-      life: .8, c: k % 2 ? '#ffd870' : '#fff6d8'
+      life: .8, c: q % 2 ? '#ffd870' : '#fff6d8'
     });
   },
 
@@ -324,6 +356,7 @@ const Game = {
     this.lota.dead = true; this.lota.state = 'sit'; this.lota.sitT = 0;
     this.fx.shake = 0.5;
     this.crashReason = reason;
+    if (reason === 'caught') { this.fx.shake = 0.8; this.fx.flash = 0.5; }
     if (reason !== 'fall') { this.lota.y = this.lota.landY != null ? this.lota.landY : this.lota.y; }
   },
 
@@ -357,6 +390,7 @@ const Game = {
     }
 
     if (this.state === 'run') this.step(dt);
+    else if (this.state === 'cut') Boss.stepCut(dt, this);
     else if (this.state === 'crash') {
       this.stepDeath(dt);
       if (this.stateT > 1.0) { this.state = 'over'; UI.showOver(); }
@@ -438,8 +472,11 @@ const Game = {
     I.jumpBuf = Math.max(0, I.jumpBuf - dt);
     if (I.duckTimer > 0) I.duckTimer -= dt;
 
+    /* a burst of energy is the one thing that changes how fast she runs */
+    const burst = Boss.speed();
+    const smashing = Boss.on && Boss.boost > 0;
     for (let s = 0; s < SUB && this.state === 'run'; s++) {
-      const v = speedAt(L.x);
+      const v = speedAt(L.x) * burst;
       const near = queryCells(W, L.x - 260, L.x + 420);
 
       /* --- ducking: only ever because the player asked for it --- */
@@ -490,7 +527,7 @@ const Game = {
       near.platforms.forEach(p => { if (p.layer === LY) consider({ x: p.x, w: p.w, top: p.y }); });
       /* a bird has no top to it: she can never land on a gull, only duck it or
          clear it */
-      near.hazards.forEach(hz => { if (hz.layer === LY && hz.kind !== 'bird') consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
+      near.hazards.forEach(hz => { if (hz.layer === LY && !hz.smashed && hz.kind !== 'bird') consider({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
       if (bestTop !== null) {
         if (!L.grounded && L.vy < -180) { Sfx.land(); this.puff(L.x - 6, bestTop, 4); }
         L.y = bestTop; L.vy = 0; L.grounded = true; L.landY = bestTop;
@@ -503,7 +540,7 @@ const Game = {
         };
         near.ground.forEach(gd => { if (solidG(gd)) chk({ x: gd.x, w: gd.w, top: gd.y }); });
         near.platforms.forEach(p => { if (p.layer === LY) chk({ x: p.x, w: p.w, top: p.y }); });
-        near.hazards.forEach(hz => { if (hz.layer === LY && hz.kind !== 'bird') chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
+        near.hazards.forEach(hz => { if (hz.layer === LY && !hz.smashed && hz.kind !== 'bird') chk({ x: hz.x, w: hz.w, top: hz.y + hz.h }); });
         if (!sup) { L.grounded = false; I.coyote = 0.10; L.vy = 0; }
       }
 
@@ -539,10 +576,10 @@ const Game = {
          after a step down, and the side of a ground obstacle. Clipping the very
          top edge scrambles her up instead of killing her. --- */
       const b2 = this.box(L);
-      let wallTop = null, wallGrab = 0;
-      const face = (top, grab) => {
+      let wallTop = null, wallGrab = 0, wallHz = null;
+      const face = (top, grab, hzo) => {
         if (L.y >= top - 2.5) return;                 // she is already on top of it
-        if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; }
+        if (wallTop === null || top > wallTop) { wallTop = top; wallGrab = grab; wallHz = hzo || null; }
       };
       near.platforms.forEach(p => {
         if (p.layer !== LY || p.oneWay || p.stair) return;
@@ -558,14 +595,14 @@ const Game = {
         face(gd.y, GRAB);
       });
       near.hazards.forEach(hz => {
-        if (hz.layer !== LY || hz.kind === 'bird') return;
+        if (hz.layer !== LY || hz.smashed || hz.kind === 'bird') return;
         if (b2.x1 - 6 <= hz.x || b2.x0 + 6 >= hz.x + hz.w) return;
         const top = hz.y + hz.h;
-        if (hz.kind !== 'over') { face(top, GRAB); return; }
+        if (hz.kind !== 'over') { face(top, GRAB, hz); return; }
         /* a hanging thing has no face down at floor level — she runs under it.
            Only a jump that gets her near its top edge counts, and that puts her
            up on top of it rather than killing her. */
-        if (L.y > hz.y && top - L.y <= GRAB_OVER) face(top, GRAB_OVER);
+        if (L.y > hz.y && top - L.y <= GRAB_OVER) face(top, GRAB_OVER, hz);
       });
       if (wallTop !== null) {
         /* On her feet and running straight into it — that is a crash, whatever
@@ -573,7 +610,10 @@ const Game = {
            instead: a jump is never what kills her. Still falling counts only
            within reach. */
         const canGrab = !L.grounded && (L.vy > 0 || wallTop - L.y <= wallGrab) && L.vy > -760;
-        if (canGrab) {
+        /* mid-burst nothing stops her: a thing she throws herself at comes
+           apart, and a wall she cannot break she simply goes up */
+        if (smashing && wallHz) Boss.smash(this, wallHz);
+        else if (canGrab || smashing) {
           L.y = wallTop; L.vy = 0; L.grounded = true; L.landY = wallTop;
           this.puff(L.x - 8, wallTop, 3);
         } else { this.crash('wall'); return; }
@@ -585,12 +625,15 @@ const Game = {
       const b3 = this.box(L);
       let hit = null;
       near.hazards.forEach(hz => {
-        if (hit || (hz.kind !== 'over' && hz.kind !== 'bird') || hz.layer !== LY) return;
+        if (hit || hz.smashed || (hz.kind !== 'over' && hz.kind !== 'bird') || hz.layer !== LY) return;
         if (b3.x1 - 7 <= hz.x || b3.x0 + 7 >= hz.x + hz.w) return;
         if (b3.y1 - 5 <= hz.y || b3.y0 + 4 >= hz.y + hz.h) return;
         hit = hz;
       });
-      if (hit) { this.crash('hit'); return; }
+      if (hit) {
+        if (smashing) Boss.smash(this, hit);
+        else { this.crash('hit'); return; }
+      }
 
       /* --- shortcuts --- */
       near.warps.forEach(wp => {
@@ -613,7 +656,10 @@ const Game = {
       near.bones.forEach(bn => {
         if (bn.got || bn.layer !== LY) return;
         const cx = L.x, cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
-        if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) this.claim(bn);
+        if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) { this.claim(bn); return; }
+        /* on the boss level walking past energy is itself a mistake: it is
+           what lets whoever is behind her make up the ground */
+        if (!bn.missed && bn.cur === 'e' && bn.x < L.x - 90) { bn.missed = 1; Boss.missed(); }
       });
 
       /* --- the metro key, lying in the duct over the girl's room --- */
@@ -645,6 +691,7 @@ const Game = {
         sp.used = true; this.fx.spin = 1;
         Sfx.swipe();
         this.puff(L.x - 14, L.y, 7);
+        if (sp.slip) { Boss.slipped(); UI.toast('Pasimetė!', 'apsisuko jai prieš nosį'); }
       }
 
       /* --- off the end of the pier ---
@@ -700,9 +747,12 @@ const Game = {
     }
 
     /* animation state */
-    L.runPhase += dt * (12 + speedAt(L.x) * 0.019);
+    L.runPhase += dt * (12 + speedAt(L.x) * 0.019 * burst);
     L.state = !L.grounded ? (L.vy > 0 ? 'jump' : 'fall') : (L.duck ? 'duck' : 'run');
     this.stepFoxes(dt);
+    /* whoever is behind her gains or loses ground — and may catch her */
+    Boss.step(dt, this);
+    if (this.state !== 'run') return;
 
     this.updateCam(dt);
     this.updateZone();
@@ -719,7 +769,9 @@ const Game = {
   claim(bn) {
     this.world.bones.forEach(o => { if (o.i === bn.i) o.got = true; });
     this.run.bones++;
-    if (bn.cur === 't') this.run.gotT++; else this.run.gotB++;
+    /* the boss level collects energy, which buys speed rather than outfits */
+    if (bn.cur === 'e') Boss.collect();
+    else if (bn.cur === 't') this.run.gotT++; else this.run.gotB++;
     Sfx.bone();
     for (let k = 0; k < 10; k++) this.fx.sparks.push({
       x: bn.x, y: bn.y, vx: (Math.random() - .5) * 160, vy: 60 + Math.random() * 160,
@@ -881,6 +933,16 @@ const Game = {
        sky included, and it updates the moment she goes down a hole */
     const nm = this.placeName();
     if (nm !== this.shownPlace) { this.shownPlace = nm; UI.setZone(nm); }
+    /* the furthest stop she has run past. On every level but the boss that is
+       simply the mouth of the place she is in; the boss puts a few more inside
+       its long arenas, so an arena is never a minute of running to lose. */
+    const st = this.world.stops;
+    let k = 0;
+    for (let i = 0; i < st.length; i++) if (this.lota.x >= st[i].x) k = i;
+    const fresh = k > (this.checkpoint.k || 0) && this.run.mode !== 'raw'
+                  && !this.run.fly && !this.run.glide;
+    if (fresh) this.setCheckpoint(k);
+
     if (idx !== this.run.zoneIdx) {
       const resumed = this.run.zoneIdx < 0;
       const z = zs[idx].zone;
@@ -890,14 +952,12 @@ const Game = {
       const sub = z.sub || '';
       /* the rocket does not simply appear in space: it goes */
       if (z.launch && !resumed) { this.fx.shake = 0.9; this.fx.flash = 0.3; }
-      /* only a place she has never reached before plants a new checkpoint */
-      if (idx > this.checkpoint.zoneIdx && this.run.mode !== 'raw'
-          && !this.run.fly && !this.run.glide) {
-        this.setCheckpoint(idx);
-        if (idx > 0) UI.toast(z.name, sub ? '✓ ' + sub : '✓ KONTROLINIS TAŠKAS');
-      } else if (!resumed && idx > 0) {
-        Sfx.zone(); UI.toast(z.name, sub);
+      if (idx > 0) {
+        if (fresh) UI.toast(z.name, sub ? '✓ ' + sub : '✓ KONTROLINIS TAŠKAS');
+        else if (!resumed) { Sfx.zone(); UI.toast(z.name, sub); }
       }
+    } else if (fresh && st[k].mid) {
+      UI.toast('✓ Kontrolinis taškas', st[k].name);
     }
   },
 
@@ -991,6 +1051,7 @@ const Game = {
 
     if (this.state === 'lobby' || this.state === 'mode') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
+    else if (this.state === 'cut') Boss.drawCut(this);
     else this.renderWorld();
     ctx.restore();
     if (spin > 0) this.drawTurnBlur(Math.sin((1 - spin) * Math.PI));
@@ -1154,18 +1215,35 @@ const Game = {
     ctx.restore();
 
     /* ---- checkpoint flags at the mouth of every place ---- */
-    if (LY === 'main' && this.run && this.run.mode !== 'raw') W.zones.forEach(zz => {
-      const fx = this.sx(zz.x0 + 24);
-      if (fx < -70 || fx > VW + 70 || zz.zone.index === 0) return;
-      this.drawFlag(fx, this.sy(0), this.checkpoint && this.checkpoint.zoneIdx >= zz.zone.index);
+    if (LY === 'main' && this.run && this.run.mode !== 'raw') W.stops.forEach((st, i) => {
+      if (i === 0) return;
+      const fx = this.sx(st.x);
+      if (fx < -70 || fx > VW + 70) return;
+      this.drawFlag(fx, this.sy(st.y || 0), !!(this.checkpoint && this.checkpoint.k >= i));
     });
 
     /* ---- obstacles. No rim any more: an object stops her because it is an
        object, and it reads as one — the shadow under it is the only cue. ---- */
     near.hazards.forEach(hz => {
-      if (!mine(hz)) return;
+      if (!mine(hz) || hz.smashed) return;
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
       const floorY = this.sy(hz.base || 0);
+      /* the things the vet throws come in over the top of the screen and land
+         in their slot a moment before she gets there — the box never moved */
+      let air = 0;
+      if (hz.thrown && L) {
+        air = Boss.flight(this, hz);
+        Boss.drawThrown(this, hz, air);
+        if (air > 0) {
+          ctx.save();
+          ctx.translate(x0 + hz.w / 2 + air * 640, yTop + hz.h / 2 - air * 420);
+          ctx.rotate(air * 7);
+          drawProp(ctx, hz.prop, -hz.w / 2, -hz.h / 2, hz.w, hz.h, this.t, this.palOf(hz), hz.x,
+                   { role: hz.kind, floorY: hz.h });
+          ctx.restore();
+          return;
+        }
+      }
       if (hz.kind === 'bird') {
         /* a gull's shadow belongs on the ground below it, which is also the
            cue that something is coming */
@@ -1219,6 +1297,9 @@ const Game = {
       });
     }
 
+    /* ---- whoever is coming up the road behind her ---- */
+    Boss.drawChase(this);
+
     /* ---- Lota ----
        On the turn she pivots on the spot: her own squeeze runs a little ahead
        of the camera's, so she is round before the view has finished coming
@@ -1250,6 +1331,9 @@ const Game = {
         ctx.restore();
       }
     }
+
+    /* ---- the burst of energy, drawn over the whole picture ---- */
+    Boss.drawBoost(this);
 
     /* ---- sparks ---- */
     this.fx.sparks.forEach(p => {
@@ -1407,9 +1491,11 @@ const Game = {
   },
 
   /** the thing this level's track is littered with: a bone on level 1, one of
-      her squeaky balls on level 2 */
+      her squeaky balls on level 2, and on the boss level energy — which is
+      not a score at all, only speed she has not spent yet */
   drawTreat(x, y, cur) {
     const c = cur || (this.world && this.world.currency) || 'b';
+    if (c === 'e') { Levels.energyIcon(this.ctx, x, y, 1, this.t); return; }
     if (c !== 't') { this.drawBone(x, y); return; }
     const ctx = this.ctx, r = 15;
     ctx.save(); ctx.translate(x, y);

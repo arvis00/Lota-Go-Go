@@ -1446,7 +1446,7 @@ const SKINS = [
   ============================================================ */
 
   { id: 'rainbow', name: 'Vaivorykštės suknelė', level: 4, cost: null,
-    from: 'Boso prizas', note: 'Už Didįjį Siurblį',
+    from: 'Boso prizas', note: 'Už Didįjį pabėgimą',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;
@@ -1552,7 +1552,7 @@ const SKINS = [
     } },
 
   { id: 'tailcoat', name: 'Vaivorykštės frakas', level: 4, cost: null,
-    from: 'Boso prizas', note: 'Už Didįjį Siurblį',
+    from: 'Boso prizas', note: 'Už Didįjį pabėgimą',
     draw(ctx, rig, t) {
       atBody(ctx, rig, c => {
         const rx = rig.bodyRX, ry = rig.bodyRY;

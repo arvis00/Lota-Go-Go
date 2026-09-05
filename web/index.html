@@ -17,22 +17,26 @@
   <!-- ===== HUD ===== -->
   <div id="hud" class="layer hidden">
     <div class="hud-top">
-      <div class="hud-bones"><span id="hudIco" class="bone-ico"></span><span id="hudBones">0</span><span id="hudTotal" class="hud-sub">/15</span></div>
+      <div class="hud-bones" id="hudBonesBox"><span id="hudIco" class="bone-ico"></span><span id="hudBones">0</span><span id="hudTotal" class="hud-sub">/15</span></div>
       <div id="hudToysBox" class="hud-bones hidden"><span class="toy-ico"></span><span id="hudToys">0</span><span id="hudToysTotal" class="hud-sub">/0</span></div>
       <div id="hudKey" class="hud-key hidden">🔑</div>
+      <div id="hudEnergy" class="hud-energy hidden"><b>⚡</b><span id="energyPips" class="pips"></span></div>
       <div id="hudMode" class="hud-mode"></div>
       <div class="hud-zone"><div id="hudZone">Namai</div>
         <div class="hud-bar"><div id="hudBarFill"></div></div>
+        <div id="hudChaseBar" class="hud-bar chase hidden"><div id="hudChaseFill"></div></div>
       </div>
       <button id="btnPause" class="icon-btn" aria-label="Pauzė">II</button>
     </div>
     <div id="tut" class="tut">
       <div class="tut-row"><b id="tutUp">↑ / W</b><span>šokti</span></div>
       <div class="tut-row"><b id="tutDown">↓ / S</b><span>pasilenkti</span></div>
+      <div class="tut-row" id="tutBoostRow" hidden><b id="tutBoost">X / ⇧</b><span>pagreitis ⚡</span></div>
     </div>
     <div id="touchpad" class="touchpad">
       <button id="btnUp" class="tbtn" aria-label="Šokti">▲</button>
       <button id="btnDown" class="tbtn" aria-label="Pasilenkti">▼</button>
+      <button id="btnBoost" class="tbtn boost hidden" aria-label="Pagreitis">⚡</button>
     </div>
   </div>
 
@@ -62,6 +66,11 @@
     <button id="btnPagePrev" class="page-arrow left" aria-label="Ankstesnis lygis">‹</button>
     <button id="btnPageNext" class="page-arrow right" aria-label="Kitas lygis">›</button>
     <div id="lobbyDots" class="page-dots"></div>
+  </div>
+
+  <!-- ===== THE BOSS LEVEL'S OPENING FILM ===== -->
+  <div id="screen-cut" class="layer hidden cut-layer">
+    <button id="btnSkipCut" class="skip-btn">PRALEISTI ›</button>
   </div>
 
   <!-- ===== LEVEL PICTURE (levels with no arena yet) ===== -->
@@ -155,8 +164,11 @@
 <script src="js/zones2.js"></script>
 <script src="js/props3.js"></script>
 <script src="js/zones3.js"></script>
+<script src="js/props4.js"></script>
+<script src="js/zones4.js"></script>
 <script src="js/level.js"></script>
 <script src="js/levels.js"></script>
+<script src="js/boss.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>

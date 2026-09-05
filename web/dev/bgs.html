@@ -13,9 +13,11 @@
 <script src="../js/props.js"></script>
 <script src="../js/props2.js"></script>
 <script src="../js/props3.js"></script>
+<script src="../js/props4.js"></script>
 <script src="../js/zones.js"></script>
 <script src="../js/zones2.js"></script>
 <script src="../js/zones3.js"></script>
+<script src="../js/zones4.js"></script>
 <script src="../js/level.js"></script>
 <script src="../js/levels.js"></script>
 <script>
@@ -65,4 +67,5 @@ Object.keys(BRANCHES3).forEach(b => {
   if (BRANCHES3[b].deep) draw('3 · ' + b + '/' + BRANCHES3[b].deep.id, BRANCHES3[b].deep.room);
 });
 draw('3 · virš debesų (raketinė kuprinė)', SKY_ROOM);
+ZONES4.forEach(z => draw('4 · ' + z.id + ' — ' + z.name, z));
 </script></body></html>

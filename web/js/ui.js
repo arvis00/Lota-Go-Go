@@ -40,12 +40,13 @@ const UI = {
     $('btnSkinsBack').onclick = () => { Sfx.click(); this.showLobby(); };
     $('btnRetry').onclick   = () => { Sfx.click(); Game.startRun(true); };
     $('btnLobby').onclick   = () => { Sfx.click(); this.bank(false); Game.lobby(); };
-    $('btnWinAgain').onclick = () => { Sfx.click(); Game.startRun(false, Game.run.level); };
+    $('btnWinAgain').onclick = () => { Sfx.click(); this.begin(Game.run.level); };
     $('btnWinLobby').onclick = () => { Sfx.click(); Game.lobby(); };
     $('btnPause').onclick   = () => { Sfx.click(); this.pause(); };
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
     $('btnPauseLobby').onclick = () => { Sfx.click(); this.bank(false); Game.lobby(); };
     $('btnPreviewBack').onclick = () => { Sfx.click(); this.backFromPreview(); };
+    $('btnSkipCut').onclick = () => { Sfx.click(); Game.skipCut(); };
     $('btnModeCp').onclick  = () => { Sfx.click(); this.pickMode('cp'); };
     $('btnModeRaw').onclick = () => { Sfx.click(); this.pickMode('raw'); };
     $('btnModeBack').onclick = () => { Sfx.click(); this.showLobby(); };
@@ -123,7 +124,7 @@ const UI = {
 
   hideAll() {
     ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview',
-     'screen-mode']
+     'screen-mode', 'screen-cut']
       .forEach(id => $(id).classList.add('hidden'));
   },
 
@@ -171,7 +172,15 @@ const UI = {
         '</b><span>BAKSTELĖK, KAD PAKEISTUM</span>';
     }
 
-    if (open && L.playable) {
+    if (open && L.playable && !L.picks) {
+      /* the boss level keeps no purse and no record: the only thing it can
+         say is whether she has got away yet, and what that was worth */
+      const prizes = Levels.prize(level), own = prizes.filter(sk => Save.owns(sk.id)).length;
+      $('lobbyBest').innerHTML = (Save.clears(level)
+        ? 'Pabėgo ×' + Save.clears(level)
+        : (Save.far(level) ? 'Toliausiai: ' + Save.far(level) : 'Nuo veterinaro — ir namo!'))
+        + '<br>Prizas: ' + own + ' / ' + prizes.length + ' aprangos';
+    } else if (open && L.playable) {
       const ico = L.picks.indexOf('t') >= 0 ? ' 🧸' : ' 🦴';
       const shop = Levels.shop(level);
       const own = shop.filter(s => Save.owns(s.id)).length;
@@ -215,7 +224,21 @@ const UI = {
     /* the choice is put once, the first time this level is played; after that
        PLAY starts straight away with whatever was answered */
     if (Levels.chooses(level) && !Save.mode(level)) return this.showMode(level);
-    Game.startRun(false, level);
+    this.begin(level);
+  },
+
+  /** Start a level from the top. The boss level opens on its film; every
+      other one simply starts. Coming back from a checkpoint never comes
+      through here, so a death never makes anybody watch the film again. */
+  begin(level, mode) {
+    if (Levels.get(level).film) Game.showCut(level, mode);
+    else Game.startRun(false, level, mode);
+  },
+
+  /** the film has no controls of its own beyond the way out of it */
+  showCut() {
+    this.hideAll();
+    $('screen-cut').classList.remove('hidden');
   },
 
   /* ---------------- with or without checkpoints ---------------- */
@@ -234,7 +257,7 @@ const UI = {
   pickMode(mode) {
     const level = this.modeLevel;
     Save.mode(level, mode);
-    Game.startRun(false, level, mode);
+    this.begin(level, mode);
   },
   openSkins() {
     const level = Game.lobbyLevel();
@@ -278,6 +301,11 @@ const UI = {
        there are — level 1 hides bones, level 2 hides toys */
     const W = Game.world;
     const two = W.toys > 0;
+    /* the boss level collects nothing for a purse: no counter, no bonus badge,
+       and in their place the energy in her paw and how close they are */
+    $('hudBonesBox').classList.toggle('hidden', !!W.boss);
+    $('hudMode').classList.toggle('hidden', !!W.boss);
+    if (W.boss) { this.setProgress(0); return; }
     $('hudIco').className = W.currency === 't' ? 'toy-ico' : 'bone-ico';
     $('hudTotal').textContent = '/' + (two ? W.collectibles : W.treats);
     $('hudToysBox').classList.toggle('hidden', !two);
@@ -339,13 +367,17 @@ const UI = {
 
     this.hideAll();
     $('screen-over').classList.remove('hidden');
-    $('overSub').textContent = 'Lota sustojo: ' + zoneName + ' · nubėgta ' +
-      Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
+    const caught = Game.crashReason === 'caught';
+    $('overSub').textContent = (caught ? 'Pagavo! ' : 'Lota sustojo: ') + zoneName +
+      ' · nubėgta ' + Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
     const raw = r.mode === 'raw';
     $('overStats').innerHTML =
-      (two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
-             row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
-           : row(what, r.bones + ' / ' + W.treats)) +
+      (W.boss ? row('Surinkta energijos', r.bones + ' / ' + W.treats) +
+                row(caught ? 'Kodėl' : 'Kliūtis',
+                    caught ? 'per mažai pagreičių' : 'atsitrenkė')
+       : two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
+               row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
+             : row(what, r.bones + ' / ' + W.treats)) +
       (raw ? row('Be kontrolinių taškų', 'viskas iš naujo', true)
            : row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true));
     $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
@@ -376,11 +408,25 @@ const UI = {
     const lvl = r.level || 1;
     const trip = lvl === 1 ? 'Nuo namų iki Londono per '
                : lvl === 2 ? 'Nuo viešbučio iki miško per '
-               : 'Nuo debesų iki Mėnulio per ';
+               : lvl === 3 ? 'Nuo debesų iki Mėnulio per '
+               : 'Nuo veterinaro stalo iki namų per ';
     $('winSub').textContent = trip + mins + ':' + String(secs).padStart(2, '0') +
       (r.mode === 'raw' ? ' · be kontrolinių taškų' : '') +
       (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
       (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
+    /* the boss level pays in outfits and in nothing else: crossing its finish
+       line is what hands over the two prizes, once */
+    if (W.boss) {
+      const got = Levels.award(lvl);
+      const prizes = Levels.prize(lvl);
+      $('winStats').innerHTML =
+        row('Surinkta energijos', r.bones + ' / ' + all) +
+        row('Bandymai', String((r.deaths || 0) + 1)) +
+        row(got.length ? 'Prizas — ' + got.length + ' naujos aprangos!' : 'Prizas',
+            got.length ? got.map(sk => sk.name).join(' · ')
+                       : prizes.map(sk => sk.name).join(' · '), true);
+      return;
+    }
     $('winStats').innerHTML =
       (two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
              row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
@@ -406,6 +452,35 @@ const UI = {
   /* the metro key rides in the HUD once she has it, so it is never a mystery
      why the bars in London are open */
   setKey(on) { $('hudKey').classList.toggle('hidden', !on); },
+
+  /** Turn the boss level's own dials on or off: the energy in her paw, the
+      road behind her, and the third button nobody else has. */
+  bossHud(on) {
+    $('hudEnergy').classList.toggle('hidden', !on);
+    $('hudChaseBar').classList.toggle('hidden', !on);
+    $('btnBoost').classList.toggle('hidden', !on);
+    const tb = $('tutBoostRow');
+    if (tb) tb.hidden = !on;
+  },
+  /** `n` of `max` symbols in hand, and whether that has made a whole charge */
+  setEnergy(n, max, charge, left) {
+    const box = $('hudEnergy'), pips = $('energyPips');
+    if (pips.childElementCount !== max) {
+      pips.innerHTML = '';
+      for (let i = 0; i < max; i++) pips.appendChild(document.createElement('i'));
+    }
+    const lit = charge ? max : n;
+    for (let i = 0; i < max; i++) pips.children[i].className = i < lit ? 'lit' : '';
+    box.classList.toggle('full', !!charge);
+    $('btnBoost').classList.toggle('ready', !!charge);
+  },
+  /** how much road is left between her and them — 1 is safe, 0 is caught */
+  setChase(gap, boosting) {
+    const f = $('hudChaseFill');
+    f.style.width = (clamp(gap, 0, 1) * 100).toFixed(1) + '%';
+    f.classList.toggle('near', gap < 0.3 && !boosting);
+    f.classList.toggle('boost', !!boosting);
+  },
   setZone(name) { $('hudZone').textContent = name; },
   setProgress(p) { $('hudBarFill').style.width = (p * 100).toFixed(1) + '%'; },
   tut(on) { $('tut').classList.toggle('show', !!on); },

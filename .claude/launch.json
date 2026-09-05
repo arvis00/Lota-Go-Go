@@ -5,10 +5,10 @@
       "name": "lota-go",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
-        ".claude/serve.py",
-        "8131"
+        ".claude/serve.py"
       ],
-      "port": 8131
+      "port": 8131,
+      "autoPort": true
     }
   ]
 }

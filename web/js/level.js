@@ -110,7 +110,7 @@ function assertPropRoles(track) {
     if (brs[b].deep) rooms.push(brs[b].deep.room);
   });
   rooms.forEach(r => {
-    ['hurdle', 'over', 'tunnel', 'ledge', 'step'].forEach(k =>
+    ['hurdle', 'over', 'tunnel', 'ledge', 'step', 'thrown'].forEach(k =>
       (r.pools[k] || []).forEach(p => { hits.add(p); all.push([r.id, p]); }));
     (r.pools.deco || []).forEach(p => all.push([r.id, p]));
   });
@@ -132,6 +132,15 @@ function buildWorld(track) {
   const ZL = track.zones, BR = track.branches || {};
   const MIN_REST = track.minRest == null ? 0.46 : track.minRest;
   const REST = track.rest || [0.95, 0.55];
+  /* Nothing can be ducked in mid-air, and a jump lasts 0.755 s whatever the
+     player does. So the room between a thing she has just jumped and a thing
+     she has to duck has to cover the rest of that arc as well as her reaction
+     — and on a track this tight it no longer does by itself. `landRest` is
+     that extra room; the three tracks built before this one leave it at zero,
+     which is exactly what they were laid out with. */
+  const LAND_REST = track.landRest || 0;
+  const JUMPED = { hurdle: 1, double: 1, step: 1, ledge: 1, shortcut: 1, thrown: 1 };
+  const DUCKED = { over: 1, tunnel: 1, bird: 1, thrown: 1 };
   const rng = makeRng(track.seed);
   const W = {
     ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [],
@@ -141,6 +150,10 @@ function buildWorld(track) {
     treats: track.treats + (track.toys || 0), collectibles: track.treats, toys: track.toys || 0,
     jet: null, jetItemX: 0, jetLandX: 0, jetLandBase: 0,
     phys: track.phys, zoneList: ZL, branches: BR,
+    /* Where a crash puts her back. One at the mouth of every place, and on
+       the boss level a few more inside the long ones — an arena that takes a
+       minute and a quarter to run is not a fair thing to lose all of. */
+    stops: [], boss: !!track.boss, energy: !!track.boss,
     finishX: 0, totalX: 0
   };
   const anchors = [];
@@ -223,6 +236,27 @@ function buildWorld(track) {
       const w = Math.round(propSize('gull')[0] * rng.range(1.0, 1.14));
       hz(z, 'gull', x, BIRD_BOTTOM, w, BIRD_H, 'bird');
       anchor(x + w / 2, BIRD_BOTTOM + BIRD_H + 34, 'bird', true);
+      x += w;
+    },
+
+    /* something the vet threw. It is an obstacle like any other — the box
+       never moves — but it is drawn arriving, and it arrives late: about half
+       a second of warning, which on this level is all anyone gets. Half of
+       them stick in the ground to be jumped, half come in at head height. */
+    thrown(z) {
+      const p = rng.pick(z.pools.thrown), s = propSize(p);
+      const high = rng.chance(0.45);
+      const w = Math.round(s[0] * rng.range(0.96, 1.1));
+      if (high) {
+        hz(z, p, x, DUCK_BOTTOM, w, 78, 'over');
+        W.hazards[W.hazards.length - 1].thrown = 1;
+        anchor(x + w / 2, 8, 'duck', true);
+      } else {
+        const h = Math.round(Math.min(s[1] * 1.05, MAX_HURDLE_H));
+        hz(z, p, x, 0, w, h);
+        W.hazards[W.hazards.length - 1].thrown = 1;
+        anchor(x + w / 2, h + 66, 'jump', false);
+      }
       x += w;
     },
 
@@ -319,6 +353,7 @@ function buildWorld(track) {
     add('step', 1.2 + d * 0.9, 'step');
     add('ledge', 1.3 + d * 0.6, 'ledge');
     add('tunnel', 0.5 + d * 0.9, 'tunnel');
+    add('thrown', 1.4 + d * 2.2, 'thrown');
     if (!bag.length) return 'hurdle';
     let name = rng.pick(bag);
     if (name === used && (name === 'tunnel' || name === 'double')) name = 'hurdle';
@@ -349,6 +384,9 @@ function buildWorld(track) {
       else if (o.shortcut && !o.shortcutDone && budget < sec * 0.62) { name = 'shortcut'; o.shortcutDone = true; }
       else name = pickPattern(pl, rng, used);
 
+      /* she may still be coming down off the last one */
+      if (LAND_REST && DUCKED[name] && JUMPED[used]) P.flat(LAND_REST);
+
       if (name === 'hurdle') P.hurdle(pl, false);
       else if (name === 'double') P.hurdle(pl, true);
       else if (name === 'over') P.over(pl);
@@ -357,6 +395,7 @@ function buildWorld(track) {
       else if (name === 'ledge') P.ledge(pl, rng.chance(0.4));
       else if (name === 'bird') P.bird(pl);
       else if (name === 'riser') P.riser(pl, o.riseH || 38);
+      else if (name === 'thrown') P.thrown(pl);
       else if (name === 'shortcut') P.shortcut(pl);
       used = name;
 
@@ -364,7 +403,8 @@ function buildWorld(track) {
          She may leave a pattern from up on top of it, so add the time it takes
          to fall back down: the reaction budget must hold on every route. */
       const exitH = { ledge: LEDGE_TOP, shortcut: LEDGE_TOP, step: MAX_STEP_H,
-                      hurdle: MAX_HURDLE_H, double: MAX_HURDLE_H, bird: PHYS.APEX }[name] || 0;
+                      hurdle: MAX_HURDLE_H, double: MAX_HURDLE_H, thrown: MAX_HURDLE_H,
+                      bird: PHYS.APEX }[name] || 0;
       const fallSec = Math.sqrt((2 * exitH) / PHYS.GRAV);
       const restSec = Math.max(MIN_REST, lerp(REST[0], REST[1], pl.diff) + rng.range(-0.06, 0.22)) + fallSec;
       P.flat(restSec);
@@ -649,10 +689,19 @@ function buildWorld(track) {
      at right now, and everything the zone lays down is stamped with it. */
   let mainBase = 0;
   openGround(0);
+  /** Somewhere a crash can put her back. Every place starts with one; a place
+      that says `stops: n` gets n more spread down it, each on floor that has
+      been deliberately left clear on both sides. */
+  function addStop(sx, z, mid) {
+    W.stops.push({ x: sx, y: curBase, zone: z.index, name: z.name,
+                   sub: mid ? null : (z.sub || ''), mid: !!mid,
+                   start: W.stops.length === 0 });
+  }
   ZL.forEach((z, zi) => {
     curZone = z;
     place('main', mainBase, null);
     const zx0 = x;
+    addStop(zi === 0 ? 60 : zx0 + 24, z, 0);
     /* calm entry so the new place reads before it is dangerous */
     P.flat(zi === 0 ? 2.6 : 1.15);
     /* ---- a flight up into a place that stands higher ----
@@ -736,7 +785,17 @@ function buildWorld(track) {
       }
     }
 
-    fill(z, budget, opts);
+    /* A place long enough to say so is broken into stretches, with a stop
+       between each pair of them. The calm on either side of the stop is what
+       makes it safe to come back to. */
+    const nStop = z.stops || 0;
+    if (nStop > 0 && budget > 6) {
+      const chunk = (budget - nStop * 2.6) / (nStop + 1);
+      for (let si = 0; si <= nStop; si++) {
+        fill(z, chunk, opts);
+        if (si < nStop) { P.flat(1.3); addStop(x, z, 1); P.flat(1.3); }
+      }
+    } else fill(z, budget, opts);
     /* a place that promised to climb, climbs — whatever the gaps did */
     while (opts.risers && opts.risersDone < opts.risers) {
       P.flat(0.5); P.riser(z, opts.riseH); opts.risersDone++; P.flat(0.5);
@@ -785,6 +844,10 @@ function buildWorld(track) {
       x = lip + dx(0.25);
       P.flat(1.5);
     }
+    /* the salon turns her on the spot several times: whoever is chasing her
+       loses her for a beat every time it happens */
+    if (z.spins) for (let si = 0; si < z.spins; si++)
+      W.spins.push({ x: zx0 + (x - zx0) * ((si + 1) / (z.spins + 1)), slip: 1 });
     if (br && !br.drop) rec.x1 = x;
     z.span = { x0: zx0, x1: x };
     z.baseY = mainBase;
@@ -869,8 +932,13 @@ function buildWorld(track) {
       takeBone(a);
     }
   });
-  /* keep them apart, and exactly as many as the level promises */
-  const SPACE = Math.min(2200, (W.totalX * 0.9) / TREATS);
+  /* Keep them apart, and exactly as many as the level promises. The floor on
+     the spacing is a fraction of what an even share would be, never the whole
+     of it: pushed onto an exact grid, a treat stops sitting where its jump or
+     its shelf put it and starts hanging over nothing. The three tracks built
+     before the boss are nowhere near this bound — the boss, which lays down
+     seventy of them, is nothing but. */
+  const SPACE = Math.min(2200, (W.totalX * 0.55) / TREATS);
   W.bones.sort((a, b) => a.x - b.x);
   for (let i = 1; i < W.bones.length; i++)
     if (!W.bones[i].fixed && W.bones[i].x - W.bones[i - 1].x < SPACE) W.bones[i].x = W.bones[i - 1].x + SPACE;

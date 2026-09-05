@@ -1,10 +1,10 @@
 # Lota Go 🐾
 
-2D endless-runner stiliaus žaidimas su juoda šnaucere Lota. Trys lygiai jau turi tikras
+2D endless-runner stiliaus žaidimas su juoda šnaucere Lota. Visi keturi lygiai turi tikras
 trasas — **1: nuo namų iki Londono**, **2: nuo viešbučio iki miško**, **3: nuo debesų iki
-žvaigždžių** — o už jų dar boso lygis, kurio kol kas parodoma tik nuotrauka ir aprangos
-(žr. „Keturi lygiai"). Grynas HTML5 + Canvas, be jokių bibliotekų ir be paveikslėlių:
-visa grafika piešiama kodu (vektoriai).
+žvaigždžių** ir **4: Didysis pabėgimas** — boso lygis nuo veterinaro stalo iki pat namų,
+ilgiausias, greičiausias ir sunkiausias iš visų. Grynas HTML5 + Canvas, be jokių
+bibliotekų ir be paveikslėlių: visa grafika piešiama kodu (vektoriai).
 
 ## Paleidimas
 
@@ -36,7 +36,9 @@ neparodys, kad atnaujinimas suveikė.
 |---|---|---|
 | Šokti | mygtukas **▲** arba swipe aukštyn (arba bakstelėti) | `↑` / `W` / `Space` |
 | Pasilenkti | mygtukas **▼** arba swipe žemyn (laikyti) | `↓` / `S` |
+| Pagreitis ⚡ (tik boso lygyje) | mygtukas **⚡** | `X` / `E` / `⇧ Shift` |
 | Pauzė | mygtukas viršuje | `Esc` / `P` |
+| Praleisti filmuką (boso lygyje) | mygtukas **PRALEISTI** | `Esc` |
 | Kitas / ankstesnis lygis (pradžios ekrane) | swipe į kairę / dešinę arba **‹ ›** | `←` / `→` |
 
 Lota bėga pati — kryptis nevaldoma.
@@ -66,7 +68,7 @@ ant kilimo guli tik jos antkaklis.
 | 1 | Kelias į Londoną | skaniukai 🦴 (15) | +10 / +50 | atviras nuo pradžios |
 | 2 | Nuo viešbučio iki miško | žaisliukai 🧸 (20) | +30 / +100 | pereiti 1 lygį **be kontrolinių taškų** ir atrakinti visas 1 lygio aprangas |
 | 3 | Nuo debesų iki žvaigždžių | skaniukai 🦴 (18) **ir** žaisliukai 🧸 (12) | +35 / +120 | pereiti 2 lygį **be kontrolinių taškų** ir atrakinti visas 2 lygio aprangas |
-| 4 | Bosas: Didysis Siurblys | nieko | visada su K.T. | pereiti 3 lygį **be kontrolinių taškų** ir atrakinti visas 3 lygio aprangas |
+| 4 | Didysis pabėgimas (bosas) | energija ⚡ (84) — ne į piniginę, o į pagreitį | visada su K.T.; prizas — dvi aprangos | pereiti 3 lygį **be kontrolinių taškų** ir atrakinti visas 3 lygio aprangas |
 
 **Raktą duoda tik bėgimas be kontrolinių taškų.** Finišas su vėliavėlėmis moka skaniukais
 ir tiek — kitas lygis neatsirakina, kad ir kiek kartų taip pereitum. Reikia bent vieno
@@ -436,6 +438,81 @@ gaunami 18 skaniukų ir **nulis** žaisliukų. Skaniukai savo ruožtu padėti su
 ankstesniuose lygiuose: pirmenybė teikiama vietoms, kurias pasiekia tik šuolis ant lentynos,
 ant kliūties viršaus arba pro tunelį.
 
+### 4 lygis — Didysis pabėgimas (bosas)
+
+Seed `20260906`, **penkios arenos** — ne daugiau ir ne mažiau, ir jos pasakoja vieną
+istoriją:
+
+`Veterinarijos kabinetas → Klinikos koridorius → Miesto gatvė → Šunų kirpykla →
+Paskutinis pabėgimas`
+
+Tai **ilgiausias, greičiausias ir sunkiausias** žaidimo lygis. Vienas bėgimas trunka
+**~4 min** — 245 s bėgant, kiek trumpiau naudojant pagreitį (trečias lygis — ~3 min 37 s);
+trasa yra 206 500 px ilgio (trečio lygio — 176 000), greitis auga
+nuo **520 iki 1180 px/s** (trečias lygis prasideda 460 ir baigiasi 1010), o siauriausioje
+vietoje kliūčiai perskaityti lieka **0,33 s** vietoj 0,36. Tempas auga visą laiką: greičio
+rampa (`X_FULL` = 200 000) baigiasi tik ties pačiu finišu, tad kuo toliau, tuo sunkiau.
+
+**Lygis prasideda filmuku.** Lota sėdi ant veterinarės stalo, tai kerpa nagus — *cvakšt*,
+*cvakšt* — ir Lota staiga nušoka ant grindų. Veterinarė sušunka **„Why you?!"**, Lota
+atsisuka ir atsako **„What did I do?"**. Filmukas trunka ~10 s, valdyti jame nieko negalima,
+o viršuje dešinėje visą laiką kabo **PRALEISTI**. Filmukas rodomas kaskart pradedant lygį iš
+naujo nuo pradžios; grįžus nuo kontrolinio taško jo nebūna.
+
+| Arena | Kiek trunka | Kas joje |
+|---|---|---|
+| 1 · Veterinarijos kabinetas | ~14 s | kėdutės, svarstyklės, narveliai, operacinė lempa — tik tam, kad ji spėtų įsibėgėti |
+| 2 · Klinikos koridorius | ~32 s | narvų siena su akimis tamsoje, dėžės, kibirai, deguonies balionai. Trumpa: čia mokomasi |
+| 3 · Miesto gatvė | ~89 s | **ilgiausia ir sunkiausia** dalis. Vitrinos, markizės, pastoliai, šiukšliadėžės — ir iš už ekrano lekiantys daiktai |
+| 4 · Šunų kirpykla | ~48 s | vonelės, džiovintuvai, veidrodžiai, muilo burbulai. Tris kartus Lota apsisuka ant vietos |
+| 5 · Paskutinis pabėgimas | ~60 s | prieblandos skersgatviai, gaisrinės kopėčios, padėklai, padangos — ir abu persekiotojai |
+
+**Kliūtys atlekia iš už ekrano.** Gatvėje ir kirpykloje veterinarė ir kirpėja mėto viską,
+kas po ranka: adatas, nagų žirkles, žirkles, termometrą, tablečių stiklainį, šukas,
+kirpimo mašinėlę, purškiklį. Kiekvienas toks daiktas yra visiškai paprasta kliūtis —
+**jo dėžutė nuo pat pradžių stovi vietoje ir niekur nejuda**, todėl niekas neatsiranda
+netikėtai po nosimi. Kinta tik tai, **kur jis piešiamas**: virš kliūties vietos sumirksi
+raudonas **!**, o pats daiktas atlekia iš viršaus dešinėje ir nukrenta į savo vietą maždaug
+**pusę sekundės** prieš Lotai iki jos atbėgant. Pusė sekundės — tiek ir teduodama.
+
+**Kirpykloje Lota apsisuka.** Trijose vietose kamera staigiai nusisuka kartu su ja
+(tas pats efektas, kaip pirmame lygyje ant molo), kirpėja akimirkai ją pameta ir atsilieka.
+
+#### Energija ir pagreitis
+
+Boso lygyje **nieko nerenkama į piniginę** — nei kaulų, nei žaisliukų. Ant trasos guli tik
+**energijos ženklai ⚡** (84 visame lygyje), ir jie ne skaičiuojami, o naudojami:
+
+- **penki ⚡ = vienas pilnas užtaisas.** HUD'e viršuje kairėje matosi penki taškeliai;
+  užsipildę jie ima pulsuoti, o mygtukas **⚡** įsijungia;
+- **užtaisą reikia panaudoti.** Paspaudus (`X` / `E` / `⇧`, arba mygtuką **⚡**) Lota
+  **prasiveržia**: 2,6 s bėga pusantro karto greičiau, persekiotojai atmetami į patį galą,
+  o viskas, kas pasitaiko kelyje, **išlekia į šalis** — pro pagreitį prasiveržiama, o ne
+  atsitrenkiama;
+- **nepanaudotas užtaisas prapuola.** Pralaikius jį 6,5 s jis subyra, persekiotojai
+  gerokai priartėja, ir apie tai pasakoma. **Trys prapuolę užtaisai iš eilės — ir jie
+  ją pagauna**, kad ir kokia būtų buvusi persvara;
+- **pro šalį paleistas ⚡ irgi kainuoja.** Kiekvienas nepakeltas ženklas šiek tiek priartina
+  persekiotojus, kiekvienas pakeltas — atitolina. Todėl bėgti reikia ne tik apeinant
+  kliūtis, bet ir renkant.
+
+**Persekiotojų juosta** yra po vietos pavadinimu, raudona, po greičio juosta. Ji pilna,
+kai jie toli, ir tuščia, kai pagauna. Kai lieka mažai, juosta ima mirksėti, ekrano kraštai
+paraudonuoja, o gatvės gale iš tamsos išnyra pati veterinarė. Iki tol matyti tik jos
+artėjimas: tamsa kairiajame krašte ir keliamos dulkės.
+
+Persekiotojas priklauso nuo arenos: **koridoriuje ir gatvėje** — veterinarė, **kirpykloje** —
+kirpėja, **paskutiniame pabėgime** — abi. Pirmoje arenoje dar niekas nesiveja.
+
+**Kontroliniai taškai boso lygyje.** Jie visada įjungti (pasirinkimo nėra), ir jų yra ne
+penki, o **penkiolika**: po vieną kiekvienos arenos pradžioje ir dar dešimt jų viduje —
+koridoriuje vienas, gatvėje keturi, kirpykloje du, paskutinėje arenoje trys. Aplink
+kiekvieną tokį tašką grindys specialiai paliekamos tuščios, kad grįžus būtų kur atsikvėpti.
+Pusantros minutės trukmės arena be jų būtų ne sunki, o tiesiog nesąžininga.
+
+**Už finišą nemokama nieko** — boso lygyje nėra piniginės. Perbėgus jį vieną kartą
+atiduodamos **abi vaivorykštinės aprangos**.
+
 ## Du keliai
 
 **Pirmame lygyje** trasa trijose vietose šakojasi. Du iš tų kelių — kaimynų antras aukštas ir ventiliacija virš
@@ -545,7 +622,7 @@ bėgimą — bet už finišą mokama kelis kartus daugiau:
 | 1 · Kelias į Londoną | +10 🦴 | **+50 🦴** |
 | 2 · Nuo viešbučio iki miško | +30 🧸 | **+100 🧸** |
 | 3 · Nuo debesų iki žvaigždžių | +35 🦴 ir 🧸 | **+120 🦴 ir 🧸** |
-| 4 · Bosas | visada su jais | — |
+| 4 · Didysis pabėgimas | visada su jais | — |
 
 Boso lygyje pasirinkimo nėra: jis visada žaidžiamas su kontroliniais taškais. Trečiame
 lygyje renkami abu dalykai, tad ir premija už finišą įskaitoma į abi to lygio pinigines.
@@ -610,13 +687,16 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
 | `js/props3.js` | ~90 trečio lygio piešinių: dirižablis, bokštas, sodas, šiltnamiai, karjeras, kasykla, raketa, stotis, Mėnulis + raketinė kuprinė |
+| `js/props4.js` | ~50 boso lygio piešinių: veterinarija, koridorius, gatvė, kirpykla, skersgatviai, skraidantys įrankiai + `drawVet()` ir `drawGroomer()` |
 | `js/zones.js` | 1 lygio 13 vietų + `BRANCHES` (metro, antras aukštas, ventiliacija); `BG` ir grindų piešimas |
 | `js/zones2.js` | 2 lygio 17 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
 | `js/zones3.js` | 3 lygio 14 vietų + `BRANCHES3` (trys skylės grindyse, bunkeris po viena iš jų) + `SKY_ROOM`; `BG3` ir grindys |
+| `js/zones4.js` | boso lygio **penkios arenos**; `BG4` ir jų grindys. Šakų nėra |
+| `js/boss.js` | tik boso lygis: įžanginis filmukas, energija ir pagreitis, persekiotojų atstumas, skraidančių daiktų atlėkimas |
 | `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
-| `js/ui.js` | ekranai, HUD, aprangų parduotuvė |
+| `js/ui.js` | ekranai, HUD (boso energija ir persekiotojų juosta taip pat), aprangų parduotuvė |
 | `dev/bgs.html` | visų vietų fonai vienoje lentelėje, po kelis kadrus iš eilės — kad kartojimasis matytųsi iš karto (atskiras puslapis) |
 | `dev/bot.js` | testinis botas (žaidimo neįkeliamas) |
 | `dev/headless.js` | tas pats botas be naršyklės — `node dev/headless.js <lygis>` |
@@ -711,6 +791,10 @@ window.BOT_LEVEL = 2; runBot(400);    // antras lygis
 // užrakinta. `down: false` — nesileisti nei į metro, nei į urvą.
 window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
 window.BOT_TAKE = { down: false }; runBot(400);
+
+window.BOT_LEVEL = 4; runBot(600);    // boso lygis — botas pats naudoja kiekvieną ⚡
+window.BOT_NOBOOST = 1; runBot(600);  // ir taip, kaip žaistų tas, kas ⚡ niekada nespaudžia:
+                                      // reason:"caught" jau koridoriuje
 
 inspect(15000);              // kas yra trasoje ties nurodyta pozicija
 ```

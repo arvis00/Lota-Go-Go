@@ -83,6 +83,11 @@
     if (overhead) jump = false;
     Game.input.duckHeld = duck;
     if (jump && !duck) Game.input.jumpBuf = 0.15;   // jump buffer fires it on landing
+    /* the boss level: spend a charge the moment there is one, which is what
+       the level asks of a player and the only thing that keeps them off her.
+       BOT_NOBOOST plays it the way somebody who never presses ⚡ would, which
+       is how the catching is checked. */
+    if (Boss.on && Boss.charge && !window.BOT_NOBOOST) Boss.fire(Game);
   }
 
   /* off the end of the pier the deck genuinely stops, and that is the point:
@@ -117,6 +122,7 @@
       pct: (Game.lota.x / Game.world.finishX * 100).toFixed(1) + '%',
       level: Game.run.level, treats: Game.run.bones + ' / ' + Game.world.treats,
       reason: Game.state === 'crash' || Game.state === 'over' ? (Game.crashReason || 'hit') : null,
+      chase: Boss.on ? { gap: Boss.gap.toFixed(2), wasted: Boss.wasted } : null,
       zone: Game.zoneAt(Game.lota.x).zone.name, layer: Game.lota.layer,
       routes: Object.keys(seen).map(k => k + ':' + (seen[k] / 120).toFixed(1) + 's').join(' '),
       seconds: Math.round(t)

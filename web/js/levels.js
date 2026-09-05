@@ -26,7 +26,8 @@ const UNLOCK_ALL = true;
 /* `bonus` is what reaching the finish is worth, and it is the whole reason to
    turn the checkpoints off: `cp` is what a run with them pays, `raw` is what
    the same finish pays when one mistake sends her back to the very start. The
-   boss level is not offered the choice — it is always played with them. */
+   boss level is not offered the choice — it is always played with them, and it
+   pays nothing: the only thing waiting at its finish is the two outfits. */
 const LEVELS = [
   { n: 1, name: 'Kelias į Londoną', sub: 'Didysis Lotos nuotykis',
     picks: 'b', playable: true, bonus: { cp: 10, raw: 50 },
@@ -41,9 +42,11 @@ const LEVELS = [
     collect: 'Skaniukai — 18 trasoje. Žaisliukai — 12, ir visi paslėpti žemiau: '
            + 'kamuoliuką gausi tik nusileidusi pro skylę grindyse.' },
 
-  { n: 4, name: 'Bosas: Didysis Siurblys', sub: '4 lygis · boso kova',
-    picks: '', playable: false, choose: false, bonus: { cp: 0, raw: 0 },
-    collect: 'Nieko rinkti nereikia. Nugalėk bosą — abi aprangos tavo.' }
+  { n: 4, name: 'Didysis pabėgimas', sub: '4 lygis · boso lygis',
+    picks: '', playable: true, choose: false, film: true, bonus: { cp: 0, raw: 0 },
+    collect: 'Nieko rinkti nereikia — tik energiją ⚡. Penki ženklai = vienas '
+           + 'pagreitis, o pagreitį reikia panaudoti: kas jo nenaudoja, tą pagauna. '
+           + 'Pabėk — ir abi aprangos tavo.' }
 ];
 const LEVEL_MAP = {};
 LEVELS.forEach(l => { LEVEL_MAP[l.n] = l; });
@@ -88,6 +91,22 @@ const TRACKS = {
     perZone: [1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1],            // = 18
     shortcuts: [],
     phys: { V_MIN: 460, V_MAX: 1010, X_FULL: 116000 }
+  },
+  4: {
+    /* The boss level, and it is the longest, the fastest and the hardest of
+       the four by a clear margin: it opens at 520 px/s — faster than level 3
+       has ever run by its own finish line — tops out at 1180, and at the
+       tightest leaves 0.33 s to read what is coming instead of 0.36.
+
+       `boss` is what turns the rest of it on. Nothing here is collected for a
+       purse: `treats` is the energy lying about the five arenas, and every
+       symbol of it goes into the burst of speed that keeps whoever is behind
+       her behind her. There are no second routes and nothing to find. */
+    level: 4, seed: 20260906, zones: ZONES4, branches: BRANCHES4, boss: true,
+    treats: 84, currency: 'e', minRest: 0.33, rest: [0.70, 0.35], landRest: 0.26,
+    perZone: [3, 11, 32, 17, 21],                                   // = 84
+    shortcuts: [],
+    phys: { V_MIN: 520, V_MAX: 1180, X_FULL: 200000 }
   }
 };
 
@@ -184,6 +203,23 @@ const Levels = {
     if (n === 3) return this.picFestival(ctx, W, H, t);
     if (n === 4) return this.picBoss(ctx, W, H, t);
     return this.picToys(ctx, W, H, t);
+  },
+
+  /** The energy the boss level is littered with, drawn free of the engine so
+      the track, the HUD and the picture can all use the same symbol. */
+  energyIcon(ctx, x, y, s, t) {
+    s = s || 1;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.save(); ctx.globalAlpha = .3 + Math.sin(t * 5) * .16;
+    circle(ctx, 0, 0, 23, '#8fe8ff'); ctx.restore();
+    circle(ctx, 0, 0, 15, '#2f5f8c');
+    ctx.save(); ctx.globalAlpha = .9;
+    circle(ctx, 0, 0, 12.5, '#8fe8ff'); ctx.restore();
+    poly(ctx, [[2.5, -11], [-6.5, 1.5], [-0.5, 1.5], [-3, 11], [6.5, -2], [0.5, -2]], '#fffbe8');
+    ctx.strokeStyle = 'rgba(24,40,64,.55)'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .7;
+    fillEll(ctx, -5, -6, 4, 2.4, '#ffffff', -0.6); ctx.restore();
+    ctx.restore();
   },
 
   /* ---- level 2: a sunny yard buried in dog toys ---- */
@@ -386,109 +422,55 @@ const Levels = {
   },
 
   /* ---- level 4: the boss ---- */
+  /* ---- level 4: the great escape ----
+     The arena is built, so nothing in the game reaches this any more — it is
+     what the page would show if the boss were ever put back behind a picture,
+     and it says the same thing the level does: she is out, they are behind
+     her, and the only thing on the road is energy. */
   picBoss(ctx, W, H, t) {
-    const floor = H * 0.70;
-    BG.sky(ctx, W, H, '#140b26', '#3a1240', '#5c1a30');
+    const floor = H * 0.72;
+    BG.sky(ctx, W, H, '#5f6f92', '#8fa0bc', '#c8cfd8');
+    BG.clouds(ctx, W, H, t * 7, t, 'rgba(226,232,242,.85)', H * 0.1, 1.2);
+    BG.buildings(ctx, W, H, 0, floor - 96, ['#4a5570', '#56617c', '#3f4a63'],
+      '#ffe08a', 130, 230, 175, true);
 
-    /* lightning behind the boss */
-    const bolt = ((t * 0.7) % 1);
-    if (bolt > 0.92) {
-      ctx.save(); ctx.globalAlpha = (bolt - 0.92) * 8;
-      ctx.fillStyle = '#ffd0e8'; ctx.fillRect(0, 0, W, H); ctx.restore();
-    }
-
-    /* dust cyclone it rides on */
-    ctx.save();
-    for (let i = 0; i < 7; i++) {
-      const k = i / 6;
-      ctx.globalAlpha = .16 + k * .12;
-      fillEll(ctx, W * 0.62 + Math.sin(t * 2 + i) * 10, floor - 10 - k * 130,
-        20 + k * 108, 12 + k * 22, '#6a4a7a');
-    }
+    /* the road */
+    ctx.fillStyle = '#767e8c'; ctx.fillRect(0, floor, W, H - floor);
+    fillRR(ctx, 0, floor, W, 11, 0, '#a8b0bc');
+    ctx.save(); ctx.globalAlpha = .4;
+    for (let x = -40; x < W + 40; x += 88) line(ctx, x, floor + 12, x - 30, H, '#5f6674', 2.4);
     ctx.restore();
 
-    /* THE GREAT VACUUM — body, hose, wheels, one furious eye */
-    const bx = W * 0.62, by = floor - 148 + Math.sin(t * 1.7) * 8;
-    ctx.save(); ctx.translate(bx, by);
-    ctx.save(); ctx.globalAlpha = .3;
-    fillEll(ctx, 0, 128, 120, 18, '#000'); ctx.restore();
-    /* hose, whipping */
-    ctx.beginPath();
-    ctx.moveTo(-96, 20);
-    ctx.quadraticCurveTo(-190 + Math.sin(t * 2.4) * 24, -30 + Math.sin(t * 2) * 30, -250, 70 + Math.sin(t * 2.4) * 24);
-    ctx.strokeStyle = '#3a2b4a'; ctx.lineWidth = 26; ctx.lineCap = 'round'; ctx.stroke();
-    ctx.strokeStyle = '#55405f'; ctx.lineWidth = 20; ctx.stroke();
-    ctx.save(); ctx.globalAlpha = .4; ctx.strokeStyle = '#8f6fa0'; ctx.lineWidth = 3;
-    for (let i = 1; i < 9; i++) {
-      const k = i / 9;
-      const px = -96 + (-250 + 96) * k, py = 20 + Math.sin(t * 2.4 + k * 3) * 26 + k * 40;
-      line(ctx, px, py - 12, px, py + 12, '#8f6fa0', 3);
-    }
-    ctx.restore();
-    /* the nozzle, gaping */
-    ctx.save(); ctx.translate(-256, 74); ctx.rotate(-0.5 + Math.sin(t * 2.4) * 0.16);
-    poly(ctx, [[0, -22], [0, 22], [-42, 44], [-42, -44]], '#241a30');
-    ctx.save(); ctx.globalAlpha = .5;
-    fillEll(ctx, -42, 0, 9, 44, '#ff5f8a'); ctx.restore();
-    ctx.restore();
-    /* body */
-    fillRR(ctx, -100, -60, 200, 150, 42, '#5c3f6e');
-    fillRR(ctx, -100, -60, 200, 150, 42, 'rgba(255,255,255,0)');
-    ctx.strokeStyle = '#2b1c38'; ctx.lineWidth = 5; rr(ctx, -100, -60, 200, 150, 42); ctx.stroke();
-    ctx.save(); ctx.globalAlpha = .3; fillRR(ctx, -84, -48, 60, 40, 20, '#c8a8e0'); ctx.restore();
-    fillRR(ctx, -70, 40, 140, 34, 14, '#3a2b4a');
+    /* the dark of them coming up behind her */
     ctx.save(); ctx.globalAlpha = .55;
-    for (let i = -3; i <= 3; i++) fillRR(ctx, i * 18 - 5, 46, 10, 22, 4, '#160f22');
+    const g = ctx.createLinearGradient(0, 0, W * 0.5, 0);
+    g.addColorStop(0, 'rgba(12,8,22,.95)'); g.addColorStop(1, 'rgba(12,8,22,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W * 0.5, H);
     ctx.restore();
-    /* the eye */
-    const glow = 0.6 + Math.sin(t * 4) * 0.3;
-    ctx.save(); ctx.globalAlpha = glow * .5;
-    circle(ctx, 12, -6, 62, '#ff2f5a'); ctx.restore();
-    circle(ctx, 12, -6, 34, '#f2e8f8');
-    circle(ctx, 12 + Math.sin(t * 1.3) * 7, -6, 18, '#e8203f');
-    circle(ctx, 12 + Math.sin(t * 1.3) * 7, -6, 8, '#2b0810');
-    ctx.save(); ctx.globalAlpha = .8; circle(ctx, 4, -16, 6, '#fff'); ctx.restore();
-    /* angry brow */
-    ctx.save(); ctx.lineCap = 'round';
-    line(ctx, -22, -40, 40, -22, '#2b1c38', 9); ctx.restore();
-    /* wheels */
-    circle(ctx, -58, 92, 24, '#241a30'); circle(ctx, 58, 92, 24, '#241a30');
-    circle(ctx, -58, 92, 10, '#6a4f7a'); circle(ctx, 58, 92, 10, '#6a4f7a');
-    ctx.restore();
+    drawVet(ctx, W * 0.12, floor + 16, 1.25, t, t * 12, 0.6);
+    drawGroomer(ctx, W * 0.02, floor + 12, 1.12, t, t * 12 + 1.7, 0.4);
 
-    /* arena floor */
-    ctx.fillStyle = '#2b1c38'; ctx.fillRect(0, floor, W, H - floor);
-    ctx.save(); ctx.globalAlpha = .5;
-    for (let x = -40; x < W + 40; x += 64) line(ctx, x, floor, x - 40, H, '#42304f', 2);
-    ctx.restore();
-    fillRR(ctx, 0, floor - 6, W, 10, 0, '#6a4f7a');
-
-    /* the prize, hanging in the air above her — the reason to come here */
-    const px = W * 0.17, py = H * 0.26 + Math.sin(t * 1.4) * 8;
-    ctx.save(); ctx.translate(px, py);
-    ctx.save(); ctx.globalAlpha = .3;
-    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 96);
-    g.addColorStop(0, '#fff'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g; ctx.fillRect(-96, -96, 192, 192); ctx.restore();
-    for (let i = 0; i < 7; i++) {
-      const a = t * 0.8 + i * (TAU / 7);
-      ctx.save(); ctx.globalAlpha = .8;
-      fillEll(ctx, Math.cos(a) * 44, Math.sin(a) * 30, 9, 5, 'hsla(' + ((i * 51 + t * 46) % 360) + ',92%,70%,1)', a);
+    /* everything they have thrown at her, still in the air */
+    const tools = ['needleTool', 'nailClipper', 'vetScissors', 'combTool', 'clipperTool'];
+    for (let i = 0; i < 5; i++) {
+      const r = makeRng(i * 47 + 11);
+      const ph = ((t * 0.5) + r()) % 1;
+      const s = propSize(tools[i]);
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.translate(W * (0.18 + ph * 0.72), H * (0.16 + r() * 0.2) + Math.sin(ph * Math.PI) * -60);
+      ctx.rotate(ph * 9 + i);
+      drawProp(ctx, tools[i], -s[0] / 2, -s[1] / 2, s[0], s[1], t, {}, i);
       ctx.restore();
     }
-    sparkle(ctx, 12, t, 0, 4, 58, 46, 3);
-    /* a disc of light for her to sit on, so the prize is on display */
-    ctx.save(); ctx.globalAlpha = .85;
-    fillEll(ctx, 0, 52, 52, 11, rainbowLin(ctx, -52, 52, 52, 52, t, .9));
-    ctx.globalAlpha = .35; fillEll(ctx, 0, 52, 68, 15, '#fff');
-    ctx.restore();
-    drawLota(ctx, 4, 48, { state: 'sit', t: t, skin: 'rainbow', scale: 1.02, face: 'happy',
-      shadow: false, tilt: Math.sin(t * 0.9) * 0.1 });
-    ctx.restore();
 
-    /* Lota herself, small and brave, facing it */
-    drawLota(ctx, W * 0.20, floor + 14, {
-      state: 'run', t: t, run: t * 11, skin: Save.data.skin, scale: 1.2, face: 'wow'
+    /* the energy, strung out down the road in front of her */
+    for (let i = 0; i < 5; i++)
+      this.energyIcon(ctx, W * (0.62 + i * 0.09), floor - 74 + Math.sin(t * 3 + i) * 7, 1.15, t);
+
+    /* Lota, flat out, and enjoying it more than she should */
+    drawLota(ctx, W * 0.46, floor + 14, {
+      state: 'run', t: t, run: t * 15, skin: Save.data.skin, scale: 1.35, face: 'happy'
     });
   }
 };
