@@ -368,19 +368,25 @@ const UI = {
     this.hideAll();
     $('screen-over').classList.remove('hidden');
     const caught = Game.crashReason === 'caught';
-    $('overSub').textContent = (caught ? 'Pagavo! ' : 'Lota sustojo: ') + zoneName +
-      ' · nubėgta ' + Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
+    const lost = Game.crashReason === 'fightLost';
+    $('overSub').textContent = lost
+      ? 'Bosai dar stovi — bet kova prasidės iš naujo, ne visas lygis'
+      : (caught ? 'Pagavo! ' : 'Lota sustojo: ') + zoneName +
+        ' · nubėgta ' + Math.round(clamp(Game.lota.x / W.finishX, 0, 1) * 100) + '%';
     const raw = r.mode === 'raw';
     $('overStats').innerHTML =
-      (W.boss ? row('Surinkta energijos', r.bones + ' / ' + W.treats) +
+      (lost ? row('Bosų gyvybės', Fight.hp[0] + ' + ' + Fight.hp[1] + ' liko') +
+              row('Grįžti', 'tiesiai į boso kovą', true)
+       : W.boss ? row('Surinkta energijos', r.bones + ' / ' + W.treats) +
                 row(caught ? 'Kodėl' : 'Kliūtis',
                     caught ? 'per mažai pagreičių' : 'atsitrenkė')
        : two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
                row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
              : row(what, r.bones + ' / ' + W.treats)) +
-      (raw ? row('Be kontrolinių taškų', 'viskas iš naujo', true)
+      (lost ? '' : raw ? row('Be kontrolinių taškų', 'viskas iš naujo', true)
            : row('Tęsi nuo', cp.start ? 'pradžios' : cp.name, true));
-    $('btnRetry').textContent = cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
+    $('btnRetry').textContent = lost ? 'Kautis iš naujo'
+                              : cp.start ? 'Bandyti iš naujo' : 'Tęsti nuo ' + cp.name;
     const pB = (r.gotB || 0) * dbl, pT = (r.gotT || 0) * dbl;
     $('btnLobby').textContent = pending
       ? 'Baigti · ' + (two ? '+' + pB + ' 🦴 +' + pT + ' 🧸' : '+' + pending + ' ' + ico)
@@ -404,13 +410,17 @@ const UI = {
 
     this.hideAll();
     $('screen-win').classList.remove('hidden');
+    /* the boss level does not finish, it is *won* — and it says so */
+    $('winTitle').textContent = W.boss ? 'BOSS LEVEL COMPLETE!' : 'FINIŠAS!';
+    $('winTitle').classList.toggle('boss', !!W.boss);
     const mins = Math.floor(r.time / 60), secs = Math.round(r.time % 60);
     const lvl = r.level || 1;
     const trip = lvl === 1 ? 'Nuo namų iki Londono per '
                : lvl === 2 ? 'Nuo viešbučio iki miško per '
                : lvl === 3 ? 'Nuo debesų iki Mėnulio per '
                : 'Nuo veterinaro stalo iki namų per ';
-    $('winSub').textContent = trip + mins + ':' + String(secs).padStart(2, '0') +
+    $('winSub').textContent = (W.boss ? 'Bosai nugalėti · ' : '') +
+      trip + mins + ':' + String(secs).padStart(2, '0') +
       (r.mode === 'raw' ? ' · be kontrolinių taškų' : '') +
       (r.shortcuts ? ' · trumpiniai: ' + r.shortcuts : '') +
       (r.deaths ? ' · bandymai: ' + (r.deaths + 1) : ' · be nė vienos klaidos!');
@@ -436,8 +446,20 @@ const UI = {
       row('Iš viso', this.paidHtml(r), true);
   },
 
-  pause() { if (Game.state !== 'run') return; Game.state = 'pause'; Music.pause(); $('screen-pause').classList.remove('hidden'); },
-  resume() { if (Game.state !== 'pause') return; $('screen-pause').classList.add('hidden'); Game.state = 'run'; Music.resume(); Game.last = performance.now(); },
+  /* The fight can be paused exactly like a run — it is the same button, and
+     coming back has to put her back into the fight and not onto the street. */
+  pause() {
+    if (Game.state !== 'run' && Game.state !== 'fight') return;
+    this.pausedFrom = Game.state;
+    Game.state = 'pause'; Music.pause();
+    $('screen-pause').classList.remove('hidden');
+  },
+  resume() {
+    if (Game.state !== 'pause') return;
+    $('screen-pause').classList.add('hidden');
+    Game.state = this.pausedFrom === 'fight' ? 'fight' : 'run';
+    Music.resume(); Game.last = performance.now();
+  },
 
   /** On a level that collects one thing this is one number. On level 3 it is
       two, because the balls are worth a different purse and are found in a
@@ -461,6 +483,14 @@ const UI = {
     $('btnBoost').classList.toggle('hidden', !on);
     const tb = $('tutBoostRow');
     if (tb) tb.hidden = !on;
+  },
+  /** The two buttons the arena hands over. They exist nowhere else in the
+      game, so they are not on the screen until the fight is about to start —
+      and they are shown on every device, not only on a phone: the fight is
+      the one part of this level that cannot be played with two keys. */
+  movePad(on) {
+    const pad = $('movepad');
+    if (pad) pad.classList.toggle('show', !!on);
   },
   /** `n` of `max` symbols in hand, and whether that has made a whole charge */
   setEnergy(n, max, charge, left) {

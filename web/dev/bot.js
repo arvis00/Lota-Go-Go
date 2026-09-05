@@ -108,7 +108,12 @@
     const dt = 1 / 120; let t = 0, frame = 0;
     const every = window.BOT_EVERY || 1;
     const seen = {};
-    while (t < (maxSec || 400) && Game.state === 'run') {
+    while (t < (maxSec || 400) && (Game.state === 'run' || Game.state === 'scene')) {
+      /* the boss level stops running twice — in the salon doorway and at the
+         mouth of the last arena. Neither is playable, so the bot simply lets
+         them run: the second one hands over to the fight, and that is where
+         the running part of the level ends. */
+      if (Game.state === 'scene') { Scene.step(dt, Game); Game.stepFx(dt); t += dt; continue; }
       if (frame % every === 0) decide();
       frame++;
       Game.step(dt);
@@ -117,6 +122,23 @@
       t += dt;
       seen[Game.lota.layer] = (seen[Game.lota.layer] || 0) + 1;
     }
+    /* and if it got as far as the fight, play a little of that too: not to win
+       it, only to prove that a minute of falling bones never throws */
+    let fight = null;
+    if (Game.state === 'fight') {
+      let ft = 0, dir = 1;
+      while (ft < (window.BOT_FIGHT == null ? 60 : window.BOT_FIGHT) && Game.state === 'fight') {
+        if (Math.random() < 0.02) dir = -dir;
+        Game.input.left = dir < 0; Game.input.right = dir > 0;
+        if (Math.random() < 0.01) Game.input.jumpBuf = 0.15;
+        Fight.step(dt, Game);
+        Game.stepFx(dt);
+        ft += dt;
+      }
+      fight = { seconds: Math.round(ft), lives: Fight.lives,
+                hp: Fight.hp.join(' + '), over: Fight.over || null,
+                bones: Fight.bones.length, state: Game.state };
+    }
     const out = {
       state: Game.state, x: Math.round(Game.lota.x), finishX: Math.round(Game.world.finishX),
       pct: (Game.lota.x / Game.world.finishX * 100).toFixed(1) + '%',
@@ -124,6 +146,7 @@
       reason: Game.state === 'crash' || Game.state === 'over' ? (Game.crashReason || 'hit') : null,
       chase: Boss.on ? { gap: Boss.gap.toFixed(2), wasted: Boss.wasted } : null,
       zone: Game.zoneAt(Game.lota.x).zone.name, layer: Game.lota.layer,
+      fight: fight,
       routes: Object.keys(seen).map(k => k + ':' + (seen[k] / 120).toFixed(1) + 's').join(' '),
       seconds: Math.round(t)
     };

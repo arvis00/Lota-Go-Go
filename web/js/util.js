@@ -221,6 +221,17 @@ const Sfx = {
     } catch (e) { this.ac = null; }
   },
   resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); },
+  /* The list of voices loads on its own clock and is empty for the first
+     moment of the page's life — asking for it early is what makes it be there
+     by the time somebody has to say something. */
+  warmVoices() {
+    try {
+      const S = window.speechSynthesis;
+      if (!S || !S.getVoices) return;
+      S.getVoices();
+      if (S.addEventListener) S.addEventListener('voiceschanged', () => S.getVoices());
+    } catch (e) { /* no speech engine here */ }
+  },
   tone(freq, dur, type, vol, slideTo, delay) {
     if (!this.on || !this.ac) return;
     const t0 = this.ac.currentTime + (delay || 0);
@@ -257,5 +268,54 @@ const Sfx = {
     this.tone(260, 0.4, 'triangle', 0.26, 90, 0.03);
     this.tone(1600, 0.18, 'sawtooth', 0.1, 400, 0.01);
   },
-  yip()    { this.tone(760, 0.08, 'triangle', 0.22, 1050); }
+  yip()    { this.tone(760, 0.08, 'triangle', 0.22, 1050); },
+  /* the clippers, on a claw */
+  snip()   { this.tone(1500, 0.05, 'square', 0.22, 900); this.tone(1100, 0.06, 'square', 0.18, 700, 0.05); },
+  hurt()   { this.tone(430, 0.2, 'square', 0.3, 120); this.tone(210, 0.3, 'triangle', 0.24, 90, 0.05); },
+  thud()   { this.tone(160, 0.16, 'triangle', 0.34, 70); },
+  pop()    { this.tone(680, 0.07, 'sine', 0.3, 1200); },
+  bark()   { this.tone(300, 0.08, 'square', 0.28, 180); this.tone(220, 0.12, 'sawtooth', 0.2, 120, 0.06); },
+  /* a white bone going home into a boss */
+  strike() { this.tone(1046, 0.1, 'triangle', 0.4, 1568); this.tone(300, 0.22, 'square', 0.26, 120, 0.08); },
+
+  /* ---------- voices ----------
+     The film is spoken, not captioned: the device's own voice says the line,
+     pitched up and hurried until it is comic. Nothing is recorded and nothing
+     is downloaded. Where there is no voice at all — an old browser, a phone
+     with the speech engine switched off — a run of little blips stands in for
+     one, so a line is never silent. */
+  say(text, o) {
+    o = o || {};
+    if (!this.on) return;
+    let started = false;
+    try {
+      const S = window.speechSynthesis;
+      if (S && window.SpeechSynthesisUtterance) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = o.lang || 'en-GB';
+        u.pitch = clamp(o.pitch == null ? 1.7 : o.pitch, 0, 2);
+        u.rate = clamp(o.rate == null ? 1.15 : o.rate, 0.1, 3);
+        u.volume = o.vol == null ? 1 : o.vol;
+        /* two speakers, two voices: whichever English voices this device has,
+           the vet takes the first and Lota the next one along */
+        const vs = S.getVoices ? (S.getVoices() || []) : [];
+        const en = vs.filter(v => /^en/i.test(v.lang || ''));
+        if (en.length) u.voice = en[imod(o.v || 0, en.length)];
+        u.onstart = () => { started = true; };
+        S.speak(u);
+      }
+    } catch (e) { /* no speech engine here */ }
+    setTimeout(() => { if (!started) this.babble(text, o); }, 380);
+  },
+  /** the stand-in voice: one blip a syllable, at the same pitch */
+  babble(text, o) {
+    o = o || {};
+    const n = clamp(Math.ceil((text || '').replace(/[^a-zA-Z]/g, '').length / 2.6), 2, 9);
+    const f0 = 300 * (o.pitch == null ? 1.7 : o.pitch);
+    for (let i = 0; i < n; i++)
+      this.tone(f0 * (0.82 + imod(i * 7, 5) * 0.09), 0.1, 'square', 0.2,
+                f0 * (i === n - 1 ? 1.5 : 0.9), i * 0.135);
+  },
+  /** cut a line off — skipping the film should not leave somebody talking */
+  hush() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} }
 };

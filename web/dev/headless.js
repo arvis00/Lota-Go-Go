@@ -23,14 +23,15 @@ vm.createContext(sandbox);
 
 ['js/util.js', 'js/music.js', 'js/lota.js', 'js/props.js', 'js/props2.js', 'js/props3.js',
  'js/props4.js', 'js/zones.js', 'js/zones2.js', 'js/zones3.js', 'js/zones4.js',
- 'js/level.js', 'js/levels.js', 'js/boss.js', 'js/game.js']
+ 'js/level.js', 'js/levels.js', 'js/boss.js', 'js/fight.js', 'js/game.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), sandbox, { filename: f }));
 
 /* a UI that does nothing, so the engine can run with no screen */
 vm.runInContext(`
   var UI = { showHud(){}, setBones(){}, setKey(){}, setZone(){}, setProgress(){},
              toast(){}, tut(){}, showOver(){}, showWin(){}, bank(){ return 0; },
-             bossHud(){}, setEnergy(){}, setChase(){}, showCut(){}, winShown: false };
+             bossHud(){}, setEnergy(){}, setChase(){}, showCut(){}, movePad(){},
+             winShown: false };
   Sfx.on = false;
   Save.load();
   Game.VW = 960; Game.VH = 540; Game.groundY = 410;

@@ -38,6 +38,11 @@
       <button id="btnDown" class="tbtn" aria-label="Pasilenkti">▼</button>
       <button id="btnBoost" class="tbtn boost hidden" aria-label="Pagreitis">⚡</button>
     </div>
+    <!-- the two buttons the last arena hands over, on every device -->
+    <div id="movepad" class="movepad">
+      <button id="btnLeft" class="tbtn" aria-label="Kairėn">◀</button>
+      <button id="btnRight" class="tbtn" aria-label="Dešinėn">▶</button>
+    </div>
   </div>
 
   <!-- ===== LOBBY (one page per level, slid sideways) ===== -->
@@ -137,7 +142,7 @@
   <!-- ===== WIN ===== -->
   <div id="screen-win" class="layer screen dim hidden">
     <div class="panel win">
-      <div class="panel-title">FINIŠAS!</div>
+      <div id="winTitle" class="panel-title">FINIŠAS!</div>
       <div id="winSub" class="panel-sub">Lota pasiekė Londoną!</div>
       <div id="winStats" class="stats"></div>
       <button id="btnWinAgain" class="big-btn play">Dar kartą</button>
@@ -169,6 +174,7 @@
 <script src="js/level.js"></script>
 <script src="js/levels.js"></script>
 <script src="js/boss.js"></script>
+<script src="js/fight.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>

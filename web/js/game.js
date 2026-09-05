@@ -6,7 +6,8 @@ const Game = {
   cv: null, ctx: null,
   cw: 0, ch: 0, VW: 960, VH: 540, scale: 1, ox: 0, oy: 0, dpr: 1,
   groundY: 410,
-  state: 'boot',          // boot | lobby | mode | preview | run | crash | over | win | pause
+  state: 'boot',          // boot | lobby | mode | preview | cut | run | scene | fight
+                          // | crash | over | win | pause
   world: null, worlds: {},
   trail: [], foxes: [],
   t: 0, last: 0, stateT: 0,
@@ -21,7 +22,7 @@ const Game = {
   lobbyFocus: 0.5, lobbySize: 1,
   previewLevel: 2,
   cam: { x: 0, y: 0 },
-  input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0 },
+  input: { jumpBuf: 0, duckHeld: false, duckTimer: 0, coyote: 0, left: false, right: false },
   fx: { dust: [], confetti: [], sparks: [], shake: 0, flash: 0, warp: 0, spin: 0,
         warpFull: 0.42, warpCol: '#12203a',
         layerFade: 0, fromLayer: 'main', fromX: 0 },
@@ -35,6 +36,7 @@ const Game = {
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
     this.bindInput();
+    Sfx.warmVoices();
     this.world = this.worldFor(1);
     this.lobby();
     this.last = performance.now();
@@ -81,6 +83,8 @@ const Game = {
     const duckOn = () => this.onDuck(true);
     const duckOff = () => this.onDuck(false);
     const boost = () => this.onBoost();
+    const moveL = on => this.onMove(-1, on);
+    const moveR = on => this.onMove(1, on);
 
     window.addEventListener('keydown', e => {
       if (e.repeat) return;
@@ -92,16 +96,26 @@ const Game = {
       }
       else if (k === 'Escape' || k === 'KeyP') {
         if (this.state === 'cut') this.skipCut();
-        else if (this.state === 'run') UI.pause();
+        else if (this.state === 'run' || this.state === 'fight') UI.pause();
         else if (this.state === 'pause') UI.resume();
         else if (this.state === 'preview') UI.backFromPreview();
         else if (this.state === 'mode') UI.showLobby();
       }
-      else if (k === 'ArrowLeft') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage - 1); }
-      else if (k === 'ArrowRight') { if (this.state === 'lobby') this.gotoLobbyPage(this.lobbyPage + 1); }
+      /* left and right are the lobby's pages everywhere else, and the two new
+         buttons in the arena: in a fight they walk her across it */
+      else if (k === 'ArrowLeft' || k === 'KeyA') {
+        if (this.state === 'fight') { e.preventDefault(); moveL(true); }
+        else if (this.state === 'lobby' && k === 'ArrowLeft') this.gotoLobbyPage(this.lobbyPage - 1);
+      }
+      else if (k === 'ArrowRight' || k === 'KeyD') {
+        if (this.state === 'fight') { e.preventDefault(); moveR(true); }
+        else if (this.state === 'lobby' && k === 'ArrowRight') this.gotoLobbyPage(this.lobbyPage + 1);
+      }
     }, { passive: false });
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowDown' || e.code === 'KeyS') duckOff();
+      else if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveL(false);
+      else if (e.code === 'ArrowRight' || e.code === 'KeyD') moveR(false);
     });
 
     /* touch / mouse swipes on the canvas */
@@ -154,6 +168,8 @@ const Game = {
     hold(document.getElementById('btnUp'), jump);
     hold(document.getElementById('btnDown'), () => duckOn(), () => duckOff());
     hold(document.getElementById('btnBoost'), boost);
+    hold(document.getElementById('btnLeft'), () => moveL(true), () => moveL(false));
+    hold(document.getElementById('btnRight'), () => moveR(true), () => moveR(false));
 
     /* the lobby is a strip of level pages — drag it sideways to see the rest */
     let lx = 0, ly = 0, lActive = false, lFired = false;
@@ -191,7 +207,8 @@ const Game = {
 
   onJump() {
     Sfx.init(); Sfx.resume();
-    if (this.state !== 'run') return;
+    /* the arena keeps the jump: it is the third of the three buttons it shows */
+    if (this.state !== 'run' && this.state !== 'fight') return;
     this.input.jumpBuf = 0.14;
   },
   /** the third control, and only the boss level has one: spend a charge */
@@ -199,6 +216,11 @@ const Game = {
     Sfx.init(); Sfx.resume();
     if (this.state !== 'run') return;
     Boss.fire(this);
+  },
+  /** the arena's two new buttons: nothing outside the fight listens to them */
+  onMove(dir, on) {
+    Sfx.init(); Sfx.resume();
+    if (dir < 0) this.input.left = !!on; else this.input.right = !!on;
   },
   onDuck(on) {
     if (this.state !== 'run') return;
@@ -296,8 +318,11 @@ const Game = {
     this.run.fly = 0; this.run.glide = 0;
     this.shownPlace = null;
     this.world.spins.forEach(sp => { sp.used = false; });
+    /* a scene she has already run past does not play again on the way back */
+    const startX = cp ? cp.x : 60;
+    (this.world.scenes || []).forEach(sc => { sc.used = sc.x <= startX; });
     this.trail.length = 0; this.foxes.length = 0;
-    const sx = cp ? cp.x : 60;
+    const sx = startX;
     const sy0 = groundYAt(this.world, sx, 'main') || 0;
     this.baseRef = sy0; this.camBase = sy0;
     this.lota = {
@@ -310,12 +335,17 @@ const Game = {
     this.fx.shake = 0; this.fx.flash = 0; this.fx.warp = 0; this.fx.spin = 0;
     this.fx.layerFade = 0; this.fx.fromLayer = 'main'; this.fx.fromX = sx;
     this.state = 'run'; this.stateT = 0;
+    Fight.on = false; Scene.on = null;
+    UI.movePad(false);
     Music.play(level);
     UI.showHud();
     /* the boss level's energy, and whoever is coming up the road behind her */
     Boss.reset(this.world);
     UI.setBones(this.run.bones);
     UI.setKey(this.run.metroKey);
+    /* Losing the boss fight never sends her back down the street: the arena is
+       its own checkpoint, so a retry starts the fight again and nothing else. */
+    if (cp && cp.fight) { Fight.start(this); return; }
     UI.toast(cp && !cp.start ? cp.name : 'Pirmyn, Lota!', cp && !cp.start ? 'nuo kontrolinio taško' : '');
     if (!cp) { UI.tut(true); setTimeout(() => UI.tut(false), 4200); }
   },
@@ -391,6 +421,8 @@ const Game = {
 
     if (this.state === 'run') this.step(dt);
     else if (this.state === 'cut') Boss.stepCut(dt, this);
+    else if (this.state === 'scene') Scene.step(dt, this);
+    else if (this.state === 'fight') Fight.step(dt, this);
     else if (this.state === 'crash') {
       this.stepDeath(dt);
       if (this.stateT > 1.0) { this.state = 'over'; UI.showOver(); }
@@ -694,6 +726,16 @@ const Game = {
         if (sp.slip) { Boss.slipped(); UI.toast('Pasimetė!', 'apsisuko jai prieš nosį'); }
       }
 
+      /* --- and the places where the running simply stops: the salon
+         doorway, and the mouth of the last arena --- */
+      for (let i = 0; i < W.scenes.length; i++) {
+        const sc = W.scenes[i];
+        if (sc.used || LY !== 'main' || L.x < sc.x) continue;
+        sc.used = true;
+        Scene.start(sc.kind, this);
+        return;
+      }
+
       /* --- off the end of the pier ---
          The deck stops and she leaps. This is the only place on any track
          where the floor runs out, and it is not a hole: falling here is the
@@ -745,6 +787,8 @@ const Game = {
       this.cam.x = L.x - this.VW * 0.30;
       this.run.warpTo = null;
     }
+
+    if (this.state !== 'run') return;
 
     /* animation state */
     L.runPhase += dt * (12 + speedAt(L.x) * 0.019 * burst);
@@ -1052,7 +1096,13 @@ const Game = {
     if (this.state === 'lobby' || this.state === 'mode') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
     else if (this.state === 'cut') Boss.drawCut(this);
-    else this.renderWorld();
+    else {
+      this.renderWorld();
+      /* the arena and its interludes are drawn over the top of the place they
+         happen in — the floor and the walls are the level's own */
+      Fight.draw(this);
+      Scene.draw(this);
+    }
     ctx.restore();
     if (spin > 0) this.drawTurnBlur(Math.sin((1 - spin) * Math.PI));
 
@@ -1228,21 +1278,13 @@ const Game = {
       if (!mine(hz) || hz.smashed) return;
       const x0 = this.sx(hz.x), yTop = this.sy(hz.y + hz.h);
       const floorY = this.sy(hz.base || 0);
-      /* the things the vet throws come in over the top of the screen and land
-         in their slot a moment before she gets there — the box never moved */
-      let air = 0;
-      if (hz.thrown && L) {
-        air = Boss.flight(this, hz);
-        Boss.drawThrown(this, hz, air);
-        if (air > 0) {
-          ctx.save();
-          ctx.translate(x0 + hz.w / 2 + air * 640, yTop + hz.h / 2 - air * 420);
-          ctx.rotate(air * 7);
-          drawProp(ctx, hz.prop, -hz.w / 2, -hz.h / 2, hz.w, hz.h, this.t, this.palOf(hz), hz.x,
-                   { role: hz.kind, floorY: hz.h });
-          ctx.restore();
-          return;
-        }
+      /* The things the vet throws come out of her hand behind Lota, fly over
+         her head in plain sight and drop into their slot half a second before
+         she arrives — and once she is past, they fall out of the air and
+         tumble to a stop instead of standing there. The box never moved. */
+      if (hz.thrown && L && Boss.drawThrown(this, hz, x0, yTop, floorY)) {
+        Boss.cue(this, hz, x0, yTop, floorY);
+        return;
       }
       if (hz.kind === 'bird') {
         /* a gull's shadow belongs on the ground below it, which is also the
@@ -1257,7 +1299,12 @@ const Game = {
       }
       drawPropTiled(ctx, hz.prop, x0, yTop, hz.w, hz.h, this.t, this.palOf(hz), hz.x,
                     { role: hz.kind, floorY: floorY });
+      /* on the boss level every obstacle says what it wants: an arrow up over
+         a thing to jump, and the gap itself picked out under a thing to duck */
+      Boss.cue(this, hz, x0, yTop, floorY);
     });
+    /* and what is still off the right-hand edge, announced before it arrives */
+    Boss.edgeWarn(this);
 
     /* ---- finish arch ---- */
     near.deco.filter(d => d.finish).forEach(d => {
@@ -1316,6 +1363,15 @@ const Game = {
       }
       const flying = this.run && (this.run.fly || this.run.glide);
       if (flying) this.drawPack(this.sx(L.x), this.sy(L.y), !!this.run.fly);
+      /* a scene may have her upside down, and in the arena she faces whichever
+         way she is walking — neither ever happens on a normal run */
+      if (L.rot || L.flip) {
+        const lx2 = this.sx(L.x), ly2 = this.sy(L.y);
+        ctx.translate(lx2, ly2 - 30);
+        if (L.rot) ctx.rotate(L.rot);
+        if (L.flip) ctx.scale(-1, 1);
+        ctx.translate(-lx2, -(ly2 - 30));
+      }
       drawLota(ctx, this.sx(L.x), this.sy(L.y), {
         state: L.state, t: this.t, run: L.runPhase, skin: Save.data.skin,
         face: this.state === 'crash' ? 'sad' : (flying ? 'happy' : undefined),

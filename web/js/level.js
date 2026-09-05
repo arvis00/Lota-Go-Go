@@ -145,6 +145,10 @@ function buildWorld(track) {
   const W = {
     ground: [], platforms: [], hazards: [], bones: [], items: [], deco: [], warps: [], portals: [],
     spins: [], dives: [],
+    /* Places where the running stops and something is acted out instead: the
+       salon doorway, and the mouth of the last arena. Only the boss level has
+       any, and each one fires once. */
+    scenes: [],
     zones: [], layers: { main: { id: 'main', base: 0, rooms: [] } },
     level: track.level, currency: track.currency,
     treats: track.treats + (track.toys || 0), collectibles: track.treats, toys: track.toys || 0,
@@ -744,6 +748,11 @@ function buildWorld(track) {
     /* the one place the view swings round: she comes off the beach, turns
        right and the pier is suddenly ahead of her */
     if (z.turn) W.spins.push({ x: zx0 + dx(0.3) });
+    /* a place that opens on a scene says so; it fires just inside the mouth,
+       on the calm stretch every place begins with, so there is always clear
+       floor under whatever is acted out there */
+    if (z.scene) W.scenes.push({ x: zx0 + dx(z.sceneAt == null ? 0.3 : z.sceneAt),
+                                 kind: z.scene, zone: z.index });
     decorate(z, 1);
 
     const br = z.branch ? BR[z.branch] : null;

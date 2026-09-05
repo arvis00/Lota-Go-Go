@@ -46,7 +46,8 @@ const LEVELS = [
     picks: '', playable: true, choose: false, film: true, bonus: { cp: 0, raw: 0 },
     collect: 'Nieko rinkti nereikia — tik energiją ⚡. Penki ženklai = vienas '
            + 'pagreitis, o pagreitį reikia panaudoti: kas jo nenaudoja, tą pagauna. '
-           + 'Pabėk — ir abi aprangos tavo.' }
+           + 'Paskutinėje arenoje bėgimas baigiasi ir prasideda boso kova: balti kaulai '
+           + 'muša bosus, oranžiniai atima gyvybę. Nugalėk — ir abi aprangos tavo.' }
 ];
 const LEVEL_MAP = {};
 LEVELS.forEach(l => { LEVEL_MAP[l.n] = l; });

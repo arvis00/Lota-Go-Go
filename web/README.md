@@ -37,11 +37,14 @@ neparodys, kad atnaujinimas suveikė.
 | Šokti | mygtukas **▲** arba swipe aukštyn (arba bakstelėti) | `↑` / `W` / `Space` |
 | Pasilenkti | mygtukas **▼** arba swipe žemyn (laikyti) | `↓` / `S` |
 | Pagreitis ⚡ (tik boso lygyje) | mygtukas **⚡** | `X` / `E` / `⇧ Shift` |
+| Eiti kairėn / dešinėn (**tik boso kovoje**) | mygtukai **◀ ▶** apačioje kairėje | `←` / `→` / `A` / `D` |
 | Pauzė | mygtukas viršuje | `Esc` / `P` |
 | Praleisti filmuką (boso lygyje) | mygtukas **PRALEISTI** | `Esc` |
 | Kitas / ankstesnis lygis (pradžios ekrane) | swipe į kairę / dešinę arba **‹ ›** | `←` / `→` |
 
-Lota bėga pati — kryptis nevaldoma.
+Lota bėga pati — kryptis nevaldoma. **Vienintelė išimtis — paskutinė boso arena:** ten ji
+nustoja bėgti, ir tada kryptį valdo žaidėjas. Du nauji mygtukai **◀ ▶** atsiranda ekrano
+apačioje kairėje būtent tada — ir tik tada — ir prieš kovą parodoma kortelė, kas jie tokie.
 
 Liečiamuose ekranuose apatiniame dešiniajame kampe rodomos dvi rodyklės **▲ / ▼**. Jas
 laikyti galima kaip klaviatūros klavišus — laikant **▼** Lota lieka pasilenkusi, todėl
@@ -111,7 +114,13 @@ Viršutiniame dešiniajame pradžios ekrano kampe yra du atskiri jungikliai:
 | Mygtukas | Ką išjungia |
 |---|---|
 | **♫** | dainas (garsai lieka) |
-| **♪** | garsus: šuolius, kaulus, dūžius (daina lieka) |
+| **♪** | garsus: šuolius, kaulus, dūžius — **ir kalbą** (daina lieka) |
+
+**Kalba.** Boso lygio replikos yra tikrai ištariamos: `Sfx.say()` paduoda tekstą naršyklės
+`speechSynthesis` varikliui, pakelia toną ir paskubina, kad skambėtų komiškai — veterinarė
+gauna pirmą angliškų balsų sąrašo balsą, Lota ir kirpėjas kitą. Jei per 380 ms niekas taip
+ir nepradeda kalbėti (senesnė naršyklė, išjungtas kalbos variklis), tą pačią repliką
+suurzgia `Sfx.babble()` — po burbtelėjimą skiemeniui. Jokių garso failų nė čia nėra.
 
 Kiekvienas lygis turi savo dainą, ir ji groja tol, kol Lota bėga: pauzė ją sustabdo toje
 pačioje vietoje, dūžis ir finišas — nutildo, kad būtų girdėti pats dūžis ar finišo melodija.
@@ -453,11 +462,20 @@ nuo **520 iki 1180 px/s** (trečias lygis prasideda 460 ir baigiasi 1010), o sia
 vietoje kliūčiai perskaityti lieka **0,33 s** vietoj 0,36. Tempas auga visą laiką: greičio
 rampa (`X_FULL` = 200 000) baigiasi tik ties pačiu finišu, tad kuo toliau, tuo sunkiau.
 
-**Lygis prasideda filmuku.** Lota sėdi ant veterinarės stalo, tai kerpa nagus — *cvakšt*,
-*cvakšt* — ir Lota staiga nušoka ant grindų. Veterinarė sušunka **„Why you?!"**, Lota
-atsisuka ir atsako **„What did I do?"**. Filmukas trunka ~10 s, valdyti jame nieko negalima,
-o viršuje dešinėje visą laiką kabo **PRALEISTI**. Filmukas rodomas kaskart pradedant lygį iš
-naujo nuo pradžios; grįžus nuo kontrolinio taško jo nebūna.
+**Lygis prasideda filmuku.** Lota sėdi ant stalo ir laiko ištiesusi leteną, o veterinarė
+stovi prie pat stalo, palinkusi, ir **mašinėle kerpa jai nagus** — mašinėlės žandikauliai
+matomai atsidaro ir užsidaro, nuo letenos nulekia nago pjuvenos, *cvakšt*, *cvakšt*.
+Tada Lota **nušoka nuo stalo per pačią veterinarę** — virš jos galvos, į kitą pusę — ir
+nusileidžia jai už nugaros. Veterinarė apsisuka ant vietos, ir toliau viskas vyksta į
+priekį, ta pačia kryptimi, kuria bėgs visas lygis.
+
+Abi replikos yra **tikrai įgarsintos**: veterinarė sušunka **„Why you?!"** (aukštu, greitu,
+nustebusiu balsu), Lota atsisuka ir atsako **„What did I do?"** (dar aukštesniu ir mažesniu).
+Kalba naršyklės `speechSynthesis` — jokių garso failų; jei įrenginys balso neturi, `Sfx.say()`
+pats pakeičia jį trumpais burbtelėjimais, kad replika niekada nebūtų tyli. Burbulai su tekstu
+lieka tiems, kas žaidžia be garso. Filmukas trunka ~11 s, valdyti jame nieko negalima, o
+viršuje dešinėje visą laiką kabo **PRALEISTI** (jis nutildo ir balsą). Filmukas rodomas
+kaskart pradedant lygį iš naujo nuo pradžios; grįžus nuo kontrolinio taško jo nebūna.
 
 | Arena | Kiek trunka | Kas joje |
 |---|---|---|
@@ -465,15 +483,29 @@ naujo nuo pradžios; grįžus nuo kontrolinio taško jo nebūna.
 | 2 · Klinikos koridorius | ~32 s | narvų siena su akimis tamsoje, dėžės, kibirai, deguonies balionai. Trumpa: čia mokomasi |
 | 3 · Miesto gatvė | ~89 s | **ilgiausia ir sunkiausia** dalis. Vitrinos, markizės, pastoliai, šiukšliadėžės — ir iš už ekrano lekiantys daiktai |
 | 4 · Šunų kirpykla | ~48 s | vonelės, džiovintuvai, veidrodžiai, muilo burbulai. Tris kartus Lota apsisuka ant vietos |
-| 5 · Paskutinis pabėgimas | ~60 s | prieblandos skersgatviai, gaisrinės kopėčios, padėklai, padangos — ir abu persekiotojai |
+| 5 · Paskutinis pabėgimas | — | **čia bėgimas baigiasi.** Lota sustoja arenos pradžioje, visi susirenka, ir prasideda boso kova |
 
-**Kliūtys atlekia iš už ekrano.** Gatvėje ir kirpykloje veterinarė ir kirpėja mėto viską,
+**Kliūtys atlekia iš už nugaros.** Gatvėje ir kirpykloje veterinarė ir kirpėja mėto viską,
 kas po ranka: adatas, nagų žirkles, žirkles, termometrą, tablečių stiklainį, šukas,
 kirpimo mašinėlę, purškiklį. Kiekvienas toks daiktas yra visiškai paprasta kliūtis —
 **jo dėžutė nuo pat pradžių stovi vietoje ir niekur nejuda**, todėl niekas neatsiranda
-netikėtai po nosimi. Kinta tik tai, **kur jis piešiamas**: virš kliūties vietos sumirksi
-raudonas **!**, o pats daiktas atlekia iš viršaus dešinėje ir nukrenta į savo vietą maždaug
-**pusę sekundės** prieš Lotai iki jos atbėgant. Pusė sekundės — tiek ir teduodama.
+netikėtai po nosimi. Kinta tik tai, **kur jis piešiamas**:
+
+- daiktas **išlekia iš persekiotojos rankos** (jos ranka tuo metu ir užsimoja) **Lotai už
+  nugaros**, perskrieja **virš jos galvos** ir nulekia į priekį, į savo vietą. Skrisdamas jis
+  palieka pėdsaką, o po juo ant grindų slenka **šešėlis** — iš jo matyti, kokiame aukštyje
+  daiktas yra;
+- **nukritęs jis nedingsta.** Kai Lota jį praeina, daiktas nukrenta ant žemės, apsiverčia ir
+  lieka gulėti už jos — o ne kabo ore amžinai;
+- **kiekviena kliūtis pasako, ko iš jos norima.** Virš peršokamos kliūties šviečia geltona
+  **▲**, o po pralendama kliūtimi pažymimas pats **tarpas** — mėlyni skliaustai nuo grindų
+  iki kliūties apačios ir **▼** viduryje. Vienodai atrodančių kliūčių, kurių viena šokama,
+  o kita lendama, nebėra: aukštis ir ženklas visada sutampa;
+- **ženklas ateina anksčiau už kliūtį.** Prie tokio greičio ekrane telpa vos pusė sekundės
+  kelio į priekį, todėl viskas, kas yra artimesnėje nei **1,75 s** atkarpoje, iš pradžių
+  paskelbiama **dešiniajame ekrano krašte**: ženkliukas su ▲ arba ▼, tame pačiame aukštyje,
+  kuriame bus pati kliūtis, o aplink jį besiveriantis žiedas rodo, kiek liko. Kai kliūtis
+  įslenka į ekraną, atsakymas jau seniai matomas.
 
 **Kirpykloje Lota apsisuka.** Trijose vietose kamera staigiai nusisuka kartu su ja
 (tas pats efektas, kaip pirmame lygyje ant molo), kirpėja akimirkai ją pameta ir atsilieka.
@@ -496,13 +528,80 @@ Boso lygyje **nieko nerenkama į piniginę** — nei kaulų, nei žaisliukų. An
   persekiotojus, kiekvienas pakeltas — atitolina. Todėl bėgti reikia ne tik apeinant
   kliūtis, bet ir renkant.
 
-**Persekiotojų juosta** yra po vietos pavadinimu, raudona, po greičio juosta. Ji pilna,
-kai jie toli, ir tuščia, kai pagauna. Kai lieka mažai, juosta ima mirksėti, ekrano kraštai
-paraudonuoja, o gatvės gale iš tamsos išnyra pati veterinarė. Iki tol matyti tik jos
-artėjimas: tamsa kairiajame krašte ir keliamos dulkės.
+**Persekiotojai matomi visą laiką.** Nuo tos akimirkos, kai kas nors ima vytis, jis yra
+ekrane: bėga, mojuoja rankomis, kilnoja kojas, o veterinarė iš ten pat ir mėto daiktus.
+Juosta rodo tik **kaip arti** jie yra — pilna reiškia gerą atkarpą kelio, tuščia reiškia,
+kad pagavo, — bet net ir pilna juosta jų nebeslepia už ekrano krašto. Kai lieka mažai,
+juosta ima mirksėti ir ekrano kraštai paraudonuoja.
+
+**Persekiotojų juosta** yra po vietos pavadinimu, raudona, po greičio juosta.
 
 Persekiotojas priklauso nuo arenos: **koridoriuje ir gatvėje** — veterinarė, **kirpykloje** —
 kirpėja, **paskutiniame pabėgime** — abi. Pirmoje arenoje dar niekas nesiveja.
+
+#### Kirpykla: skanėsto scena
+
+Įbėgusi pro kirpyklos duris Lota **sustoja**, ir kartu sustoja visas lygis. Kirpėjas stovi
+nugara, išgirsta ją, **apsisuka ant vietos**, pamato — virš galvos iššoka **!** — ir
+susiraukia. Tada bando ją papirkti: pritupia, ištiesia skanėstą ir vilioja
+(**„Come here, doggy!"**, irgi įgarsinta).
+
+Lota šoka jo link. **Šuolio viduryje ji apsiverčia ant nugaros**, ir tuo pačiu momentu
+vaizdas pereina į **sulėtintą** — juostos viršuje ir apačioje, brūkšniai ore, tamsa
+kraštuose. Išsigandęs kirpėjas **sviedžia skanėstą į viršų**, skanėstas nulekia lanku, Lota
+jį ore **pagauna** (*AM!*), ir vaizdas iškart grįžta į normalų greitį. Ji nusileidžia ant
+kojų, ir žaidimas tęsiasi toje pačioje vietoje, kur buvo sustojęs — tik keliomis dešimtimis
+pikselių toliau, ant tos pačios tuščios grindų atkarpos, kuria prasideda kiekviena arena.
+
+Scena rodoma vieną kartą per bėgimą; grįžus nuo kontrolinio taško, esančio už jos, ji
+nebekartojama.
+
+#### Penkta arena: perėjimas į kovą
+
+Paskutinės arenos pradžioje Lota **nustoja bėgti visam laikui**. Ji sustabdo save (dulkės
+iš po letenų) ir atsisėda arenos viduryje. Tada:
+
+1. **veterinarė** atbėga iš kairės ir sustoja savo vietoje;
+2. **kirpėjas** atbėga paskui ją ir pereina į kitą arenos pusę;
+3. **keturi dideli, skirtingų veislių šunys** — dogas, šventbernardis, pudelis ir buldogas —
+   sueina iš anapus ir sustoja giliau už žmonių. Niekas nebebėga ratu: visi stovi savo
+   vietose ir ruošiasi dvikovai;
+4. ekrane blyksteli **BOSO KOVA · Nebebėgame. Dabar kaunamės.**;
+5. ir tik tada parodoma **kortelė su naujais mygtukais** — ◀ kairėn, ▶ dešinėn, ▲ šuolis —
+   bei vienintelė kovos taisyklė su abiem kaulais, nupieštais taip, kaip jie atrodys.
+   Tuo pačiu momentu **◀ ▶ atsiranda ir ekrane**, apačioje kairėje.
+
+Perėjimas trunka ~7,5 s ir rodomas tik pirmą kartą: pralaimėjus kova prasideda iš karto.
+
+#### Boso kova
+
+Iš viršaus **krenta kaulai**. Iš pradžių lėtai — pirmieji trys visada balti ir krenta beveik
+tingiai, kad taisyklė būtų akivaizdi, — paskui vis greičiau: per ~50 s kritimo greitis auga
+nuo 210 iki 555 px/s, tarpas tarp kaulų trumpėja nuo 1,15 iki 0,38 s, o oranžinių dalis
+auga nuo 28 % iki 50 %. Po kiekvienu krentančiu kaulu ant grindų slenka šešėlis.
+
+- **baltus kaulus reikia rinkti.** Pagautas baltas kaulas pats nuskrieja lanku į vieną iš
+  bosų ir **atima jam vieną gyvybę** (taikosi į tą, kuris dar sveikesnis, kad abu kristų
+  kartu);
+- **oranžinių liesti negalima.** Jie pažymėti kryžiuku ir oranžine švyste; palietus —
+  **minus viena Lotos gyvybė**, ekranas krusteli, ir pusantros sekundės ji nepažeidžiama;
+- **kiekvienas bosas turi 10 gyvybių**, jos rodomos juostomis virš galvų (`Veterinarė`,
+  `Kirpėjas`). **Lota turi 5 gyvybes** — penkios širdelės viršuje kairėje. Likus vienai,
+  ekrano kraštai ima raudonuoti;
+- viršutinė lygio juosta kovos metu rodo nebe nubėgtą kelią, o **kiek bosų gyvybių numušta**.
+
+**Pralaimėjus — grįžtama tiesiai į kovą.** Netekusi visų penkių gyvybių Lota **nepradeda
+boso lygio nuo pirmos arenos**. Kova pati yra kontrolinis taškas: mygtukas **„Kautis iš
+naujo"** paleidžia ją iš karto penktoje arenoje, su penkiomis gyvybėmis ir abiem bosais po
+10. Viso ilgo pabėgimo bėgti iš naujo nereikia.
+
+#### Finalas
+
+Nugalėjus abu bosus prasideda trumpas filmukas. Kirpėjas ir veterinarė **atbėga iš skirtingų
+arenos pusių ir susiduria** viduryje (**„Ouch!"**, žvaigždutės), aplink stovi dideli šunys,
+ir abu supranta, kas atsitiko (**„She won!"**). Lota tuo metu šokinėja iš džiaugsmo,
+krinta konfeti, ekrane užsidega **LOTA LAIMĖJO!** — ir tada rodomas laimėjimo langas su
+antrašte **BOSS LEVEL COMPLETE!**
 
 **Kontroliniai taškai boso lygyje.** Jie visada įjungti (pasirinkimo nėra), ir jų yra ne
 penki, o **penkiolika**: po vieną kiekvienos arenos pradžioje ir dar dešimt jų viduje —
@@ -687,12 +786,13 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
 | `js/props3.js` | ~90 trečio lygio piešinių: dirižablis, bokštas, sodas, šiltnamiai, karjeras, kasykla, raketa, stotis, Mėnulis + raketinė kuprinė |
-| `js/props4.js` | ~50 boso lygio piešinių: veterinarija, koridorius, gatvė, kirpykla, skersgatviai, skraidantys įrankiai + `drawVet()` ir `drawGroomer()` |
+| `js/props4.js` | ~50 boso lygio piešinių: veterinarija, koridorius, gatvė, kirpykla, skersgatviai, skraidantys įrankiai + `drawVet()`, `drawGroomer()` ir `drawBigDog()` (keturios veislės) |
 | `js/zones.js` | 1 lygio 13 vietų + `BRANCHES` (metro, antras aukštas, ventiliacija); `BG` ir grindų piešimas |
 | `js/zones2.js` | 2 lygio 17 vietų + `BRANCHES2` (lapių urvas); `BG2` ir naujos grindys |
 | `js/zones3.js` | 3 lygio 14 vietų + `BRANCHES3` (trys skylės grindyse, bunkeris po viena iš jų) + `SKY_ROOM`; `BG3` ir grindys |
 | `js/zones4.js` | boso lygio **penkios arenos**; `BG4` ir jų grindys. Šakų nėra |
-| `js/boss.js` | tik boso lygis: įžanginis filmukas, energija ir pagreitis, persekiotojų atstumas, skraidančių daiktų atlėkimas |
+| `js/boss.js` | tik boso lygis: įžanginis filmukas, energija ir pagreitis, persekiotojų atstumas, skraidančių daiktų atlėkimas, kliūčių ženklai (▲ / ▼ ir kraštinis įspėjimas) |
+| `js/fight.js` | tik boso lygis: trys scenos (kirpykla, arenos susirinkimas, finalas) ir pati boso kova — krentantys kaulai, gyvybės, bosų juostos |
 | `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
@@ -792,7 +892,10 @@ window.BOT_LEVEL = 2; runBot(400);    // antras lygis
 window.BOT_TAKE = { metro: false, upstairs: true }; runBot(400);
 window.BOT_TAKE = { down: false }; runBot(400);
 
-window.BOT_LEVEL = 4; runBot(600);    // boso lygis — botas pats naudoja kiekvieną ⚡
+window.BOT_LEVEL = 4; runBot(600);    // boso lygis — botas pats naudoja kiekvieną ⚡;
+                                      // scenos prabėga pačios, o pabaigoje botas dar
+                                      // pažaidžia minutę boso kovos (`fight:` rezultate).
+                                      // `window.BOT_FIGHT = 0` ją praleidžia
 window.BOT_NOBOOST = 1; runBot(600);  // ir taip, kaip žaistų tas, kas ⚡ niekada nespaudžia:
                                       // reason:"caught" jau koridoriuje
 

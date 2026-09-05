@@ -871,6 +871,21 @@ Object.keys(PROP_SIZE4).forEach(k => {
    is catch up. `run` is a phase, `lunge` how far forward she is
    throwing herself, `s` a plain scale.
 ================================================================= */
+/* A pair of legs planted on the ground. They are straight, so they reach
+   further than the swinging pair do — STAND_LIFT is exactly that difference,
+   and standing figures are drawn that much higher up so their shoes land on
+   the floor instead of through it. */
+const STAND_LIFT = 21;
+function standLegs(ctx, t, col, shoe, wide) {
+  const b = Math.sin(t * 1.7) * 1.1;
+  [-1, 1].forEach(sgn => {
+    ctx.save(); ctx.translate(sgn * (wide == null ? 8 : wide), 0);
+    fillRR(ctx, -6, 0, 12, 32 + b, 6, col);
+    fillRR(ctx, -6, 30, 12, 26, 6, col);
+    fillRR(ctx, -10, 50, 21, 9, 5, shoe);
+    ctx.restore();
+  });
+}
 /** a pair of legs mid-stride, shared by both of them */
 function chaseLegs(ctx, run, col, shoe) {
   const a = Math.sin(run), b = Math.sin(run + Math.PI);
@@ -885,30 +900,47 @@ function chaseLegs(ctx, run, col, shoe) {
 }
 /** The vet: scrubs, a clipboard she has given up on, and the clippers
     still in her other hand. Comic, never frightening. */
-function drawVet(ctx, x, y, s, t, run, lunge) {
-  s = s || 1;
+function drawVet(ctx, x, y, s, t, run, lunge, o) {
+  s = s || 1; o = o || {};
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   ctx.save(); ctx.globalAlpha = .25;
   fillEll(ctx, 0, 2, 34, 8, '#000'); ctx.restore();
-  ctx.translate(0, -64);
-  ctx.rotate(-0.06 - lunge * 0.12);
-  /* legs */
-  ctx.save(); ctx.translate(0, 26); chaseLegs(ctx, run, '#4f8ca8', '#e8eef2'); ctx.restore();
+  ctx.translate(0, -64 - (o.still ? STAND_LIFT : 0));
+  ctx.rotate((o.lean || 0) - 0.06 - lunge * 0.12);
+  /* legs — running unless she has stopped and planted herself */
+  ctx.save(); ctx.translate(0, 26);
+  if (o.still) standLegs(ctx, t, '#4f8ca8', '#e8eef2');
+  else chaseLegs(ctx, run, '#4f8ca8', '#e8eef2');
+  ctx.restore();
   /* the scrubs */
   fillRR(ctx, -19, -18, 38, 48, 13, '#5fa8c4');
   ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
   ctx.save(); ctx.globalAlpha = .5;
   fillRR(ctx, -14, -13, 12, 22, 5, '#8fd0e0'); ctx.restore();
   vetCross(ctx, 8, -6, 6, '#ffffff');
-  /* the arm out in front, clippers first */
+  /* The arm out in front, clippers first. `arm` aims it somewhere on purpose
+     — down at a paw on the table, or straight up over her head to throw. */
   ctx.save();
-  ctx.translate(15, -10); ctx.rotate(-0.5 + Math.sin(run * 1.02) * 0.28 - lunge * 0.5);
-  fillRR(ctx, 0, -6, 30, 12, 6, '#5fa8c4');
-  ctx.translate(30, 0);
+  const armA = o.arm != null ? o.arm
+             : -0.5 + Math.sin(run * 1.02) * 0.28 - lunge * 0.5 - (o.throw || 0) * 2.1;
+  ctx.translate(15, -10); ctx.rotate(armA);
+  const reach = o.reach || 0;
+  fillRR(ctx, 0, -6, 30 + reach, 12, 6, '#5fa8c4');
+  ctx.translate(30 + reach, 0);
   circle(ctx, 0, 0, 6.5, '#f2cfa8');
   ctx.rotate(0.2);
-  fillRR(ctx, 2, -6, 20, 12, 5, '#3f4a58');
-  fillRR(ctx, 20, -4, 9, 8, 2, '#dfe8f0');
+  /* the clippers themselves. Snipping opens and shuts the jaws, which is the
+     whole reason anyone can tell what she is doing to that paw. */
+  const gap = o.snip ? Math.abs(Math.sin(t * 13)) * 8 : 0;
+  fillRR(ctx, 1, -7, 17, 14, 6, '#3f4a58');
+  fillRR(ctx, 16, -5 - gap * 0.6, 17, 6, 2, '#eef4f8');
+  fillRR(ctx, 16, -1 + gap * 0.6, 17, 6, 2, '#b8c4d0');
+  if (o.snip) {
+    /* a spark off the blades, so it is unmistakably a pair of clippers doing
+       something to something */
+    ctx.save(); ctx.globalAlpha = 0.3 + Math.abs(Math.sin(t * 13)) * 0.6;
+    circle(ctx, 34, -1, 4, '#ffffff'); ctx.restore();
+  }
   ctx.restore();
   /* the other arm, trailing, still holding the clipboard */
   ctx.save();
@@ -935,19 +967,30 @@ function drawVet(ctx, x, y, s, t, run, lunge) {
   line(ctx, 4, -36, 5, -36, '#8b98a6', 2);
   ctx.restore();
   line(ctx, -4, -44, 3, -46, '#6a452c', 2.4);
-  fillEll(ctx, 4, -26, 5, 4 + Math.abs(Math.sin(t * 7)) * 2.5, '#7a2b34');
+  /* the mouth: normally a little O of effort, wide open when she is shouting */
+  const mo = o.mouth || 0;
+  fillEll(ctx, 4, -26 + mo * 2, 5 + mo * 4, 4 + mo * 6 + Math.abs(Math.sin(t * 7)) * 2.5, '#7a2b34');
+  if (mo > 0.4) fillEll(ctx, 4, -22 + mo * 4, 3 + mo * 2, 2 + mo * 2, '#ff9ab0');
+  if (o.cross) {
+    /* two cross brows: she has stopped being puzzled and started being furious */
+    line(ctx, -6, -42, 1, -39, '#6a452c', 2.6);
+    line(ctx, 13, -42, 6, -39, '#6a452c', 2.6);
+  }
   ctx.restore();
 }
 /** The groomer: an apron, a dryer in one hand, bows in her pocket,
     and absolutely no idea where the dog went. */
-function drawGroomer(ctx, x, y, s, t, run, lunge) {
-  s = s || 1;
+function drawGroomer(ctx, x, y, s, t, run, lunge, o) {
+  s = s || 1; o = o || {};
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   ctx.save(); ctx.globalAlpha = .25;
   fillEll(ctx, 0, 2, 32, 8, '#000'); ctx.restore();
-  ctx.translate(0, -62);
-  ctx.rotate(-0.08 - lunge * 0.1);
-  ctx.save(); ctx.translate(0, 24); chaseLegs(ctx, run + 1.1, '#4a4652', '#ff9ab0'); ctx.restore();
+  ctx.translate(0, -62 - (o.still ? STAND_LIFT : 0) + (o.crouch || 0) * 20);
+  ctx.rotate((o.lean || 0) - 0.08 - lunge * 0.1);
+  ctx.save(); ctx.translate(0, 24 - (o.crouch || 0) * 20);
+  if (o.still) standLegs(ctx, t, '#4a4652', '#ff9ab0');
+  else chaseLegs(ctx, run + 1.1, '#4a4652', '#ff9ab0');
+  ctx.restore();
   /* the apron over a striped top */
   fillRR(ctx, -18, -18, 36, 46, 12, '#f2ece0');
   ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
@@ -959,7 +1002,9 @@ function drawGroomer(ctx, x, y, s, t, run, lunge) {
   PROPS.bowTool(ctx, -6, 8, 14, 10); ctx.restore();
   /* the clippers, held high and buzzing */
   ctx.save();
-  ctx.translate(14, -14); ctx.rotate(-1.0 + Math.sin(run * 1.02) * 0.3 - lunge * 0.4);
+  ctx.translate(14, -14);
+  ctx.rotate(o.arm != null ? o.arm
+             : -1.0 + Math.sin(run * 1.02) * 0.3 - lunge * 0.4 - (o.scared || 0) * 1.4);
   fillRR(ctx, 0, -5, 28, 11, 5, '#f2cfa8');
   ctx.translate(28, 0);
   ctx.rotate(0.5 + Math.sin(t * 26) * 0.06);
@@ -989,6 +1034,126 @@ function drawGroomer(ctx, x, y, s, t, run, lunge) {
   poly(ctx, [[-12, -34], [-22, -40], [-20, -28]], '#e0748c');
   circle(ctx, 8, -33, 4.4, '#ffffff'); circle(ctx, 8, -33, 2.3, '#2b2634');
   circle(ctx, -2, -33, 4, '#ffffff'); circle(ctx, -2, -33, 2.1, '#2b2634');
-  fillEll(ctx, 4, -24, 4.5, 3.5 + Math.abs(Math.sin(t * 6 + 1)) * 2.5, '#7a2b34');
+  const gm = o.mouth || 0;
+  fillEll(ctx, 4, -24 + gm * 2, 4.5 + gm * 3.5, 3.5 + gm * 5 + Math.abs(Math.sin(t * 6 + 1)) * 2.5, '#7a2b34');
+  if (o.cross) { line(ctx, -6, -40, 1, -37, '#8a5a3a', 2.5); line(ctx, 13, -40, 6, -37, '#8a5a3a', 2.5); }
+  ctx.restore();
+}
+
+/* =================================================================
+   THE BIG DOGS
+
+   They only ever turn up in the last arena: four of them, no two the
+   same breed, standing in a half-circle behind the two people while
+   the whole thing is settled. They are never an obstacle either —
+   they watch, they bark, and at the end they are on Lota's side.
+================================================================= */
+const BIG_DOGS = {
+  /* coat, markings, how tall, how wide, the ears, and what the tail does */
+  dane:    { coat: '#8b95a2', mark: '#5d6773', nose: '#2b2634', h: 1.20, w: 0.96, ear: 'prick', muzzle: 1.30, tail: 'whip' },
+  saint:   { coat: '#a4713f', mark: '#f2e6d2', nose: '#3a2a22', h: 1.02, w: 1.22, ear: 'flop',  muzzle: 1.05, tail: 'bushy' },
+  poodle:  { coat: '#eadcc4', mark: '#fff6e8', nose: '#4a3a30', h: 1.08, w: 0.98, ear: 'curl',  muzzle: 0.90, tail: 'pom' },
+  bulldog: { coat: '#c99a5e', mark: '#f6f2ea', nose: '#3a2f2a', h: 0.80, w: 1.28, ear: 'rose',  muzzle: 0.66, tail: 'stub' }
+};
+const BIG_DOG_IDS = ['dane', 'saint', 'poodle', 'bulldog'];
+
+/** One big dog, standing, facing left (towards Lota) unless `o.face` is 1.
+    `wag` is how hard the tail is going, `bark` a 0..1 poke of the head. */
+function drawBigDog(ctx, x, y, s, t, breed, o) {
+  const D = BIG_DOGS[breed] || BIG_DOGS.dane;
+  o = o || {};
+  s = (s == null ? 1 : s);
+  const wag = o.wag == null ? 0.5 : o.wag, bark = o.bark || 0;
+  const ph = (o.phase || 0) + t;
+  const breathe = Math.sin(ph * 1.8) * 1.4;
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(s * (o.face === 1 ? -1 : 1), s);
+  ctx.save(); ctx.globalAlpha = .26;
+  fillEll(ctx, 0, 2, 44 * D.w, 9, '#000'); ctx.restore();
+
+  const H = 96 * D.h;                       /* shoulder height */
+  const legTop = -H * 0.52;
+  /* four legs: the far pair first, dulled, so the near pair reads */
+  const leg = (lx, dull) => {
+    ctx.save(); ctx.globalAlpha = dull ? .62 : 1;
+    fillRR(ctx, lx - 7, legTop, 14, -legTop - 4, 7, dull ? shade(D.coat, -.18) : D.coat);
+    fillRR(ctx, lx - 9, -10, 19, 10, 5, shade(D.coat, -.1));
+    ctx.restore();
+  };
+  leg(-24 * D.w, true); leg(20 * D.w, true);
+  leg(-30 * D.w, false); leg(26 * D.w, false);
+
+  /* the tail */
+  ctx.save();
+  ctx.translate(-36 * D.w, -H * 0.86);
+  const sw = Math.sin(ph * (3 + wag * 7)) * (0.25 + wag * 0.55);
+  ctx.rotate(-0.7 + sw);
+  if (D.tail === 'stub') { fillRR(ctx, -10, -6, 16, 12, 6, D.coat); }
+  else if (D.tail === 'pom') {
+    line(ctx, 0, 0, -22, -10, D.coat, 7);
+    circle(ctx, -26, -12, 11, D.mark);
+  } else if (D.tail === 'bushy') {
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-22, -18, -40, -12);
+    ctx.strokeStyle = D.coat; ctx.lineWidth = 16; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-28, -14); ctx.quadraticCurveTo(-36, -14, -42, -11);
+    ctx.strokeStyle = D.mark; ctx.lineWidth = 13; ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-20, -14, -34, -22);
+    ctx.strokeStyle = D.coat; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.stroke();
+  }
+  ctx.restore();
+
+  /* the body */
+  ctx.save(); ctx.translate(0, -H * 0.74 + breathe * 0.3);
+  fillEll(ctx, 0, 0, 42 * D.w, 26 * D.h, D.coat);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.save(); ctx.globalAlpha = .9;
+  fillEll(ctx, 6 * D.w, 10, 26 * D.w, 13, D.mark); ctx.restore();
+  if (breed === 'poodle') {
+    ctx.save(); ctx.globalAlpha = .75;
+    for (let i = 0; i < 9; i++)
+      circle(ctx, -34 + i * 8.4, -12 + Math.sin(i * 2.1) * 5, 7, D.mark);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  /* neck and head */
+  ctx.save();
+  ctx.translate(30 * D.w, -H * 0.92 - breathe * 0.4);
+  ctx.rotate(-0.12 + bark * 0.3 + Math.sin(ph * 1.3) * 0.04);
+  fillRR(ctx, -14, -4, 22, 30, 10, D.coat);
+  const hw = 22 * (0.9 + D.w * 0.12);
+  fillEll(ctx, 4, -16, hw, 19, D.coat);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.stroke();
+  /* the muzzle, which is most of what tells the breeds apart */
+  const ml = 22 * D.muzzle;
+  fillRR(ctx, 4, -14, ml, 17, 8, shade(D.coat, .06));
+  fillEll(ctx, 4 + ml, -12, 7, 6, D.nose);
+  ctx.save(); ctx.globalAlpha = .8;
+  fillEll(ctx, 8, 0, ml * 0.6, 5, D.mark); ctx.restore();
+  /* the mouth, open when it is barking */
+  if (bark > 0.05) {
+    fillEll(ctx, 4 + ml * 0.55, -2 + bark * 3, ml * 0.4, 3 + bark * 6, '#7a2b34');
+    ctx.save(); ctx.globalAlpha = .9;
+    fillEll(ctx, 4 + ml * 0.5, 1 + bark * 5, ml * 0.24, 2 + bark * 2, '#ff9ab0'); ctx.restore();
+  }
+  /* eye */
+  const blink = imod(ph * 1000, 3600) > 3420;
+  circle(ctx, 2, -20, 4.6, '#ffffff');
+  circle(ctx, 3, -20, blink ? 0.5 : 2.5, '#2b2634');
+  /* ears */
+  if (D.ear === 'prick') poly(ctx, [[-12, -26], [-2, -46], [4, -24]], shade(D.coat, -.12));
+  else if (D.ear === 'flop') {
+    ctx.save(); ctx.rotate(Math.sin(ph * 2.2) * 0.08);
+    fillRR(ctx, -18, -24, 18, 34, 9, shade(D.coat, -.14)); ctx.restore();
+  } else if (D.ear === 'curl') {
+    circle(ctx, -12, -20, 13, D.mark);
+    circle(ctx, -16, -30, 9, D.mark);
+    circle(ctx, 2, -34, 11, D.mark);        /* the topknot */
+  } else {
+    fillRR(ctx, -14, -30, 15, 15, 7, shade(D.coat, -.14));
+  }
+  ctx.restore();
   ctx.restore();
 }

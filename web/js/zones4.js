@@ -430,6 +430,9 @@ const ZONES4 = [
        groomer has worked out which way she went. */
     id: 'salon', name: 'Šunų kirpykla', sec: 48, diff: 0.92, floor: 'salonTile',
     exit: 'backDoor', chaser: 'groomer', spins: 3, stops: 2,
+    /* the whole level stops dead in the doorway while the groomer tries to
+       buy her off with a treat — see fight.js */
+    scene: 'salon',
     sub: 'kirpėja su mašinėle — ir Lota apsisuka jai prieš nosį',
     pal: { floorTop: '#ffd8e2', floorBody: '#f0b8c8', accent: '#e0748c',
            treadTop: '#fff0f4', treadSide: '#e0a8bc' },
@@ -445,7 +448,11 @@ const ZONES4 = [
     /* ---- 5 · the last run home, with both of them right behind ---- */
     id: 'alley', name: 'Paskutinis pabėgimas', sec: 62, diff: 1.0, floor: 'alleyStone',
     last: true, chaser: 'both', stops: 3,
-    sub: 'visi iš paskos — greičiausia ir sunkiausia atkarpa',
+    /* and here the running ends. She stops at the mouth of this one for good:
+       everybody who has been behind her walks in, plants themselves, and the
+       rest of the level is the fight — see fight.js. */
+    scene: 'arena', sceneAt: 0.35,
+    sub: 'visi susirenka — čia bėgimas baigiasi ir prasideda kova',
     pal: { floorTop: '#8a7f74', floorBody: '#5a5158', accent: '#ffd870',
            treadTop: '#a89c90', treadSide: '#4a4248' },
     bg(ctx, VW, VH, camX, floorY, t, pal) { BG4.alleyWall(ctx, VW, VH, camX, floorY, t); },
