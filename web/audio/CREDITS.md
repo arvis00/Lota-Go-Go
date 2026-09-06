@@ -2,15 +2,20 @@
 
 Aštuoni klasikos įrašai, kuriuos groja `js/music.js`.
 
-**Failų šitame aplanke nėra.** Jie sveria ~10,6 MB, ir git istorijai jų nereikia,
-todėl `/web/audio/*.m4a` yra `.gitignore` sąraše. Parsisiųsti iš naujo:
+**Failai yra sukommitinti** (~10,6 MB) ir turi būti: žaidimą serveruoja GitHub
+Pages tiesiai iš `web/`, tad ko nėra repozitorijoje, to telefone nėra — 404.
+Kurį laiką jie buvo laikomi ne git'e, ir tada paskelbtas žaidimas prašė aštuonių
+failų, kurių niekas nebuvo įkėlęs, ir negrojo nieko.
+
+Tai paprasti git objektai, ir tai svarbu: `.gitattributes` daugumą dvejetainių
+failų siunčia į LFS, bet **Pages LFS rodyklių neišskleidžia** — per LFS šie
+failai nusileistų kaip tekstiniai rodyklių failiukai ir grotų tylą.
+
+Perkurti juos iš originalų (reikia `curl` ir `ffmpeg`):
 
 ```sh
-cd web/audio && ./fetch.sh
+cd web/audio && ./fetch.sh --force
 ```
-
-Reikia `curl` ir `ffmpeg`. Be failų žaidimas veikia lygiai taip pat, tik tyliai —
-`js/music.js` pabando visą lentyną ir nutyla (žr. `misses`).
 
 ## Kodėl `.m4a`, o ne originalus `.ogg`
 

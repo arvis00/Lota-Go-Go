@@ -5,8 +5,7 @@ trasas — **1: nuo namų iki Londono**, **2: nuo viešbučio iki miško**, **3:
 žvaigždžių** ir **4: Didysis pabėgimas** — boso lygis nuo veterinaro stalo iki pat namų,
 ilgiausias, greičiausias ir sunkiausias iš visų. Grynas HTML5 + Canvas, be jokių
 bibliotekų ir be paveikslėlių: visa grafika piešiama kodu (vektoriai). Vienintelis
-žaidimo turtas yra muzika — aštuoni laisvos licencijos klasikos įrašai, kurių pačių
-repozitorijoje nėra: juos parsisiunčia `web/audio/fetch.sh`.
+žaidimo turtas yra muzika — aštuoni laisvos licencijos klasikos įrašai `web/audio/`.
 
 ## Paleidimas
 
@@ -171,19 +170,31 @@ pats dūžis ar finišo melodija. Įjungus **♫** pradžios ekrane, pjesės pra
 įrašas taip negali: `playbackRate` orkestrui pakelia ir toną, ir Grieg'as virsta animaciniu
 filmuku. `Music.setRate()` liko tuščias — jį vis dar kviečia lygio kodas kas kadrą.
 
-### Failų repozitorijoje nėra
+### Failai yra repozitorijoje — ir turi būti
 
-Įrašai sveria ~10,6 MB, ir git istorijai jų nereikia, tad `/web/audio/*.m4a` yra
-`.gitignore` sąraše. Po `git clone` muzikos nebus, kol nepaleisi:
+Įrašai (~10,6 MB) yra sukommitinti. Žaidimą serveruoja **GitHub Pages tiesiai iš `web/`**
+(žr. `.github/workflows/pages.yml`), tad ko nėra repozitorijoje, to telefone nėra.
+
+Kurį laiką jie buvo laikomi ne git'e, kad nesvertų — ir paskelbtas žaidimas ėmė prašyti
+aštuonių failų, kurių niekas nebuvo įkėlęs. Naršyklė gaudavo aštuonis 404, `music.js`
+tyliai pasiduodavo, ir telefone muzikos nebūdavo išvis. Svoris repozitorijoje yra pigesnis
+už tylų žaidimą.
+
+Tai **paprasti git objektai, ne LFS**, ir tai irgi svarbu: `.gitattributes` daugumą
+dvejetainių failų siunčia į LFS, bet **Pages LFS rodyklių neišskleidžia** — per LFS šie
+failai nusileistų kaip tekstiniai rodyklių failiukai ir grotų tylą. `.m4a` į `.gitattributes`
+sąrašą nepatenka, tad viskas gerai savaime.
+
+Perkurti įrašus iš originalų (reikia `curl` ir `ffmpeg`):
 
 ```sh
-cd web/audio && ./fetch.sh
+cd web/audio && ./fetch.sh --force
 ```
 
 Skriptas parsisiunčia originalus iš tų pačių Wikimedia Commons adresų ir perkoduoja juos
-lygiai taip pat (patikrinta: išeina baitas į baitą tie patys failai). Reikia `curl` ir
-`ffmpeg`. **Be failų žaidimas veikia lygiai taip pat, tik tyliai** — `js/music.js`
-pabando visą lentyną ir nutyla, o ne blaškosi per aštuonis 404 per sekundę.
+lygiai taip pat (patikrinta: išeina baitas į baitą tie patys failai). Failui vis tiek
+nepavykus užsikrauti, `js/music.js` pabando visą lentyną ir nutyla, o ne blaškosi per
+aštuonis 404 per sekundę.
 
 ### Kodėl `.m4a`, o ne `.ogg`
 
@@ -976,7 +987,7 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 |---|---|
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
 | `js/music.js` | grojaraštis: aštuoni klasikos įrašai iš `audio/`, grojami vieno `<audio>` elemento — maišomas kas paleidimą |
-| `audio/` | `fetch.sh` (parsisiunčia įrašus) + `CREDITS.md` su licencijomis; patys `.m4a` į git nededami |
+| `audio/` | aštuoni `.m4a` įrašai + `CREDITS.md` (licencijos) + `fetch.sh` (perkuria juos iš originalų) |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + visos aprangos |
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |

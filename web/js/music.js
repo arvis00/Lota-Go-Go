@@ -8,12 +8,20 @@
    doing an impression of an orchestra. What plays here instead are
    real performances, sitting in `web/audio/`.
 
-   **The files are not in the repository.** They are ~10 MB of audio that
-   nobody needs in git history, so `web/audio/*.m4a` is ignored and a
-   fresh clone arrives without them. `audio/fetch.sh` downloads the
-   originals again from the same sources and re-encodes them, and is the
-   only thing that has to be run to get the music back. Without them the
-   game is silent but perfectly playable — see `misses` below.
+   **The files are committed**, all ~10 MB of them, and they have to be:
+   the game is served by GitHub Pages straight out of `web/`, so anything
+   not in the repository is a 404 on the phone. They were briefly kept out
+   of git to save the weight, which deployed a game that asked for eight
+   files nobody had published and played nothing at all. `audio/fetch.sh`
+   rebuilds them from the original sources and is what documents where
+   each one came from; it is not needed to run the game.
+
+   (They are ordinary git objects, deliberately. `.gitattributes` sends
+   most binaries to LFS, but Pages does not resolve LFS pointers — through
+   LFS these would deploy as little text files and play as silence.)
+
+   A file can still fail to load, so the player still counts failures and
+   gives up on the whole shelf rather than chasing it — see `misses`.
 
    Everything on the shelf is free to ship. A classical piece being old
    is only half of it: the composition is out of copyright, but a

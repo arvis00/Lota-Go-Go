@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Gets the music back.
+# Rebuilds the music from its original sources.
 #
-# The eight recordings are not in the repository — they are ~9 MB of audio that
-# git does not need a history of. This downloads the originals from Wikimedia
-# Commons again and re-encodes them exactly the way the committed ones were
-# made, so a fresh clone ends up with the same shelf.
+# The eight .m4a files next to this script are committed, so a clone already has
+# them and nothing here has to be run to play the game. This exists to record
+# where each recording came from and to rebuild them: it downloads the originals
+# from Wikimedia Commons and re-encodes them exactly the way the committed ones
+# were made, byte for byte.
+#
+# The files have to stay committed. GitHub Pages serves the game straight out of
+# web/, so anything missing from the repository is a 404 on the phone and the
+# game plays nothing.
 #
 #   cd web/audio && ./fetch.sh          # fetch whatever is missing
 #   cd web/audio && ./fetch.sh --force  # rebuild everything from scratch

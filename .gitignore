@@ -113,11 +113,6 @@ InitTestScene*.unity*
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
 
-# The music itself. Eight classical recordings, ~9 MB of AAC, fetched and
-# re-encoded by web/audio/fetch.sh rather than kept in git history. Without
-# them the game runs fine, just silently. Licences stay tracked in
-# web/audio/CREDITS.md.
-/web/audio/*.m4a
 
 # Finder droppings
 .DS_Store

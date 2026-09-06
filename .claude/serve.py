@@ -7,6 +7,11 @@ session's server — and otherwise 8123.
 import functools, http.server, os, sys
 
 class NoCache(http.server.SimpleHTTPRequestHandler):
+    # Python guesses .m4a as audio/mp4a-latm, which iPhone Safari will not play.
+    # GitHub Pages gets this right on its own; this is only for local testing.
+    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
+                      '.m4a': 'audio/mp4'}
+
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         super().end_headers()
