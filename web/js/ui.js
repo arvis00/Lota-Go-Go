@@ -16,11 +16,13 @@ function costHtml(cost) {
   if (cost.t) parts.push('<span class="toy-ico"></span>' + cost.t);
   return parts.length ? parts.join('<i>+</i>') : 'Nemokama';
 }
+/** A level's purse. The boss level has none — it pays in outfits — and it
+    used to say so out loud on its own page and over its own wardrobe. An
+    empty purse is now simply not shown: the row it was in disappears. */
 function walletHtml(level) {
   const w = Save.purse(level), picks = Levels.get(level).picks, out = [];
   if (picks.indexOf('b') >= 0) out.push('<span class="cur"><span class="bone-ico"></span>' + w.b + '</span>');
   if (picks.indexOf('t') >= 0) out.push('<span class="cur"><span class="toy-ico"></span>' + w.t + '</span>');
-  if (!out.length) out.push('<span class="none">Čia nieko nerenkama</span>');
   return out.join('');
 }
 
@@ -44,7 +46,26 @@ const UI = {
     $('btnWinLobby').onclick = () => { Sfx.click(); Game.lobby(); };
     $('btnPause').onclick   = () => { Sfx.click(); this.pause(); };
     $('btnResume').onclick  = () => { Sfx.click(); this.resume(); };
+    /* Everything picked up so far is hers the moment she chooses to stop —
+       nobody should have to crash into a bin to be paid for the run. */
     $('btnPauseLobby').onclick = () => { Sfx.click(); this.bank(false); Game.lobby(); };
+    $('btnSkipScene').onclick = () => { Sfx.click(); Game.skipScene(); };
+    $('btnBriefBack').onclick = () => { Sfx.click(); this.showLobby(); };
+    $('btnBriefOk').onclick = () => { Sfx.click(); Brief.unmount(); this.begin(this.briefLevel); };
+    $('btnConfirmNo').onclick = () => { Sfx.click(); this.closeConfirm(); };
+    $('btnConfirmYes').onclick = () => {
+      Sfx.click();
+      const go = this.confirmYes;
+      this.closeConfirm();
+      if (go) go();
+    };
+    $('btnPremiumTag').onclick = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.startFilm('lobby'); };
+    $('btnPremium').onclick   = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.startFilm('lobby'); };
+    $('btnPremiumBack').onclick = () => { Sfx.click(); Premium.close(); };
+    $('btnPremiumFilm').onclick = () => { Sfx.click(); Premium.startFilm('lobby'); };
+    $('btnSkipPremium').onclick = () => { Sfx.click(); Premium.endFilm(); };
+    $('btnPremiumPay').onclick = () => { Sfx.locked(); this.toast('Netrukus', 'Mokėjimas dar neįjungtas'); };
+    $('btnPremiumTry').onclick = () => { Sfx.locked(); this.toast('Netrukus', 'Bandymas dar neįjungtas'); };
     $('btnPreviewBack').onclick = () => { Sfx.click(); this.backFromPreview(); };
     $('btnSkipCut').onclick = () => { Sfx.click(); Game.skipCut(); };
     $('btnModeCp').onclick  = () => { Sfx.click(); this.pickMode('cp'); };
@@ -54,20 +75,21 @@ const UI = {
     $('btnPreviewSkins').onclick = () => { Sfx.click(); this.showSkins(Game.previewLevel); };
     $('btnPagePrev').onclick = () => Game.gotoLobbyPage(Game.lobbyPage - 1);
     $('btnPageNext').onclick = () => Game.gotoLobbyPage(Game.lobbyPage + 1);
-    $('btnSound').onclick   = () => {
-      Save.data.sound = Save.data.sound ? 0 : 1; Save.write();
-      Sfx.on = !!Save.data.sound; Sfx.init(); Sfx.resume(); if (Sfx.on) Sfx.click();
-      this.syncSound();
+    /* The same two switches exist in two places — the home page's corner and
+       the side of the pause menu — and they are the same switch: one handler,
+       one saved value, and syncSound() dresses every copy of them. */
+    $('btnSound').onclick = $('btnPauseSound').onclick = () => this.toggleSound();
+    $('btnMusic').onclick = $('btnPauseMusic').onclick = () => this.toggleMusic();
+    /* ⟳ throws the whole game away and pulls it down again. It sits one
+       thumb-width from PLAY, so it asks first and says what it is going to do. */
+    $('btnReload').onclick  = () => {
+      Sfx.click();
+      this.confirm('ATNAUJINTI?',
+        'Žaidimas bus parsiųstas iš naujo ir perkraus save. ' +
+        'Pažanga, aprangos, skaniukai ir žaisliukai <b>išliks</b> — ' +
+        'dingsta tik sena žaidimo kopija telefone.',
+        () => this.hardReload());
     };
-    /* the songs have their own switch: turning them off leaves the barks,
-       the boings and the treats exactly where they were */
-    $('btnMusic').onclick   = () => {
-      Save.data.music = Save.data.music ? 0 : 1; Save.write();
-      Music.setOn(!!Save.data.music);
-      this.syncSound();
-      if (Music.on) { Sfx.init(); Sfx.resume(); Music.preview(Game.lobbyLevel()); }
-    };
-    $('btnReload').onclick  = () => { Sfx.click(); this.hardReload(); };
     $('buildTag').textContent = BUILD;
     this.syncSound();
 
@@ -84,11 +106,51 @@ const UI = {
     }, 500);
   },
 
+  /* the effects: the barks, the boings and the treats */
+  toggleSound() {
+    Save.data.sound = Save.data.sound ? 0 : 1; Save.write();
+    Sfx.on = !!Save.data.sound; Sfx.init(); Sfx.resume(); if (Sfx.on) Sfx.click();
+    this.syncSound();
+  },
+  /* the songs have their own switch: turning them off leaves everything else
+     exactly where it was. In the middle of a level it stops the song there
+     and then, so it can be shut up without walking back to the lobby. */
+  toggleMusic() {
+    Save.data.music = Save.data.music ? 0 : 1; Save.write();
+    Music.setOn(!!Save.data.music);
+    this.syncSound();
+    if (!Music.on) return;
+    Sfx.init(); Sfx.resume();
+    if (Game.state === 'pause') Music.play(Game.run ? Game.run.level : 1);
+    else Music.preview(Game.lobbyLevel());
+  },
+
   syncSound() {
-    $('btnSound').textContent = Save.data.sound ? '♪' : '✕';
-    $('btnSound').style.opacity = Save.data.sound ? 1 : .5;
-    $('btnMusic').textContent = Save.data.music ? '♫' : '✕';
-    $('btnMusic').style.opacity = Save.data.music ? 1 : .5;
+    [['btnSound', 'btnPauseSound', Save.data.sound, '♪'],
+     ['btnMusic', 'btnPauseMusic', Save.data.music, '♫']].forEach(row => {
+      [row[0], row[1]].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = row[2] ? row[3] : '✕';
+        el.style.opacity = row[2] ? 1 : .5;
+      });
+    });
+  },
+
+  /* ---------------- yes / no ----------------
+     One dialog, borrowed by anything that would be a bad accident. It goes
+     over whatever is already on the screen rather than replacing it, so the
+     page underneath is still the answer to "what am I saying yes to?". */
+  confirmOn: false, confirmYes: null,
+  confirm(title, html, onYes) {
+    this.confirmOn = true; this.confirmYes = onYes || null;
+    $('confirmTitle').textContent = title;
+    $('confirmBody').innerHTML = html;
+    $('screen-confirm').classList.remove('hidden');
+  },
+  closeConfirm() {
+    this.confirmOn = false; this.confirmYes = null;
+    $('screen-confirm').classList.add('hidden');
   },
 
   /** Added to the home screen there is no address bar and no reload button,
@@ -123,8 +185,10 @@ const UI = {
   },
 
   hideAll() {
+    this.closeConfirm();
+    Brief.unmount();
     ['hud', 'screen-lobby', 'screen-skins', 'screen-over', 'screen-win', 'screen-pause', 'screen-preview',
-     'screen-mode', 'screen-cut']
+     'screen-mode', 'screen-cut', 'screen-brief', 'screen-premium', 'screen-pfilm']
       .forEach(id => $(id).classList.add('hidden'));
   },
 
@@ -147,7 +211,12 @@ const UI = {
     const open = Levels.unlocked(level);
 
     $('lobbySub').textContent = L.sub;
-    $('lobbyWallet').innerHTML = walletHtml(level);
+    const purse = walletHtml(level);
+    $('lobbyWallet').innerHTML = purse;
+    $('lobbyWallet').classList.toggle('hidden', !purse);
+    document.querySelector('.lobby-foot').classList.toggle('solo', !purse);
+    /* the extension lives one swipe past the last level that exists */
+    $('btnPremium').classList.toggle('hidden', Game.lobbyPage !== LEVELS.length - 1);
 
     const play = $('btnPlay'), skins = $('btnSkins'), note = $('lobbyLock');
     play.classList.toggle('shut', !open);
@@ -224,6 +293,9 @@ const UI = {
     /* the choice is put once, the first time this level is played; after that
        PLAY starts straight away with whatever was answered */
     if (Levels.chooses(level) && !Save.mode(level)) return this.showMode(level);
+    /* the boss level plays by rules nothing else in the game has, so PLAY
+       shows them first — four moving pictures and a line under each */
+    if (L.brief) return this.showBrief(level);
     this.begin(level);
   },
 
@@ -239,6 +311,45 @@ const UI = {
   showCut() {
     this.hideAll();
     $('screen-cut').classList.remove('hidden');
+  },
+
+  /* ---------------- what the boss level is going to ask ---------------- */
+  briefLevel: 4,
+  showBrief(level) {
+    this.briefLevel = level;
+    const L = Levels.get(level);
+    Game.state = 'brief';
+    this.hideAll();
+    $('screen-brief').classList.remove('hidden');
+    $('briefTitle').textContent = L.name;
+    $('briefSub').textContent = 'Čia niekas nerenkama į piniginę — tik energija. Štai kas tavęs laukia:';
+    Brief.mount($('briefGrid'));
+  },
+
+  /* ---------------- premium ---------------- */
+  showPremiumFilm() {
+    this.hideAll();
+    $('screen-pfilm').classList.remove('hidden');
+  },
+  showPremium() {
+    this.hideAll();
+    $('screen-premium').classList.remove('hidden');
+    this.drawPremiumSkin();
+  },
+  /** the outfit that comes free with it, drawn rather than described */
+  drawPremiumSkin() {
+    const cv = $('premSkin');
+    if (!cv) return;
+    const W = 96, H = 84, dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, W, H);
+    drawLota(c, W / 2, H - 6, {
+      state: 'sit', t: 1.2, skin: Save.data.skin, scale: 0.86,
+      shadow: true, face: 'happy', tilt: -0.08
+    });
   },
 
   /* ---------------- with or without checkpoints ---------------- */
@@ -452,7 +563,48 @@ const UI = {
     if (Game.state !== 'run' && Game.state !== 'fight') return;
     this.pausedFrom = Game.state;
     Game.state = 'pause'; Music.pause();
+    this.pauseStats();
     $('screen-pause').classList.remove('hidden');
+  },
+
+  /** What she is already carrying, and what walking away with it is worth.
+      Stopping here pays exactly what crashing into something would have —
+      so the panel says the number out loud rather than making anybody
+      finish a run they no longer want to be in. */
+  pauseStats() {
+    const r = Game.run, W = Game.world, box = $('pauseStats'), btn = $('btnPauseLobby');
+    if (!r || !W) { box.innerHTML = ''; btn.textContent = 'Grįžti į Lobby'; return; }
+    if (W.boss) {
+      /* the boss level banks nothing: it pays in outfits, at its finish line */
+      box.innerHTML =
+        row('Surinkta energijos', r.bones + ' / ' + W.treats) +
+        row('Pagreičių paw', Boss.charge ? 'pilna ⚡' : Boss.energy + ' / ' + BOSS.PER_CHARGE) +
+        row('Grįžus', 'lygis iš naujo', true);
+      btn.textContent = 'Grįžti į Lobby';
+      return;
+    }
+    const two = W.toys > 0;
+    const dbl = r.bones === W.treats ? 2 : 1;
+    const pB = (r.gotB || 0) * dbl, pT = (r.gotT || 0) * dbl;
+    const picks = Levels.get(r.level || 1).picks || 'b';
+    const gotB = picks.indexOf('b') >= 0 ? pB : 0;
+    const gotT = picks.indexOf('t') >= 0 ? pT : 0;
+    const pending = gotB + gotT;
+    const zoneName = Game.zoneAt(Game.lota.x).zone.name;
+    box.innerHTML =
+      (two ? row('Skaniukai', (r.gotB || 0) + ' / ' + W.collectibles) +
+             row('Žaisliukai', (r.gotT || 0) + ' / ' + W.toys)
+           : row(W.currency === 't' ? 'Surinkti žaisliukai' : 'Surinkti skaniukai',
+                 r.bones + ' / ' + W.treats)) +
+      row('Kur esi', zoneName) +
+      row('Atsiimsi dabar', pending
+        ? (two ? '+' + gotB + ' 🦴 +' + gotT + ' 🧸'
+               : '+' + pending + ' ' + (W.currency === 't' ? '🧸' : '🦴'))
+        : 'dar nieko', true);
+    btn.textContent = pending
+      ? 'Grįžti į Lobby · ' + (two ? '+' + gotB + ' 🦴 +' + gotT + ' 🧸'
+                                   : '+' + pending + ' ' + (W.currency === 't' ? '🧸' : '🦴'))
+      : 'Grįžti į Lobby';
   },
   resume() {
     if (Game.state !== 'pause') return;
@@ -492,6 +644,11 @@ const UI = {
     const pad = $('movepad');
     if (pad) pad.classList.toggle('show', !!on);
   },
+  /** the way out of the salon interlude; nothing else in a run is skippable */
+  sceneSkip(on) {
+    const b = $('btnSkipScene');
+    if (b) b.classList.toggle('hidden', !on);
+  },
   /** `n` of `max` symbols in hand, and whether that has made a whole charge */
   setEnergy(n, max, charge, left) {
     const box = $('hudEnergy'), pips = $('energyPips');
@@ -530,7 +687,9 @@ const UI = {
     this.hideAll();
     $('screen-skins').classList.remove('hidden');
     $('skinsTitle').textContent = level === 1 ? 'Aprangos' : level + ' lygio aprangos';
-    $('skinsWallet').innerHTML = walletHtml(level);
+    const purse = walletHtml(level);
+    $('skinsWallet').innerHTML = purse;
+    $('skinsWallet').classList.toggle('hidden', !purse);
 
     const grid = $('skinGrid');
     grid.innerHTML = '';

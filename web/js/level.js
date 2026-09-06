@@ -853,10 +853,6 @@ function buildWorld(track) {
       x = lip + dx(0.25);
       P.flat(1.5);
     }
-    /* the salon turns her on the spot several times: whoever is chasing her
-       loses her for a beat every time it happens */
-    if (z.spins) for (let si = 0; si < z.spins; si++)
-      W.spins.push({ x: zx0 + (x - zx0) * ((si + 1) / (z.spins + 1)), slip: 1 });
     if (br && !br.drop) rec.x1 = x;
     z.span = { x0: zx0, x1: x };
     z.baseY = mainBase;

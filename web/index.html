@@ -26,8 +26,12 @@
         <div class="hud-bar"><div id="hudBarFill"></div></div>
         <div id="hudChaseBar" class="hud-bar chase hidden"><div id="hudChaseFill"></div></div>
       </div>
-      <button id="btnPause" class="icon-btn" aria-label="Pauzė">II</button>
     </div>
+    <!-- Pause sits on the layer itself, not in the row: lying the phone down
+         the row fills up with badges and used to push it off the screen. -->
+    <button id="btnPause" class="icon-btn" aria-label="Pauzė">II</button>
+    <!-- the salon stops the level dead for six seconds; this is the way past it -->
+    <button id="btnSkipScene" class="skip-btn scene hidden">PRALEISTI ›</button>
     <div id="tut" class="tut">
       <div class="tut-row"><b id="tutUp">↑ / W</b><span>šokti</span></div>
       <div class="tut-row"><b id="tutDown">↓ / S</b><span>pasilenkti</span></div>
@@ -57,11 +61,13 @@
     <div class="lobby-actions">
       <button id="btnPlay" class="big-btn play">ŽAISTI</button>
       <button id="btnSkins" class="big-btn alt">APRANGOS</button>
+      <button id="btnPremium" class="big-btn prem hidden">✦ PREMIUM · +200 LYGIŲ</button>
     </div>
     <div class="lobby-foot">
       <div id="lobbyWallet" class="wallet"></div>
       <div id="lobbyBest" class="best"></div>
     </div>
+    <button id="btnPremiumTag" class="prem-tag" aria-label="Premium">✦ PREMIUM</button>
     <div class="lobby-tools">
       <span id="buildTag" class="build"></span>
       <button id="btnMusic" class="icon-btn round" aria-label="Muzika">♫</button>
@@ -153,9 +159,66 @@
   <!-- ===== PAUSE ===== -->
   <div id="screen-pause" class="layer screen dim hidden">
     <div class="panel">
+      <div class="side-tools">
+        <button id="btnPauseMusic" class="icon-btn round" aria-label="Muzika">♫</button>
+        <button id="btnPauseSound" class="icon-btn round" aria-label="Garsai">♪</button>
+      </div>
       <div class="panel-title small">PAUZĖ</div>
+      <div id="pauseStats" class="stats"></div>
       <button id="btnResume" class="big-btn play">Tęsti</button>
       <button id="btnPauseLobby" class="big-btn alt">Grįžti į Lobby</button>
+    </div>
+  </div>
+
+  <!-- ===== YES / NO ===== -->
+  <div id="screen-confirm" class="layer screen dim hidden">
+    <div class="panel">
+      <div id="confirmTitle" class="panel-title small">PATVIRTINK</div>
+      <div id="confirmBody" class="panel-sub"></div>
+      <button id="btnConfirmYes" class="big-btn play">Taip</button>
+      <button id="btnConfirmNo" class="big-btn alt">Ne</button>
+    </div>
+  </div>
+
+  <!-- ===== WHAT THE BOSS LEVEL ASKS OF HER ===== -->
+  <div id="screen-brief" class="layer screen hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <button id="btnBriefBack" class="icon-btn">‹</button>
+        <h2 id="briefTitle">Didysis pabėgimas</h2>
+      </div>
+      <div id="briefSub" class="brief-sub"></div>
+      <div id="briefGrid" class="brief-grid"></div>
+      <button id="btnBriefOk" class="big-btn play">OK</button>
+    </div>
+  </div>
+
+  <!-- ===== THE PREMIUM FILM ===== -->
+  <div id="screen-pfilm" class="layer hidden cut-layer">
+    <button id="btnSkipPremium" class="skip-btn">PRALEISTI ›</button>
+  </div>
+
+  <!-- ===== AND WHAT IT IS SELLING ===== -->
+  <div id="screen-premium" class="layer screen hidden">
+    <div class="prem-head">
+      <button id="btnPremiumBack" class="icon-btn">‹</button>
+      <div class="prem-chip">✦ PREMIUM</div>
+      <button id="btnPremiumFilm" class="icon-btn" aria-label="Filmukas">▶</button>
+    </div>
+    <div class="prem-sheet">
+      <div class="prem-title">DAR 200 LYGIŲ</div>
+      <div class="prem-lead">Lota atsiverčia knygą — ir už jos laukia visiškai naujas žaidimas.</div>
+      <div class="prem-grid">
+        <div class="prem-card"><b>+200 lygių</b><i>Nuo pirmos plytelės iki paskutinių durų</i></div>
+        <div class="prem-card"><b>Mini žaidimai</b><i>Viktorinos, mąstymo užduotys, kitokios kliūtys</i></div>
+        <div class="prem-card"><b>Istorija</b><i>Kiekvienas mini žaidimas — tos pačios istorijos dalis</i></div>
+        <div class="prem-card skin"><canvas id="premSkin"></canvas><div><b>Nemokama apranga</b><i>Knygos Lota — dovanų kartu su Premium</i></div></div>
+      </div>
+      <div class="prem-buy">
+        <button id="btnPremiumPay" class="big-btn play">PIRKTI · netrukus</button>
+        <button id="btnPremiumTry" class="big-btn alt">Išbandyti 3 lygius · netrukus</button>
+        <div class="prem-note">Mokėjimas ir bandymas dar neveikia — tai kol kas tik pristatymas.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -176,6 +239,8 @@
 <script src="js/boss.js"></script>
 <script src="js/fight.js"></script>
 <script src="js/game.js"></script>
+<script src="js/brief.js"></script>
+<script src="js/premium.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>

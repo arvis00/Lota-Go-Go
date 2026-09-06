@@ -29,7 +29,6 @@ const BOSS = {
   ORB_MISS: 0.045,    // and lost by running straight past one
   WASTE: 0.34,        // ground lost by letting a whole charge go to waste
   WASTE_MAX: 3,       // three wasted one after another and they simply have her
-  SPIN_GAIN: 0.14,    // ground won back every time she turns on the spot
   /* A thrown thing leaves the vet's hand THROW seconds before Lota reaches
      the spot it is aimed at, and is sitting in that spot LAND seconds before
      she gets there. The second and a half in between is the whole warning
@@ -84,11 +83,16 @@ const Boss = {
     this.sync();
   },
 
+  /** Is there a free slot in her paw? Five symbols is the whole of it, and
+      five symbols is a charge — so while a charge is sitting there unspent
+      she is full, and a sixth symbol is not hers to take. Spending the
+      charge empties the paw and the next symbol counts again. */
+  hasRoom() { return !this.on || !this.charge; },
+
   /** one energy symbol picked up */
   collect() {
-    if (!this.on) return;
+    if (!this.on || this.charge) return;   // full: the symbol was never taken
     this.gap = clamp(this.gap + BOSS.ORB_GAIN, 0, 1);
-    if (this.charge) return;               // a full charge cannot hold any more
     this.energy++;
     if (this.energy >= BOSS.PER_CHARGE) {
       this.energy = 0; this.charge = 1; this.holdT = 0;
@@ -116,13 +120,6 @@ const Boss = {
       life: .6, c: k % 2 ? '#8fe8ff' : '#ffffff'
     });
     UI.toast('⚡ Pirmyn!', 'prasiveržia');
-    this.sync();
-  },
-
-  /** the salon: she turns on the spot and whoever it is loses her for a beat */
-  slipped() {
-    if (!this.on) return;
-    this.gap = clamp(this.gap + BOSS.SPIN_GAIN, 0, 1);
     this.sync();
   },
 

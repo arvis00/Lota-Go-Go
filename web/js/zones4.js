@@ -7,7 +7,7 @@
      1 · Veterinarijos kabinetas — where the film ends and she lands
      2 · Klinikos koridorius     — short, and only there to teach it
      3 · Miesto gatvė            — the longest and hardest of the five
-     4 · Šunų kirpykla           — fast, chaotic, and it spins her round
+     4 · Šunų kirpykla           — fast, chaotic, and pink all the way
      5 · Paskutinis pabėgimas    — everything at once, at full speed
 
    There are no second routes down here and nothing to hunt for: the
@@ -426,14 +426,16 @@ const ZONES4 = [
 
   {
     /* ---- 4 · in through the salon door, and straight back out ----
-       She skids, turns on the spot and is gone again before the
-       groomer has worked out which way she went. */
+       She used to turn on the spot in here three times. It looked good and
+       it played badly: the camera swung, the floor went with it, and the
+       obstacle already on the screen arrived while nobody could read it. The
+       salon is now run straight through like everywhere else. */
     id: 'salon', name: 'Šunų kirpykla', sec: 48, diff: 0.92, floor: 'salonTile',
-    exit: 'backDoor', chaser: 'groomer', spins: 3, stops: 2,
+    exit: 'backDoor', chaser: 'groomer', stops: 2,
     /* the whole level stops dead in the doorway while the groomer tries to
        buy her off with a treat — see fight.js */
     scene: 'salon',
-    sub: 'kirpėja su mašinėle — ir Lota apsisuka jai prieš nosį',
+    sub: 'kirpėja su mašinėle — ir Lota pro ją tiesiai į galines duris',
     pal: { floorTop: '#ffd8e2', floorBody: '#f0b8c8', accent: '#e0748c',
            treadTop: '#fff0f4', treadSide: '#e0a8bc' },
     bg(ctx, VW, VH, camX, floorY, t, pal) { BG4.salonWall(ctx, VW, VH, camX, floorY, t); },

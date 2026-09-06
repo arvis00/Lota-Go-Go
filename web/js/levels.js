@@ -42,8 +42,11 @@ const LEVELS = [
     collect: 'Skaniukai — 18 trasoje. Žaisliukai — 12, ir visi paslėpti žemiau: '
            + 'kamuoliuką gausi tik nusileidusi pro skylę grindyse.' },
 
+  /* `brief` is the page of pictures that goes up before the film: this level
+     plays by rules no other level has, and all of them are invisible until
+     they have already gone wrong. */
   { n: 4, name: 'Didysis pabėgimas', sub: '4 lygis · boso lygis',
-    picks: '', playable: true, choose: false, film: true, bonus: { cp: 0, raw: 0 },
+    picks: '', playable: true, choose: false, film: true, brief: true, bonus: { cp: 0, raw: 0 },
     collect: 'Nieko rinkti nereikia — tik energiją ⚡. Penki ženklai = vienas '
            + 'pagreitis, o pagreitį reikia panaudoti: kas jo nenaudoja, tą pagauna. '
            + 'Paskutinėje arenoje bėgimas baigiasi ir prasideda boso kova: balti kaulai '

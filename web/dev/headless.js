@@ -31,6 +31,8 @@ vm.runInContext(`
   var UI = { showHud(){}, setBones(){}, setKey(){}, setZone(){}, setProgress(){},
              toast(){}, tut(){}, showOver(){}, showWin(){}, bank(){ return 0; },
              bossHud(){}, setEnergy(){}, setChase(){}, showCut(){}, movePad(){},
+             sceneSkip(){}, showBrief(){}, showPremium(){}, showPremiumFilm(){},
+             pauseStats(){}, confirm(){}, closeConfirm(){},
              winShown: false };
   Sfx.on = false;
   Save.load();

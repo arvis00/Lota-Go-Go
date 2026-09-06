@@ -52,8 +52,12 @@ const Scene = {
     G.state = 'scene'; G.stateT = 0;
     Boss.hold = true;
     L.vy = 0; L.grounded = true; L.duck = false; L.rot = 0; L.flip = 0;
+    /* only the salon may be walked out of: the arena is where the two buttons
+       are handed over and the victory scene is the level ending, and skipping
+       either of those would drop the player into a fight nobody explained */
     this.on = { kind: kind, t: 0, x0: L.x, base: G.floorBase(L),
-                said: {}, caught: 0, cardOn: 0 };
+                said: {}, caught: 0, cardOn: 0, skip: kind === 'salon' };
+    UI.sceneSkip(kind === 'salon');
     UI.tut(false);
     Sfx.init(); Sfx.resume();
     if (kind === 'arena') { UI.bossHud(false); Music.stop(); }
@@ -92,9 +96,13 @@ const Scene = {
     const s = this.on;
     this.on = null;
     if (!s) return;
+    UI.sceneSkip(false);
     if (s.kind === 'salon') {
-      /* back into the run, on the same floor, a dog's length further on */
+      /* back into the run, on the same floor, a dog's length further on.
+         Skipping lands her exactly where sitting through it would have —
+         past the groomer, treat and all. */
       const L = G.lota;
+      L.x = s.x0 + 258;
       L.rot = 0; L.flip = 0; L.state = 'run'; L.grounded = true; L.vy = 0;
       L.y = groundYAt(G.world, L.x, 'main');
       if (L.y == null) L.y = s.base;

@@ -6,8 +6,9 @@ const Game = {
   cv: null, ctx: null,
   cw: 0, ch: 0, VW: 960, VH: 540, scale: 1, ox: 0, oy: 0, dpr: 1,
   groundY: 410,
-  state: 'boot',          // boot | lobby | mode | preview | cut | run | scene | fight
-                          // | crash | over | win | pause
+  state: 'boot',          // boot | lobby | mode | brief | preview | cut | run | scene
+                          // | fight | crash | over | win | pause
+                          // | premium | pfilm
   world: null, worlds: {},
   trail: [], foxes: [],
   t: 0, last: 0, stateT: 0,
@@ -95,11 +96,15 @@ const Game = {
         e.preventDefault(); boost();
       }
       else if (k === 'Escape' || k === 'KeyP') {
-        if (this.state === 'cut') this.skipCut();
+        if (UI.confirmOn) UI.closeConfirm();
+        else if (this.state === 'cut') this.skipCut();
+        else if (this.state === 'pfilm') Premium.endFilm();
+        else if (this.state === 'scene') this.skipScene();
         else if (this.state === 'run' || this.state === 'fight') UI.pause();
         else if (this.state === 'pause') UI.resume();
         else if (this.state === 'preview') UI.backFromPreview();
-        else if (this.state === 'mode') UI.showLobby();
+        else if (this.state === 'premium') Premium.close();
+        else if (this.state === 'mode' || this.state === 'brief') UI.showLobby();
       }
       /* left and right are the lobby's pages everywhere else, and the two new
          buttons in the arena: in a fight they walk her across it */
@@ -267,6 +272,12 @@ const Game = {
     UI.showCut();
   },
   skipCut() { if (this.state === 'cut') Boss.endCut(this); },
+  /** the salon stops the level dead for six seconds; this walks past it */
+  skipScene() {
+    if (this.state !== 'scene' || !Scene.on || !Scene.on.skip) return;
+    Sfx.hush();
+    Scene.end(this);
+  },
 
   /** the picture standing in for a level that has no arena yet */
   showPreview(level) {
@@ -336,7 +347,7 @@ const Game = {
     this.fx.layerFade = 0; this.fx.fromLayer = 'main'; this.fx.fromX = sx;
     this.state = 'run'; this.stateT = 0;
     Fight.on = false; Scene.on = null;
-    UI.movePad(false);
+    UI.movePad(false); UI.sceneSkip(false);
     Music.play(level);
     UI.showHud();
     /* the boss level's energy, and whoever is coming up the road behind her */
@@ -421,6 +432,7 @@ const Game = {
 
     if (this.state === 'run') this.step(dt);
     else if (this.state === 'cut') Boss.stepCut(dt, this);
+    else if (this.state === 'pfilm') Premium.stepFilm(dt);
     else if (this.state === 'scene') Scene.step(dt, this);
     else if (this.state === 'fight') Fight.step(dt, this);
     else if (this.state === 'crash') {
@@ -688,10 +700,17 @@ const Game = {
       near.bones.forEach(bn => {
         if (bn.got || bn.layer !== LY) return;
         const cx = L.x, cy = L.y + (L.duck ? LOTA.DUCK_H : LOTA.STAND_H) * 0.5;
-        if (Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) { this.claim(bn); return; }
+        /* Five energy is all she can carry. On a full charge the sixth symbol
+           is left exactly where it is: not taken, not counted — and not held
+           against her either, since leaving it was not a mistake she made. */
+        const full = bn.cur === 'e' && !Boss.hasRoom();
+        if (!full && Math.abs(bn.x - cx) < 44 && Math.abs(bn.y - cy) < 66) { this.claim(bn); return; }
         /* on the boss level walking past energy is itself a mistake: it is
            what lets whoever is behind her make up the ground */
-        if (!bn.missed && bn.cur === 'e' && bn.x < L.x - 90) { bn.missed = 1; Boss.missed(); }
+        if (!bn.missed && bn.cur === 'e' && bn.x < L.x - 90) {
+          bn.missed = 1;
+          if (!full) Boss.missed();
+        }
       });
 
       /* --- the metro key, lying in the duct over the girl's room --- */
@@ -723,7 +742,6 @@ const Game = {
         sp.used = true; this.fx.spin = 1;
         Sfx.swipe();
         this.puff(L.x - 14, L.y, 7);
-        if (sp.slip) { Boss.slipped(); UI.toast('Pasimetė!', 'apsisuko jai prieš nosį'); }
       }
 
       /* --- and the places where the running simply stops: the salon
@@ -1083,7 +1101,8 @@ const Game = {
        the frame covered while the picture is tilted. The streaks over the top
        are the pan itself; without them a turn this fast just reads as the
        screen wobbling. */
-    const spin = this.state === 'lobby' ? 0 : this.fx.spin;
+    const spin = (this.state === 'lobby' || this.state === 'premium' || this.state === 'pfilm')
+      ? 0 : this.fx.spin;
     ctx.save();
     if (spin > 0) {
       const k = Math.sin((1 - spin) * Math.PI);
@@ -1093,9 +1112,11 @@ const Game = {
       ctx.translate(-this.VW / 2, -this.VH / 2);
     }
 
-    if (this.state === 'lobby' || this.state === 'mode') this.renderLobby();
+    if (this.state === 'lobby' || this.state === 'mode' || this.state === 'brief') this.renderLobby();
     else if (this.state === 'preview') this.renderPreview();
     else if (this.state === 'cut') Boss.drawCut(this);
+    else if (this.state === 'premium') Premium.drawScreen(this);
+    else if (this.state === 'pfilm') Premium.drawFilm(this);
     else {
       this.renderWorld();
       /* the arena and its interludes are drawn over the top of the place they

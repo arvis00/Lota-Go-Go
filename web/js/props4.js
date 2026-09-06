@@ -396,12 +396,10 @@ Object.assign(PROPS, {
     ctx.save(); ctx.globalAlpha = .5;
     for (let px = x + 20; px < x + w - 10; px += 44) line(ctx, px, y + 2, px, y + h * 0.32, '#8f6a3a', 3);
     ctx.restore();
-    ctx.save(); ctx.globalAlpha = .8;
-    for (let px = x + 30; px < x + w - 20; px += 128) {
-      line(ctx, px, y + h * 0.3, px, y + h, '#8b98a6', 7);
-      line(ctx, px - 26, y + h * 0.56, px + 26, y + h * 0.46, '#8b98a6', 5);
-    }
-    ctx.restore();
+    /* The uprights used to drop out of the boards to the pavement with a
+       brace laid across each of them, and a post with a bar across it is a
+       cross: a row of them standing in the street read as a graveyard and
+       not as scaffolding. The walkway hangs on its own now. */
     ctx.save(); ctx.globalAlpha = .7;
     for (let px = x + 8; px < x + w; px += 40) hazardTape(ctx, px, y + h * 0.34, 24, 8);
     ctx.restore();

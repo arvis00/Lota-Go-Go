@@ -4,8 +4,19 @@
 
    Same WebAudio context the sound effects use and, like everything
    else here, no files: every note is an oscillator and every drum is
-   a burst of noise. One tune per level, looping quietly under the
-   run while the effects keep playing on top of it.
+   a burst of noise.
+
+   What it plays is a shelf of classical tunes that are old enough to
+   belong to everybody — Mozart, Beethoven, Bach, Grieg, Tchaikovsky,
+   Rossini — arranged down to a melody, a bass line and a drum part.
+   Nothing is licensed and nothing is downloaded; these are the notes,
+   typed out, and the synth plays them.
+
+   The shelf is shuffled once when the page loads, so two launches do
+   not open on the same tune, and it moves on by itself: when a piece
+   has been round the number of times it asks for, the next one starts
+   underneath whatever is happening on screen. A level does not pick
+   its own song any more — the playlist runs across all of them.
 
    A song is three lines of text on a grid of eighth notes:
 
@@ -14,66 +25,119 @@
        drums  k kick, s snare, h hat
 
    `.` is a rest, `-` holds the note before it for one more eighth,
-   `|` is a bar line and means nothing to the parser. The three lines
-   loop on their own lengths, so a one-bar drum pattern under an
-   eight-bar melody comes back round in the right place by itself.
+   `|` is a bar line and means nothing to the parser. The bass and the
+   drums loop on their own lengths, so a one-bar drum pattern under an
+   eight-bar melody comes back round in the right place by itself; the
+   melody's length is what decides when the piece is over.
+
+   `plays` is how many times through the melody before moving on, and
+   `beats` says how many eighths are in a bar — the minuet is in three,
+   everything else is in four.
 ----------------------------------------------------------------*/
 
-const SONGS = {
-  /* 1 — Kelias į Londoną. C major, bouncy, the tune she trots to. */
-  1: {
-    bpm: 138,
-    lead: 'c5 .  e5 .  g5 -  e5 . | f5 .  e5 .  d5 -  .  . | ' +
-          'd5 .  f5 .  a5 -  f5 . | g5 -  e5 .  c5 -  -  . | ' +
-          'c5 .  e5 .  g5 -  a5 . | g5 -  e5 .  d5 -  .  . | ' +
-          'b4 .  d5 .  g5 -  f5 . | e5 -  c5 -  -  .  .  .',
-    bass: 'c3 .  c3 .  g2 .  c3 . | f2 .  f2 .  c3 .  f2 . | ' +
-          'd3 .  d3 .  a2 .  d3 . | g2 .  g2 .  d3 .  g2 . | ' +
-          'c3 .  c3 .  g2 .  c3 . | c3 .  c3 .  e3 .  c3 . | ' +
-          'g2 .  g2 .  d3 .  f3 . | c3 .  c3 .  g2 .  c3 .',
-    drums: 'k h s h k h s h | k h s h k h s k'
-  },
+const SONGS = [
+  /* Mozart — Eine kleine Nachtmusik, K.525, the opening. Public domain. */
+  { name: 'Nachtmusik', bpm: 140, plays: 3,
+    lead: 'g4 -  d4 -  g4 -  d4 - | g4 d4 g4 b4 d5 -  -  . | ' +
+          'd5 -  a4 -  d5 -  a4 - | d5 a4 d5 fs5 a5 - -  . | ' +
+          'a5 .  g5 .  fs5 . e5 . | d5 .  c5 .  b4 -  a4 . | ' +
+          'g4 .  b4 .  d5 .  g5 . | fs5 - d5 -  g4 -  -  .',
+    bass: 'g2 .  d3 .  g2 .  d3 . | g2 .  d3 .  g2 .  g2 . | ' +
+          'd2 .  a2 .  d2 .  a2 . | d2 .  a2 .  d2 .  d2 . | ' +
+          'd3 .  d3 .  a2 .  a2 . | g2 .  g2 .  d3 .  d3 . | ' +
+          'g2 .  b2 .  d3 .  g2 . | d3 .  d3 .  g2 .  g2 .',
+    drums: 'k h s h k h s h | k h s h k h s k' },
 
-  /* 2 — Nuo viešbučio iki miško. F major, sunnier and a shade slower;
-     the same shape, but it sways instead of trotting. */
-  2: {
-    bpm: 126,
-    lead: 'f4 .  a4 .  c5 -  a4 . | d5 -  c5 .  a4 -  .  . | ' +
-          'g4 .  bb4 . d5 -  bb4 . | c5 -  a4 .  f4 -  -  . | ' +
-          'a4 .  c5 .  f5 -  e5 . | d5 -  c5 .  a4 -  .  . | ' +
-          'bb4 . d5 .  g5 -  e5 . | f5 -  c5 -  a4 -  .  .',
-    bass: 'f2 .  f2 .  c3 .  f2 . | d3 .  d3 .  a2 .  d3 . | ' +
-          'bb2 . bb2 . f2 .  bb2 . | c3 .  c3 .  g2 .  c3 . | ' +
-          'f2 .  f2 .  c3 .  f2 . | d3 .  d3 .  a2 .  d3 . | ' +
-          'bb2 . bb2 . c3 .  c3 . | f2 .  f2 .  c3 .  f2 .',
-    drums: 'k .  s h  k h  s . | k .  s h  k h  s s'
-  },
+  /* Beethoven — Ode to Joy, from the Ninth. Public domain. */
+  { name: 'Džiaugsmo odė', bpm: 122, plays: 3,
+    lead: 'e5 -  e5 -  f5 -  g5 - | g5 -  f5 -  e5 -  d5 - | ' +
+          'c5 -  c5 -  d5 -  e5 - | e5 -  -  d5 d5 -  -  . | ' +
+          'e5 -  e5 -  f5 -  g5 - | g5 -  f5 -  e5 -  d5 - | ' +
+          'c5 -  c5 -  d5 -  e5 - | d5 -  -  c5 c5 -  -  .',
+    bass: 'c3 .  e3 .  g2 .  e3 . | g2 .  b2 .  d3 .  b2 . | ' +
+          'c3 .  e3 .  g2 .  e3 . | g2 .  d3 .  g2 .  g2 . | ' +
+          'c3 .  e3 .  g2 .  e3 . | g2 .  b2 .  d3 .  b2 . | ' +
+          'c3 .  e3 .  g2 .  e3 . | g2 .  d3 .  c3 .  c3 .',
+    drums: 'k .  s .  k .  s . | k .  s .  k .  s s' },
 
-  /* 3 — Šviesų šventė. D major, all bells and sparkle. */
-  3: {
-    bpm: 132,
-    lead: 'd5 .  fs5 . a5 -  fs5 . | b5 -  a5 .  fs5 - .  . | ' +
-          'g5 .  b5 .  d6 -  b5 . | a5 -  fs5 . d5 -  -  .',
-    bass: 'd3 .  d3 .  a2 .  d3 . | b2 .  b2 .  fs2 . b2 . | ' +
-          'g2 .  g2 .  d3 .  g2 . | a2 .  a2 .  e3 .  a2 .',
-    drums: 'k h h s k h h s | k h s h k s s h'
-  },
+  /* Mozart — Ah vous dirai-je, Maman, K.265: the tune every child on
+     this planet already knows. Public domain. */
+  { name: 'Žvaigždutė', bpm: 124, plays: 2,
+    lead: 'c5 -  c5 -  g5 -  g5 - | a5 -  a5 -  g5 -  -  - | ' +
+          'f5 -  f5 -  e5 -  e5 - | d5 -  d5 -  c5 -  -  - | ' +
+          'g5 -  g5 -  f5 -  f5 - | e5 -  e5 -  d5 -  -  - | ' +
+          'g5 -  g5 -  f5 -  f5 - | e5 -  e5 -  d5 -  -  - | ' +
+          'c5 -  c5 -  g5 -  g5 - | a5 -  a5 -  g5 -  -  - | ' +
+          'f5 -  f5 -  e5 -  e5 - | d5 -  d5 -  c5 -  -  -',
+    bass: 'c3 .  c3 .  g2 .  c3 . | f2 .  f2 .  c3 .  c3 . | ' +
+          'f2 .  f2 .  c3 .  c3 . | g2 .  g2 .  c3 .  c3 . | ' +
+          'c3 .  c3 .  g2 .  g2 . | c3 .  c3 .  g2 .  g2 . | ' +
+          'c3 .  c3 .  g2 .  g2 . | c3 .  c3 .  g2 .  g2 . | ' +
+          'c3 .  c3 .  g2 .  c3 . | f2 .  f2 .  c3 .  c3 . | ' +
+          'f2 .  f2 .  c3 .  c3 . | g2 .  g2 .  c3 .  c3 .',
+    drums: 'k h s h k h s h' },
 
-  /* 4 — Didysis pabėgimas. A minor, fast, and it does not let up. */
-  4: {
-    bpm: 152,
-    lead: 'a4 -  c5 .  a4 .  e5 . | f5 -  e5 .  c5 -  .  . | ' +
-          'g4 -  bb4 . g4 .  d5 . | e5 -  d5 .  a4 -  -  .',
-    bass: 'a2 a2 .  a2 e2 .  a2 . | f2 f2 .  f2 c3 .  f2 . | ' +
-          'g2 g2 .  g2 d2 .  g2 . | e2 e2 .  e2 b2 .  e2 .',
-    drums: 'k h k s k h k s | k k s h k h s s'
-  }
-};
+  /* Petzold — Minuet in G, BWV Anh.114, out of Bach's notebook for Anna
+     Magdalena. Three beats to the bar, which is why `beats` is 6. */
+  { name: 'Menuetas', bpm: 132, plays: 4, beats: 6,
+    lead: 'd5 -  g4 a4 b4 c5 | d5 -  g4 -  g4 - | ' +
+          'e5 -  c5 d5 e5 fs5 | g5 -  g4 -  g4 - | ' +
+          'c5 -  d5 c5 b4 a4 | b4 -  c5 b4 a4 g4 | ' +
+          'fs4 - g4 a4 b4 g4 | a4 -  -  -  -  -',
+    bass: 'g2 -  -  d3 -  - | g2 -  -  b2 -  - | ' +
+          'c3 -  -  g2 -  - | g2 -  -  d3 -  - | ' +
+          'a2 -  -  e3 -  - | g2 -  -  d3 -  - | ' +
+          'd3 -  -  a2 -  - | d3 -  -  d3 -  -',
+    drums: 'k h h s h h' },
+
+  /* Rossini — William Tell Overture, the final galop. Public domain, and
+     the only tune on the shelf that runs at the same speed she does. */
+  { name: 'Vilius Telis', bpm: 152, plays: 3,
+    lead: 'g4 g4 g4 -  g4 g4 g4 - | g4 g4 g4 g4 g4 -  -  . | ' +
+          'c5 c5 c5 -  c5 c5 c5 - | c5 c5 c5 c5 c5 -  -  . | ' +
+          'g4 g4 c5 -  e5 -  g5 - | e5 -  c5 -  g4 -  -  . | ' +
+          'g4 g4 g4 -  c5 c5 c5 - | e5 -  c5 -  c5 -  -  .',
+    bass: 'c3 c3 .  c3 g2 .  c3 . | c3 c3 .  c3 g2 .  g2 . | ' +
+          'c3 c3 .  c3 g2 .  c3 . | c3 c3 .  c3 g2 .  g2 . | ' +
+          'f2 f2 .  f2 c3 .  f2 . | c3 c3 .  c3 g2 .  g2 . | ' +
+          'g2 g2 .  g2 d3 .  g2 . | c3 c3 .  c3 g2 .  c3 .',
+    drums: 'k h k s k h k s | k k s h k h s s' },
+
+  /* Tchaikovsky — Dance of the Sugar Plum Fairy, from The Nutcracker.
+     Public domain, and the quietest thing here. */
+  { name: 'Cukrinė fėja', bpm: 118, plays: 4,
+    lead: 'e5 ds5 b4 g4 e5 ds5 b4 g4 | c5 b4 g4 e4 c5 -  -  . | ' +
+          'e5 ds5 b4 g4 e5 ds5 b4 g4 | fs5 e5 ds5 e5 b4 -  -  .',
+    bass: 'e2 .  .  e2 .  .  b2 . | c3 .  .  c3 .  .  g2 . | ' +
+          'e2 .  .  e2 .  .  b2 . | b2 .  .  fs2 . .  b2 .',
+    drums: '.  h .  h .  h .  h | .  h .  h .  h s  h' },
+
+  /* Grieg — In the Hall of the Mountain King, Peer Gynt. Public domain,
+     and it is here because it creeps. */
+  { name: 'Kalnų karalius', bpm: 128, plays: 4,
+    lead: 'b4 cs5 d5 e5 d5 fs5 d5 fs5 | b4 cs5 d5 e5 d5 fs5 d5 fs5 | ' +
+          'g5 e5 g5 fs5 d5 fs5 e5 cs5 | e5 b4 e5 d5 b4 d5 cs5 as4',
+    bass: 'b2 .  b2 .  b2 .  b2 . | b2 .  b2 .  b2 .  b2 . | ' +
+          'g2 .  g2 .  g2 .  g2 . | e2 .  e2 .  fs2 . fs2 .',
+    drums: 'k .  k .  k .  k . | k .  k .  k .  k k' },
+
+  /* Beethoven — Bagatelle in A minor, WoO 59, "Für Elise". Public domain. */
+  { name: 'Elizai', bpm: 132, plays: 3,
+    lead: 'e5 ds5 e5 ds5 e5 b4 d5 c5 | a4 -  .  c4 e4 a4 b4 - | ' +
+          '.  e4 gs4 b4 c5 -  .  e4 | e5 ds5 e5 ds5 e5 b4 d5 c5 | ' +
+          'a4 -  .  c4 e4 a4 b4 - | .  e4 c5 b4 a4 -  -  .',
+    bass: 'a2 .  e3 .  a2 .  e3 . | a2 .  e3 .  a2 .  e3 . | ' +
+          'e2 .  b2 .  e2 .  b2 . | a2 .  e3 .  a2 .  e3 . | ' +
+          'a2 .  e3 .  a2 .  e3 . | e2 .  b2 .  a2 .  a2 .',
+    drums: '.  h .  h .  h .  h | .  h .  h .  h .  h' }
+];
 
 const Music = {
   on: true,
   playing: false,
   song: null, level: 0,
+  /* the shelf, shuffled once per launch, and where in it we are */
+  order: null, idx: 0, len: 0,
   gain: null, soft: null, noise: null, timer: null, previewT: null,
   step: 0, nextT: 0, rate: 1,
   VOL: 0.14,          // the whole band, kept well under the effects
@@ -111,19 +175,56 @@ const Music = {
     if (!this.on) this.stop();
   },
 
+  /* ---------- the playlist ---------- */
+  /** Deal the shelf out in a fresh order. Called once, the first time
+      anything asks for music, so every launch opens on a different piece. */
+  shuffle() {
+    this.order = SONGS.map((s, i) => i);
+    for (let i = this.order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = this.order[i]; this.order[i] = this.order[j]; this.order[j] = t;
+    }
+    this.idx = 0;
+  },
+  /** the piece at the front of the queue, and step past it */
+  take() {
+    if (!this.order || !this.order.length) this.shuffle();
+    const song = SONGS[this.order[this.idx % this.order.length]];
+    this.idx = (this.idx + 1) % this.order.length;
+    return song;
+  },
+  /** how many eighths one piece lasts, all the way round `plays` times */
+  measure(song) {
+    if (!song.c) song.c = { lead: compileNotes(song.lead), bass: compileNotes(song.bass),
+                            drums: compileDrums(song.drums) };
+    return song.c.lead.n * (song.plays || 2);
+  },
+
   /* ---------- transport ---------- */
-  /** start (or keep) the tune belonging to a level */
+  /** Put music on. `level` no longer picks the tune — the playlist does —
+      but it is still passed in, because how fast she is running is a level's
+      business and setRate() reads from there. */
   play(level) {
     if (!this.on) return;
     const ac = this.ensure();
     if (!ac) return;
     Sfx.resume();
     clearTimeout(this.previewT); this.previewT = null;
-    const song = SONGS[level] || SONGS[1];
-    if (this.playing && this.song === song) return;     // already running
-    this.song = song; this.level = level;
-    this.step = 0; this.rate = 1;
+    if (this.playing && this.song) return;              // already running
+    /* a piece that was only paused picks up where it was; otherwise the
+       next one off the shelf starts from the top */
+    if (!this.song) { this.song = this.take(); this.step = 0; this.rate = 1; }
+    this.len = this.measure(this.song);
+    this.level = level;
     this.start(ac);
+  },
+
+  /** one piece has been round often enough: the next one starts on the
+      very next eighth, without stopping the clock */
+  advance() {
+    this.song = this.take();
+    this.len = this.measure(this.song);
+    this.step = 0;
   },
 
   /** put a couple of bars on, so turning the music on is audible in the lobby */
@@ -184,6 +285,9 @@ const Music = {
       this.tick(this.step, this.nextT);
       this.nextT += 30 / (this.song.bpm * this.rate);   // one eighth note
       this.step++;
+      /* a piece that has finished hands over mid-run: nobody has to go back
+         to the lobby to hear a different one */
+      if (this.len && this.step >= this.len) this.advance();
     }
   },
 

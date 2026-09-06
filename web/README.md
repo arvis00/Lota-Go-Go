@@ -26,7 +26,9 @@ iPhone/iPad: Safari → Share → „Add to Home Screen" — žaidimas veiks per
 juostos, nei perkrovimo mygtuko, todėl iPhone gali savaitėmis rodyti seną, savo talpykloje
 gulinčią versiją. Pradžios ekrano viršuje dešinėje yra **⟳**: jis išmeta visas talpyklas,
 iš naujo parsiunčia kiekvieną `js/` failą (`fetch(..., { cache: 'reload' })`) ir grįžta
-nauju adresu `?v=<laikas>`. Šalia jo maža data — tai `BUILD` iš `js/main.js`, t. y. versija,
+nauju adresu `?v=<laikas>`. Jis stovi per nykštį nuo *ŽAISTI*, todėl **pirma klausia**:
+langelis paaiškina, kad bus parsiųsta nauja kopija ir kad pažanga, aprangos ir piniginės
+**išlieka**, ir siūlo *Taip* / *Ne*. Šalia jo maža data — tai `BUILD` iš `js/main.js`, t. y. versija,
 kuri iš tikrųjų veikia. **Keičiant žaidimą `BUILD` reikia pasikelti ranka** — kitaip data
 neparodys, kad atnaujinimas suveikė.
 
@@ -38,8 +40,9 @@ neparodys, kad atnaujinimas suveikė.
 | Pasilenkti | mygtukas **▼** arba swipe žemyn (laikyti) | `↓` / `S` |
 | Pagreitis ⚡ (tik boso lygyje) | mygtukas **⚡** | `X` / `E` / `⇧ Shift` |
 | Eiti kairėn / dešinėn (**tik boso kovoje**) | mygtukai **◀ ▶** apačioje kairėje | `←` / `→` / `A` / `D` |
-| Pauzė | mygtukas viršuje | `Esc` / `P` |
-| Praleisti filmuką (boso lygyje) | mygtukas **PRALEISTI** | `Esc` |
+| Pauzė | mygtukas **II** viršuje dešinėje | `Esc` / `P` |
+| Praleisti filmuką (boso lygyje, Premium) | mygtukas **PRALEISTI** | `Esc` |
+| Praleisti kirpyklos sceną | mygtukas **PRALEISTI** po **II** | `Esc` |
 | Kitas / ankstesnis lygis (pradžios ekrane) | swipe į kairę / dešinę arba **‹ ›** | `←` / `→` |
 
 Lota bėga pati — kryptis nevaldoma. **Vienintelė išimtis — paskutinė boso arena:** ten ji
@@ -109,7 +112,9 @@ skirtingą kiekį, kad nė viena nebūtų uždirbama taip pat kaip kita.
 
 ## Muzika ir garsai
 
-Viršutiniame dešiniajame pradžios ekrano kampe yra du atskiri jungikliai:
+Viršutiniame dešiniajame pradžios ekrano kampe yra du atskiri jungikliai — **ir lygiai tie
+patys du jungikliai yra pauzės meniu kampe**, tad dainą galima išjungti nepertraukiant
+bėgimo ir negrįžtant į Lobby:
 
 | Mygtukas | Ką išjungia |
 |---|---|
@@ -122,28 +127,112 @@ gauna pirmą angliškų balsų sąrašo balsą, Lota ir kirpėjas kitą. Jei per
 ir nepradeda kalbėti (senesnė naršyklė, išjungtas kalbos variklis), tą pačią repliką
 suurzgia `Sfx.babble()` — po burbtelėjimą skiemeniui. Jokių garso failų nė čia nėra.
 
-Kiekvienas lygis turi savo dainą, ir ji groja tol, kol Lota bėga: pauzė ją sustabdo toje
-pačioje vietoje, dūžis ir finišas — nutildo, kad būtų girdėti pats dūžis ar finišo melodija.
-Bėgant lygis greitėja, ir daina kartu su juo paskuba iki 14 % (`Music.setRate()`). Įjungus
-**♫** pradžios ekrane, kelios taktos pagrojamos iš karto — kad girdėtųsi, kas įjungta.
+### Klasika, sumaišyta kas paleidimą
 
-Dainos gyvena `js/music.js` ir, kaip ir visa kita čia, jokių failų neturi: melodija —
-kvadratinė banga, bosas — trikampė, būgnai — triukšmo pliūpsniai. Daina užrašoma trimis
-eilutėmis aštuntinių tinklelyje:
+Grojaraštyje yra **aštuonios klasikos pjesės, visos seniai viešame naudojime** ir visos
+tinkamos vaikams:
+
+| Pjesė | Kompozitorius |
+|---|---|
+| *Eine kleine Nachtmusik* (pradžia) | Mozart |
+| *Džiaugsmo odė* | Beethoven |
+| *Žvaigždutė* (*Ah vous dirai-je, Maman*) | Mozart |
+| *Menuetas G-dur* (iš Anos Magdalenos knygelės) | Petzold / Bach |
+| *Viliaus Telio* uvertiūros galopas | Rossini |
+| *Cukrinės fėjos šokis* | Čaikovskis |
+| *Kalnų karaliaus menėje* | Grieg |
+| *Elizai* | Beethoven |
+
+**Lygis dainos nebesirenka.** Įkėlus puslapį lentyna sumaišoma (`Music.shuffle()`), tad du
+paleidimai neprasideda ta pačia melodija, ir grojaraštis eina per visus lygius iš eilės.
+**Pjesei pasibaigus kita pradedama toje pačioje vietoje** — nereikia nei grįžti į Lobby,
+nei ko nors spausti: `Music.advance()` perjungia dainą kito aštuntinio metu, laikrodžio
+nesustabdydamas. Kiekviena pjesė sukasi `plays` kartų (30–47 s), tada užleidžia vietą.
+
+Pauzė sustabdo dainą toje pačioje takto vietoje, dūžis ir finišas — nutildo, kad būtų
+girdėti pats dūžis ar finišo melodija. Bėgant lygis greitėja, ir daina kartu su juo
+paskuba iki 14 % (`Music.setRate()`). Įjungus **♫** pradžios ekrane, kelios taktos
+pagrojamos iš karto — kad girdėtųsi, kas įjungta.
+
+Dainos gyvena `js/music.js` ir, kaip ir visa kita čia, **jokių garso failų neturi**:
+melodija — kvadratinė banga, bosas — trikampė, būgnai — triukšmo pliūpsniai. Natos tiesiog
+surašytos ranka. Daina užrašoma trimis eilutėmis aštuntinių tinklelyje:
 
 ```js
-2: {
-  bpm: 126,
-  lead:  'f4 .  a4 .  c5 -  a4 . | ...',   // melodija
-  bass:  'f2 .  f2 .  c3 .  f2 . | ...',   // bosas
-  drums: 'k .  s h  k h  s . | ...'        // k bosinis būgnas, s būgnelis, h lėkštė
+{ name: 'Džiaugsmo odė', bpm: 122, plays: 3,
+  lead:  'e5 -  e5 -  f5 -  g5 - | ...',   // melodija
+  bass:  'c3 .  e3 .  g2 .  e3 . | ...',   // bosas
+  drums: 'k .  s .  k .  s . | ...'        // k bosinis būgnas, s būgnelis, h lėkštė
 }
 ```
 
 `.` — pauzė, `-` — pratęsia prieš tai buvusią natą dar vienam aštuntiniui, `|` — taktos
 brūkšnys (skaitytojui, ne kodui). Natos rašomos `c5`, `fs5` (diezas), `bb4` (bemolis).
-Trys eilutės sukasi kiekviena savo ilgiu, tad vienos taktos būgnai po aštuonių taktų
-melodija patys grįžta į vietą. Naują dainą pakanka įrašyti į `SONGS` prie lygio numerio.
+Bosas ir būgnai sukasi kiekvienas savo ilgiu, tad vienos taktos būgnai po aštuonių taktų
+melodija patys grįžta į vietą; **melodijos ilgis nusako, kada pjesė baigiasi**. Menuetas
+yra trimis ketvirtinėmis, todėl jo taktas — šeši aštuntiniai (`beats: 6`), o būgnų eilutė
+irgi šešių. Naują pjesę pakanka įrašyti į `SONGS` masyvą — daugiau niekur nieko keisti
+nereikia.
+
+## Pauzės meniu
+
+Pauzė nebėra vien *Tęsti* / *Grįžti į Lobby*:
+
+- **kampe stovi tie patys ♫ ir ♪, kaip pradžios ekrane** — daina išjungiama vietoje,
+  negrįžtant į Lobby ir neatidarant jokio kito meniu;
+- **rodoma, kiek jau surinkta** ir kiek už tai bus sumokėta: `Surinkti skaniukai 6 / 15`,
+  `Kur esi · Kiemas`, `Atsiimsi dabar +6 🦴`;
+- **grįžimas į Lobby atiduoda tai, kas surinkta.** Mygtukas taip ir parašytas —
+  *Grįžti į Lobby · +6 🦴* — ir sumoka lygiai tiek pat, kiek būtų sumokėjęs dūžis su
+  *Baigti*. Niekam nebereikia specialiai trenktis į šiukšliadėžę, kad atsiimtų savo.
+
+Boso lygyje piniginės nėra, tad pauzė ten rodo kitką: kiek energijos surinkta, kiek jos
+letenoje, ir kad grįžus lygis prasidės iš naujo.
+
+## Boso lygio įžanga
+
+Boso lygis žaidžiamas ne taip, kaip visi kiti, ir visos jo taisyklės iki pirmos klaidos
+yra nematomos. Todėl paspaudus *ŽAISTI* pirmiausia atsiveria **lapas su keturiais
+judančiais paveikslėliais**, po kiekvienu — viena eilutė:
+
+| Paveikslėlis | Ką sako |
+|---|---|
+| Lota bėga, veterinarė iš paskos | Bėk ir nesustok |
+| Penki taškeliai, prisipildantys po vieną | Rink energiją ⚡ — penki ženklai, vienas pagreitis |
+| Mygtukas **⚡** ir prasiveržimas | Panaudok pagreitį, kitaip jis suges |
+| Arena, balti ir oranžiniai kaulai | Boso kova |
+
+Paveikslėliai piešiami taip pat, kaip visa kita — `js/brief.js`, po drobę kortelei, viena
+`requestAnimationFrame` kilpa visoms. Paspaudus **OK** prasideda įprastas įžanginis
+filmukas. Boso lygio pradžios ekrane ir jo spintoje **nebėra užrašo „čia nieko
+nerenkama"** — tuščia piniginė tiesiog nerodoma.
+
+## Premium (kol kas tik pristatymas)
+
+Tikro pratęsimo, mokėjimo ar trijų lygių bandymo **nėra ir nekuriama** — yra tik reklama.
+
+Pradžios ekrano viršuje kairėje stovi **✦ PREMIUM** ženkliukas, o nubraukus iki boso lygio
+po *APRANGOS* atsiranda ir platus **✦ PREMIUM · +200 LYGIŲ** mygtukas. Abu paleidžia tą
+patį **~19 s filmuką** (`js/premium.js`), kurį galima praleisti (**PRALEISTI** / `Esc`):
+
+1. Lota — ta pati juoda šnaucerė — savo kambaryje pamato **knygą**;
+2. knyga atsiverčia, iš jos veržiasi spalvos, ir Lota **uraganu įsisuka į ją**;
+3. kita pusė **nupiešta kreidelėmis**: popierius, subraižytas dangus, saulė, gėlės — ir
+   pati Lota su ant jos primargintomis spalvomis;
+4. ji mato **EXIT duris** ir bėga jų link. Durys **nėra** kreidinės — tai tos pačios durys,
+   kaip lygiuose ir pradžios ekrane, ir tuo visa scena ir laikosi;
+5. po letenomis atsiranda žalia plytelė **LEVEL 1**, ji pažvelgia žemyn — ir plytelių
+   pasirodo daugiau. Lenta **išsiskleidžia**: penkios eilės po dešimt, **50 plytelių**
+   (ne visi 200), o už paskutinės vis dar stovi tos pačios EXIT durys;
+6. Lota **įsiurbiama į pirmą plytelę**;
+7. **mini žaidimai**: viktorina, atminties kortelės, labirintas ir kitokios kliūtys —
+   kiekvienas su savo fonu ir kiekviename **Lota**;
+8. smūgis, žiedai, ir vaizdas nusileidžia ant **Premium ekrano**.
+
+Premium ekranas turi savo, ne pradžios ekrano, foną (irgi pieštą: atversta knyga, iš jos
+kylantys spinduliai ir plytelės), o viduryje — kas duodama: **+200 lygių**, mini žaidimai,
+istorija ir **viena nemokama apranga**. Apačioje yra vieta mokėjimui ir vieta trijų lygių
+bandymui; abu mygtukai kol kas sako *netrukus* ir nieko nedaro.
 
 ## Aprangos
 
@@ -507,16 +596,16 @@ netikėtai po nosimi. Kinta tik tai, **kur jis piešiamas**:
   kuriame bus pati kliūtis, o aplink jį besiveriantis žiedas rodo, kiek liko. Kai kliūtis
   įslenka į ekraną, atsakymas jau seniai matomas.
 
-**Kirpykloje Lota apsisuka.** Trijose vietose kamera staigiai nusisuka kartu su ja
-(tas pats efektas, kaip pirmame lygyje ant molo), kirpėja akimirkai ją pameta ir atsilieka.
-
 #### Energija ir pagreitis
 
 Boso lygyje **nieko nerenkama į piniginę** — nei kaulų, nei žaisliukų. Ant trasos guli tik
 **energijos ženklai ⚡** (84 visame lygyje), ir jie ne skaičiuojami, o naudojami:
 
-- **penki ⚡ = vienas pilnas užtaisas.** HUD'e viršuje kairėje matosi penki taškeliai;
-  užsipildę jie ima pulsuoti, o mygtukas **⚡** įsijungia;
+- **penki ⚡ = vienas pilnas užtaisas, ir daugiau į leteną netelpa.** HUD'e viršuje
+  kairėje matosi penki taškeliai; užsipildę jie ima pulsuoti, o mygtukas **⚡** įsijungia.
+  **Šeštas ⚡ prie pilno užtaiso neimamas išvis:** jis lieka gulėti kur gulėjęs, niekas
+  neužskaitoma ir niekas neatimama — praėjimas pro šalį pilnomis letenomis nekainuoja
+  nieko. Panaudojus pagreitį vieta atsilaisvina, ir kitas ženklas vėl skaičiuojamas;
 - **užtaisą reikia panaudoti.** Paspaudus (`X` / `E` / `⇧`, arba mygtuką **⚡**) Lota
   **prasiveržia**: 2,6 s bėga pusantro karto greičiau, persekiotojai atmetami į patį galą,
   o viskas, kas pasitaiko kelyje, **išlekia į šalis** — pro pagreitį prasiveržiama, o ne
@@ -554,7 +643,10 @@ kojų, ir žaidimas tęsiasi toje pačioje vietoje, kur buvo sustojęs — tik k
 pikselių toliau, ant tos pačios tuščios grindų atkarpos, kuria prasideda kiekviena arena.
 
 Scena rodoma vieną kartą per bėgimą; grįžus nuo kontrolinio taško, esančio už jos, ji
-nebekartojama.
+nebekartojama. Jai sukantis po pauzės mygtuku šviečia **PRALEISTI** (arba `Esc`): tada Lota
+iškart atsiduria ten, kur būtų atsidūrusi ją peržiūrėjus — už kirpėjo, su skanėstu, ant tos
+pačios grindų atkarpos. Praleisti galima **tik šitą** sceną: arenos susirinkimas dalija du
+naujus mygtukus, o finalas yra pati lygio pabaiga, tad jų praleisti negalima.
 
 #### Penkta arena: perėjimas į kovą
 
@@ -740,8 +832,9 @@ pasiektos vietos pradžią — mygtukas ekrane rodo, nuo kurios vietos tęsiama 
 
 Skaniukai, surinkti iki kontrolinio taško, išlieka; tos vietos skaniukai atstatomi, nes
 per ją bėgama iš naujo. Surinkti skaniukai **atiduodami tik pasibaigus bėgimui** — pasiekus
-finišą arba paspaudus *Baigti*. Todėl žūtis prie kontrolinio taško nieko neduoda ir nieko
-neatima.
+finišą, paspaudus *Baigti* arba **išėjus per pauzę į Lobby**. Todėl žūtis prie kontrolinio
+taško nieko neduoda ir nieko neatima, o norint atsiimti surinktus dalykus nebūtina laukti
+dūžio.
 
 **Be kontrolinių taškų.** Vėliavėlių trasoje išvis nėra — jos nepiešiamos, nes jų nėra.
 Vienintelis kontrolinis taškas yra starto linija, tad atsitrenkus prarandama viskas:
@@ -781,7 +874,7 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | Failas | Ką daro |
 |---|---|
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
-| `js/music.js` | keturios dainos (po vieną lygiui) ir jas grojantis WebAudio grotuvas |
+| `js/music.js` | aštuonios klasikos pjesės (viešas naudojimas) ir jas grojantis WebAudio grotuvas — grojaraštis maišomas kas paleidimą |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + visos aprangos |
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
@@ -796,7 +889,9 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | `js/levels.js` | keturi lygiai, `TRACKS` (kas iš ko pastatoma), atrakinimo taisyklės, premijos už finišą, lygių nuotraukos |
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
-| `js/ui.js` | ekranai, HUD (boso energija ir persekiotojų juosta taip pat), aprangų parduotuvė |
+| `js/brief.js` | boso lygio įžangos lapas: keturios judančios kortelės su paaiškinimais |
+| `js/premium.js` | Premium pristatymas: ~19 s filmukas (knyga, kreidinis pasaulis, 50 plytelių, mini žaidimai) ir Premium ekrano fonas |
+| `js/ui.js` | ekranai, HUD (boso energija ir persekiotojų juosta taip pat), aprangų parduotuvė, pauzės meniu, *Taip / Ne* langelis |
 | `dev/bgs.html` | visų vietų fonai vienoje lentelėje, po kelis kadrus iš eilės — kad kartojimasis matytųsi iš karto (atskiras puslapis) |
 | `dev/bot.js` | testinis botas (žaidimo neįkeliamas) |
 | `dev/headless.js` | tas pats botas be naršyklės — `node dev/headless.js <lygis>` |
