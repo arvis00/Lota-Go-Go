@@ -4,7 +4,9 @@
 trasas — **1: nuo namų iki Londono**, **2: nuo viešbučio iki miško**, **3: nuo debesų iki
 žvaigždžių** ir **4: Didysis pabėgimas** — boso lygis nuo veterinaro stalo iki pat namų,
 ilgiausias, greičiausias ir sunkiausias iš visų. Grynas HTML5 + Canvas, be jokių
-bibliotekų ir be paveikslėlių: visa grafika piešiama kodu (vektoriai).
+bibliotekų ir be paveikslėlių: visa grafika piešiama kodu (vektoriai). Vienintelis
+žaidimo turtas yra muzika — aštuoni laisvos licencijos klasikos įrašai, kurių pačių
+repozitorijoje nėra: juos parsisiunčia `web/audio/fetch.sh`.
 
 ## Paleidimas
 
@@ -125,54 +127,95 @@ bėgimo ir negrįžtant į Lobby:
 `speechSynthesis` varikliui, pakelia toną ir paskubina, kad skambėtų komiškai — veterinarė
 gauna pirmą angliškų balsų sąrašo balsą, Lota ir kirpėjas kitą. Jei per 380 ms niekas taip
 ir nepradeda kalbėti (senesnė naršyklė, išjungtas kalbos variklis), tą pačią repliką
-suurzgia `Sfx.babble()` — po burbtelėjimą skiemeniui. Jokių garso failų nė čia nėra.
+suurzgia `Sfx.babble()` — po burbtelėjimą skiemeniui. Nei kalba, nei garsai jokių failų
+neturi; failus turi tik muzika.
 
 ### Klasika, sumaišyta kas paleidimą
 
-Grojaraštyje yra **aštuonios klasikos pjesės, visos seniai viešame naudojime** ir visos
-tinkamos vaikams:
+Grojaraštyje yra **aštuoni klasikos įrašai**, gulintys `web/audio/` aplanke. Tai jau
+**tikri atlikimai, o ne natos**: anksčiau žaidimas melodijas turėjo susirašęs pats ir grojo
+jas osciliatoriumi, tad neturėjo nė vieno garso failo, bet ir skambėjo kaip konsolė,
+mėginanti pamėgdžioti orkestrą.
 
-| Pjesė | Kompozitorius |
-|---|---|
-| *Eine kleine Nachtmusik* (pradžia) | Mozart |
-| *Džiaugsmo odė* | Beethoven |
-| *Žvaigždutė* (*Ah vous dirai-je, Maman*) | Mozart |
-| *Menuetas G-dur* (iš Anos Magdalenos knygelės) | Petzold / Bach |
-| *Viliaus Telio* uvertiūros galopas | Rossini |
-| *Cukrinės fėjos šokis* | Čaikovskis |
-| *Kalnų karaliaus menėje* | Grieg |
-| *Elizai* | Beethoven |
+| Failas | Pjesė | Kompozitorius | Licencija |
+|---|---|---|---|
+| `nachtmusik-allegro.m4a` | *Eine kleine Nachtmusik* — I. Allegro | Mozart | Public domain |
+| `nachtmusik-rondo.m4a` | *Eine kleine Nachtmusik* — IV. Rondo | Mozart | Public domain |
+| `fur-elise.m4a` | *Elizai* | Beethoven | Public domain |
+| `vivaldi-spring.m4a` | *Keturi metų laikai*: Pavasaris — I. Allegro | Vivaldi | Public Domain Mark |
+| `mountain-king.m4a` | *Kalnų karaliaus menėje* | Grieg | Public domain |
+| `gymnopedie-1.m4a` | *Gymnopédie* Nr. 1 | Satie | Public domain |
+| `blue-danube.m4a` | *Mėlynasis Dunojus* | Strauss | CC0 |
+| `sugar-plum-fairy.m4a` | *Cukrinės fėjos šokis* | Čaikovskis | **CC BY 3.0** |
 
-**Lygis dainos nebesirenka.** Įkėlus puslapį lentyna sumaišoma (`Music.shuffle()`), tad du
-paleidimai neprasideda ta pačia melodija, ir grojaraštis eina per visus lygius iš eilės.
-**Pjesei pasibaigus kita pradedama toje pačioje vietoje** — nereikia nei grįžti į Lobby,
-nei ko nors spausti: `Music.advance()` perjungia dainą kito aštuntinio metu, laikrodžio
-nesustabdydamas. Kiekviena pjesė sukasi `plays` kartų (30–47 s), tada užleidžia vietą.
+**Kūrinio amžius nieko nelemia — svarbi įrašo licencija.** Klasikinė pjesė yra viešame
+naudojime todėl, kad kompozitorius mirė seniai, bet **įrašas turi savo atskirą autorių
+teisę**, priklausančią atlikėjui. Naujas Mozarto atlikimas **nėra** laisvas vien dėl to,
+kad Mozartas laisvas. Kiekvienas šių aštuonių failų buvo tikrintas po vieną; septyni yra
+public domain arba CC0, o Čaikovskis yra CC BY 3.0 ir **reikalauja nuorodos**. Ką kam
+privalu priskirti, surašyta `audio/CREDITS.md` — tai failas, kurį reikia perskaityti
+prieš dedant į aplanką ką nors naujo.
 
-Pauzė sustabdo dainą toje pačioje takto vietoje, dūžis ir finišas — nutildo, kad būtų
-girdėti pats dūžis ar finišo melodija. Bėgant lygis greitėja, ir daina kartu su juo
-paskuba iki 14 % (`Music.setRate()`). Įjungus **♫** pradžios ekrane, kelios taktos
-pagrojamos iš karto — kad girdėtųsi, kas įjungta.
+**Lygis dainos nesirenka.** Įkėlus puslapį lentyna sumaišoma (`Music.shuffle()`), tad du
+paleidimai neprasideda ta pačia pjese, ir grojaraštis eina per visus lygius iš eilės.
+**Įrašui pasibaigus kitas pradedamas iš karto** — nereikia nei grįžti į Lobby, nei ko nors
+spausti: `ended` įvykis pats iškviečia `Music.advance()`. Jei failas neatsidaro ar
+neatsikoduoja, `error` įvykis perverčia į kitą, kad muzika dėl vieno failo nenutiltų.
 
-Dainos gyvena `js/music.js` ir, kaip ir visa kita čia, **jokių garso failų neturi**:
-melodija — kvadratinė banga, bosas — trikampė, būgnai — triukšmo pliūpsniai. Natos tiesiog
-surašytos ranka. Daina užrašoma trimis eilutėmis aštuntinių tinklelyje:
+Pauzė sustabdo įrašą toje pačioje vietoje, dūžis ir finišas — nutildo, kad būtų girdėti
+pats dūžis ar finišo melodija. Įjungus **♫** pradžios ekrane, pjesės pradžia pagrojama
+6 sekundes — kad girdėtųsi, kas įjungta.
 
-```js
-{ name: 'Džiaugsmo odė', bpm: 122, plays: 3,
-  lead:  'e5 -  e5 -  f5 -  g5 - | ...',   // melodija
-  bass:  'c3 .  e3 .  g2 .  e3 . | ...',   // bosas
-  drums: 'k .  s .  k .  s . | ...'        // k bosinis būgnas, s būgnelis, h lėkštė
-}
+**Bėgant įrašas nebegreitėja.** Sintezatorius kadaise paskubėdavo kartu su Lota, bet
+įrašas taip negali: `playbackRate` orkestrui pakelia ir toną, ir Grieg'as virsta animaciniu
+filmuku. `Music.setRate()` liko tuščias — jį vis dar kviečia lygio kodas kas kadrą.
+
+### Failų repozitorijoje nėra
+
+Įrašai sveria ~10,6 MB, ir git istorijai jų nereikia, tad `/web/audio/*.m4a` yra
+`.gitignore` sąraše. Po `git clone` muzikos nebus, kol nepaleisi:
+
+```sh
+cd web/audio && ./fetch.sh
 ```
 
-`.` — pauzė, `-` — pratęsia prieš tai buvusią natą dar vienam aštuntiniui, `|` — taktos
-brūkšnys (skaitytojui, ne kodui). Natos rašomos `c5`, `fs5` (diezas), `bb4` (bemolis).
-Bosas ir būgnai sukasi kiekvienas savo ilgiu, tad vienos taktos būgnai po aštuonių taktų
-melodija patys grįžta į vietą; **melodijos ilgis nusako, kada pjesė baigiasi**. Menuetas
-yra trimis ketvirtinėmis, todėl jo taktas — šeši aštuntiniai (`beats: 6`), o būgnų eilutė
-irgi šešių. Naują pjesę pakanka įrašyti į `SONGS` masyvą — daugiau niekur nieko keisti
-nereikia.
+Skriptas parsisiunčia originalus iš tų pačių Wikimedia Commons adresų ir perkoduoja juos
+lygiai taip pat (patikrinta: išeina baitas į baitą tie patys failai). Reikia `curl` ir
+`ffmpeg`. **Be failų žaidimas veikia lygiai taip pat, tik tyliai** — `js/music.js`
+pabando visą lentyną ir nutyla, o ne blaškosi per aštuonis 404 per sekundę.
+
+### Kodėl `.m4a`, o ne `.ogg`
+
+Parsisiunčiami failai yra ogg ir flac, bet lentynoje guli AAC (`.m4a`), nes **iPhone
+Safari nedekoduoja Ogg Vorbis**. Žaidimas daugiausia žaidžiamas telefone, tad ogg lentyna
+ten būtų tiesiog tylėjusi ir niekas to nebūtų pasakęs. AAC groja visur, o Apple
+įrenginiuose jis gimtasis. Suvedus į mono, 64 kbps, failai sumažėja maždaug perpus. Abu
+*Nachtmusik* failai yra 48 kbps, nes jų originalai jau buvo maždaug tokie — koduoti
+aukščiau reikštų eikvoti baitus detalėms, kurių ten nėra.
+
+### Vienodas garsumas
+
+Aštuoni įrašai iš aštuonių šaltinių atėjo **beveik 18 dB skirtingo garsumo**: Grieg'as
+kirto per viršų (+1,2 dBTP), o vienas Mozartas buvo toks tylus, kad dingdavo po garso
+efektais — grojaraščiui apsivertus muzika šokteldavo. Dabar visi suvesti į **-18 LUFS**
+(EBU R128, du praėjimai): tai lygis, kuriame muzika groja *po* kažkuo kitu. Sklaida nuo
+18,3 dB sumažėjo iki 2,6 dB, ir niekas nebekerta per viršų. Tai daroma vieną kartą,
+`fetch.sh` metu, o ne žaidimo eigoje.
+
+### Svarbu ne tik licencija, bet ir kas groja
+
+Lentynoje buvo Menuetas G-dur (BWV Anh. 114) — licencija nepriekaištinga (CC0), bet grojo
+jį *Gooch Synthetic Woodwind*: keturių balsų **kvadratinių bangų** sintezatorius iš 1970-ųjų
+PLATO sistemos. Tai buvo lygiai tas skambesys, dėl kurio šios lentynos apskritai imtasi.
+Jį pakeitė Vivaldi *Pavasaris*, grojamas tikro orkestro. Renkantis įrašą tikrinti reikia
+abu dalykus: ir licenciją, ir kas iš tikrųjų groja.
+
+Visą grojaraštį groja **vienas `<audio>` elementas**, kuriam keičiamas `src`. Iš anksto
+neužkraunama nieko (`preload = 'none'`). Prieš dedant įrašą į lentyną klausiama
+`canPlayType()` — ko naršyklė nedekoduoja, tą praleidžia.
+
+Naują pjesę reikia įrašyti į `RECORDINGS` masyvą (`js/music.js`), o failą — į `fetch.sh`:
+**pirma patikrinus to įrašo licenciją** ir įrašius ją į `audio/CREDITS.md`.
 
 ## Pauzės meniu
 
@@ -874,7 +917,8 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | Failas | Ką daro |
 |---|---|
 | `js/util.js` | matematika, spalvos, `localStorage`, WebAudio garsai |
-| `js/music.js` | aštuonios klasikos pjesės (viešas naudojimas) ir jas grojantis WebAudio grotuvas — grojaraštis maišomas kas paleidimą |
+| `js/music.js` | grojaraštis: aštuoni klasikos įrašai iš `audio/`, grojami vieno `<audio>` elemento — maišomas kas paleidimą |
+| `audio/` | `fetch.sh` (parsisiunčia įrašus) + `CREDITS.md` su licencijomis; patys `.m4a` į git nededami |
 | `js/lota.js` | Lotos piešimas (bėgimas / šuolis / pasilenkimas / sėdėjimas) + visos aprangos |
 | `js/props.js` | ~130 pirmo lygio kliūčių, platformų ir dekoracijų piešiniai + jų natūralūs dydžiai |
 | `js/props2.js` | ~70 antro lygio piešinių: viešbutis, paplūdimys, tiltas, jūros dugnas, urvas + `drawFox()` |
@@ -911,8 +955,9 @@ Dažniausiai keičiami dalykai:
   `buildDuct()` (`js/level.js`), vamzdžio vaizdas — `BRANCHES.upstairs.duct` (`js/zones.js`).
   Lovos plotis (`bw`) valdo, koks platus yra nusileidimo langas; `BED_TOP` — kiek anksti
   reikia atsispirti
-- **Dainos** — `SONGS` (`js/music.js`): `bpm`, `lead`, `bass`, `drums`; bendras garsumas —
-  `Music.VOL`, greitėjimas bėgant — `Music.setRate()`
+- **Dainos** — `RECORDINGS` (`js/music.js`): failas, pavadinimas, kompozitorius; garsumas —
+  `Music.VOL` (0–1, tai `<audio>` elemento `volume`), pradžios ekrano pavyzdžio ilgis —
+  `preview()` laikmatis. Naujo įrašo licencija rašoma į `audio/CREDITS.md`
 - **Kur pradžios ekrane sėdi Lota** — `lobbyFocus` ir `lobbySize` (`js/game.js`,
   `resize()`): gulsčiame ekrane mygtukai užima vidurį, tad ji, jos kilimėlis ir lygio
   numeris nukeliauja į kairį kraštą ir, jei ten ankšta, susitraukia; stačiame ekrane
