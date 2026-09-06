@@ -60,7 +60,9 @@ const UI = {
       if (go) go();
     };
     $('btnPremiumTag').onclick = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.startFilm('lobby'); };
-    $('btnPremium').onclick   = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.startFilm('lobby'); };
+    /* the Premium page's own two buttons: the film, and the page behind it */
+    $('btnPremWatch').onclick = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.startFilm('lobby'); };
+    $('btnPremOpen').onclick  = () => { Sfx.init(); Sfx.resume(); Sfx.click(); Premium.open('lobby'); };
     $('btnPremiumBack').onclick = () => { Sfx.click(); Premium.close(); };
     $('btnPremiumFilm').onclick = () => { Sfx.click(); Premium.startFilm('lobby'); };
     $('btnSkipPremium').onclick = () => { Sfx.click(); Premium.endFilm(); };
@@ -207,6 +209,11 @@ const UI = {
 
   /** re-dress the overlay for whichever page is now under it */
   lobbyPageChanged() {
+    const prem = Game.onPremiumPage();
+    $('screen-lobby').classList.toggle('premium-page', prem);
+    this.pageDots();
+    if (prem) return this.premiumPageChanged();
+
     const level = Game.lobbyLevel(), L = Levels.get(level);
     const open = Levels.unlocked(level);
 
@@ -215,9 +222,6 @@ const UI = {
     $('lobbyWallet').innerHTML = purse;
     $('lobbyWallet').classList.toggle('hidden', !purse);
     document.querySelector('.lobby-foot').classList.toggle('solo', !purse);
-    /* the extension lives one swipe past the last level that exists */
-    $('btnPremium').classList.toggle('hidden', Game.lobbyPage !== LEVELS.length - 1);
-
     const play = $('btnPlay'), skins = $('btnSkins'), note = $('lobbyLock');
     play.classList.toggle('shut', !open);
     skins.classList.toggle('shut', !open);
@@ -272,20 +276,34 @@ const UI = {
       $('lobbyBest').innerHTML = 'Užrakinta';
     }
 
-    /* arrows + dots */
+  },
+
+  /** The extension's own page. It is the last stop on the same strip, so it
+      keeps the logo, the arrows and the dots — and drops everything that
+      belongs to a level, because there is no level here to play. */
+  premiumPageChanged() {
+    $('lobbySub').textContent = 'Kita knygos pusė · dar 200 lygių';
+  },
+
+  /* arrows + dots. The strip is one page longer than the game has levels:
+     the last dot is Premium, and it is drawn as a star rather than a level
+     that has not been earned yet. */
+  pageDots() {
     $('btnPagePrev').classList.toggle('off', Game.lobbyPage <= 0);
-    $('btnPageNext').classList.toggle('off', Game.lobbyPage >= LEVELS.length - 1);
+    $('btnPageNext').classList.toggle('off', Game.lobbyPage >= Game.lobbyPages() - 1);
     const dots = $('lobbyDots');
     dots.innerHTML = '';
-    LEVELS.forEach((lv, i) => {
+    for (let i = 0; i < Game.lobbyPages(); i++) {
       const b = document.createElement('i');
-      if (i === Game.lobbyPage) b.className = 'on';
-      else if (!Levels.unlocked(lv.n)) b.className = 'shut';
+      if (i === Game.premiumPage()) b.className = 'prem';
+      else if (!Levels.unlocked(i + 1)) b.className = 'shut';
+      if (i === Game.lobbyPage) b.className += ' on';
       dots.appendChild(b);
-    });
+    }
   },
 
   play() {
+    if (Game.onPremiumPage()) return;
     const level = Game.lobbyLevel(), L = Levels.get(level);
     if (!Levels.unlocked(level)) return this.refuse(level);
     Sfx.click();
@@ -371,6 +389,7 @@ const UI = {
     this.begin(level, mode);
   },
   openSkins() {
+    if (Game.onPremiumPage()) return;
     const level = Game.lobbyLevel();
     if (!Levels.unlocked(level)) return this.refuse(level);
     Sfx.click(); this.showSkins(level);

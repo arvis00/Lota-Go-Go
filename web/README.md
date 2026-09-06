@@ -44,6 +44,7 @@ neparodys, kad atnaujinimas suveikė.
 | Eiti kairėn / dešinėn (**tik boso kovoje**) | mygtukai **◀ ▶** apačioje kairėje | `←` / `→` / `A` / `D` |
 | Pauzė | mygtukas **II** viršuje dešinėje | `Esc` / `P` |
 | Praleisti filmuką (boso lygyje, Premium) | mygtukas **PRALEISTI** | `Esc` |
+| Kitas / ankstesnis pradžios ekranas (įskaitant Premium) | nubraukimas į šoną arba ‹ › | `←` / `→` |
 | Praleisti kirpyklos sceną | mygtukas **PRALEISTI** po **II** | `Esc` |
 | Kitas / ankstesnis lygis (pradžios ekrane) | swipe į kairę / dešinę arba **‹ ›** | `←` / `→` |
 
@@ -250,32 +251,89 @@ Paveikslėliai piešiami taip pat, kaip visa kita — `js/brief.js`, po drobę k
 filmukas. Boso lygio pradžios ekrane ir jo spintoje **nebėra užrašo „čia nieko
 nerenkama"** — tuščia piniginė tiesiog nerodoma.
 
+## Pradžios ekranai — kiekvienas lygis savo vietoje
+
+Pradžios ekranas yra juosta puslapių, per kuriuos einama **nubraukiant į šoną** (arba
+`←` / `→`, arba ‹ › rodyklėmis). Anksčiau visi keturi buvo **tas pats violetinis kambarys**
+su kitu numeriu ant sienos. Dabar kiekvienas lygis turi savo vietą, ir ta vieta yra ta,
+iš kurios lygis prasideda (`js/rooms.js`):
+
+| Puslapis | Kur tai | Kas jame |
+|---|---|---|
+| 1 · Namai | jos svetainė, vakaras prieš kelionę | supakuotas lagaminas su bilietu, pavadėlis ant kabliuko, **LONDON** plakatas, toršeras ir jo šviesos dėmė, dubenėlis su užrašu LOTA |
+| 2 · Viešbutis | apartamentai virš vakarėjančios jūros | balkonas per pusę sienos: saulė ant vandens, žuvėdros, tiltas, o ant iškyšulio — to paties lygio **pušys**; vėjyje plevėsuojančios užuolaidos, smėlis ant lentų, kriauklės ir jūrų žvaigždė, paplūdimio rankšluostis vietoj kilimo |
+| 3 · Observatorija | palėpė po stiklu, nutaikyta į dangų | lėtai sukantis žvaigždynas, retkarčiais perbėganti kometa, didelis žemas Mėnulis, žalvarinis teleskopas, besisukantis **orerijus**, obelaitė po stiklu (sodas ir šiltnamis, parsinešti į vidų); kilimo vietoje — žvaigždžių žemėlapis |
+| 4 · Veterinarija | laukiamasis, iš kurio ji ir bėga | mėtinės plytelės, mirksinti lempa, plastikinės kėdės, registratūra su skambučiu, atviras narvelis, laikrodis su judančia sekundine — ir gale **IŠĖJIMAS** su žalia iškaba, o už matinio stiklo kažkas lėtai praeina pirmyn ir atgal |
+
+Kilimėlis, numeris ant sienos ir tai, **kas kyla jai virš galvos** (širdelės namie,
+burbuliukai prie jūros, žvaigždutės po kupolu, o veterinarijoje — nieko), yra kiekvienoje
+vietoje savi. Užrakintas puslapis vis dar tas pats: iš vietos ištraukiama spalva, ant jos
+uždedama spyna, o ant kilimėlio lieka tik jos antkaklis.
+
+**Perėjimas sako, kur pateko.** Kol vieta slenka pro šalį, virš siūlės atplaukia kortelė su
+lygio pavadinimu ir numeriu (`Game.drawPageCard()`), ir dingsta, kai vaizdas nurimsta.
+
 ## Premium (kol kas tik pristatymas)
 
 Tikro pratęsimo, mokėjimo ar trijų lygių bandymo **nėra ir nekuriama** — yra tik reklama.
 
-Pradžios ekrano viršuje kairėje stovi **✦ PREMIUM** ženkliukas, o nubraukus iki boso lygio
-po *APRANGOS* atsiranda ir platus **✦ PREMIUM · +200 LYGIŲ** mygtukas. Abu paleidžia tą
-patį **~19 s filmuką** (`js/premium.js`), kurį galima praleisti (**PRALEISTI** / `Esc`):
+**Premium turi savo puslapį toje pačioje juostoje.** Boso lygio pradžios ekrane po
+*APRANGOS* **nebėra jokio Premium mygtuko** — vietoj jo nubraukiama dar kartą į šoną, ir už
+paskutinio lygio atsiveria atskiras **Premium pradžios ekranas**. Jis tyčia nėra kambarys:
+tai popierius. Kreidinis dangus, saulė, žolė, nutolstantis plytelių takas, aukso rėmelis
+aplink lapą su žvaigždutėmis kampuose, o apačioje — atversta knyga, iš kurios kyla lygiai.
+Ant jo tik du mygtukai — **▶ ŽIŪRĖTI FILMĄ** ir **KAS TEN VIDUJE** — ir keturios trumpos
+eilutės, ką duoda Premium. Paskutinis taškelis juostos apačioje piešiamas kitaip: jis
+tuščiaviduris, nes tai ne lygis.
 
-1. Lota — ta pati juoda šnaucerė — savo kambaryje pamato **knygą**;
-2. knyga atsiverčia, iš jos veržiasi spalvos, ir Lota **uraganu įsisuka į ją**;
-3. kita pusė **nupiešta kreidelėmis**: popierius, subraižytas dangus, saulė, gėlės — ir
-   pati Lota su ant jos primargintomis spalvomis;
-4. ji mato **EXIT duris** ir bėga jų link. Durys **nėra** kreidinės — tai tos pačios durys,
-   kaip lygiuose ir pradžios ekrane, ir tuo visa scena ir laikosi;
-5. po letenomis atsiranda žalia plytelė **LEVEL 1**, ji pažvelgia žemyn — ir plytelių
-   pasirodo daugiau. Lenta **išsiskleidžia**: penkios eilės po dešimt, **50 plytelių**
-   (ne visi 200), o už paskutinės vis dar stovi tos pačios EXIT durys;
-6. Lota **įsiurbiama į pirmą plytelę**;
-7. **mini žaidimai**: viktorina, atminties kortelės, labirintas ir kitokios kliūtys —
-   kiekvienas su savo fonu ir kiekviename **Lota**;
-8. smūgis, žiedai, ir vaizdas nusileidžia ant **Premium ekrano**.
+Viršuje kairėje esantis **✦ PREMIUM** ženkliukas **sumažintas**: iš ryškaus gradientinio
+ženklo jis tapo mažu, permatomu, aukso apvadu apvestu ženkliuku, kuris nebeužgožia paties
+lygio ir įsijungia tik jį paspaudus. Premium puslapyje jo iš viso nėra — ten jis nieko
+nesakytų.
 
-Premium ekranas turi savo, ne pradžios ekrano, foną (irgi pieštą: atversta knyga, iš jos
-kylantys spinduliai ir plytelės), o viduryje — kas duodama: **+200 lygių**, mini žaidimai,
-istorija ir **viena nemokama apranga**. Apačioje yra vieta mokėjimui ir vieta trijų lygių
-bandymui; abu mygtukai kol kas sako *netrukus* ir nieko nedaro.
+### Filmukas
+
+`js/premium.js`, **~115 s** (buvo 19), praleidžiamas bet kada (**PRALEISTI** / `Esc`), o
+apačioje eina plona juostelė, rodanti, kiek liko.
+
+**Viskas jame nupiešta ranka.** Ne stilizuota — nupiešta: kiekviena linija dreba ir
+peršoka į naują vietą **7,5 karto per sekundę** (`boil()`), kaip verda tušas ranka pieštame
+animaciniame filme. Nėra nė vieno tikro stačiakampio ar apskritimo: dėžutės, ratai ir
+kontūrai eina per `hbox()`, `hcircle()`, `hpath()` ir `hfill()`, spalva dedama kreidele
+pro kraštus, o po visu tuo — popieriaus grūdas. Nė viena scena neatrodo kaip žaidimo
+įrašas, ir tai sąmoninga: pratęsimas yra kitas pasaulis.
+
+Scenos ir kiek kiekviena trunka:
+
+| s | Kas vyksta |
+|---|---|
+| 0–6 | **tuščias lapas piešia pats save**: pieštukas nubrėžia grindis, langą, lentyną, kilimą ir toršerą, ir tik tada spalvą |
+| 6–13 | Lota jame **nuobodžiauja**; prariedėjęs kamuoliukas sustoja |
+| 13–19 | lentynoje **kažkas šviečia**; virš jos galvos iškyla mintis su klaustuku |
+| 19–25 | ji **nueina**, knyga nukrenta nuo lentynos |
+| 25–31 | knyga **atsiverčia pati**, iš jos spalva rėplioja per visą lapą |
+| 31–37 | ir **įtraukia** — ji sukasi, mažėja, baltas kadras |
+| 37–44 | **kita pusė**: ji nukrenta į popierinį pasaulį ir apsidairo |
+| 44–50 | **EXIT durys** (vienintelis nekreidinis daiktas kadre) ir jos žvilgsnis į jas |
+| 50–56 | po letenomis **LEVEL 1** |
+| 56–66 | lenta **išsiskleidžia iki 200 plytelių**, o skaičius dešinėje **suskaičiuojamas garsiai**: 1 → 200. Durys tolsta |
+| 66–71 | ji **įsiurbiama** į pirmą plytelę |
+| 71–91 | **keturi mini žaidimai po 5 s**: viktorina (klausimas, ji galvoja, atsako, varnelė), atminties kortelės (verčiamos poromis, sutapusios apvedamos), labirintas (kelias braižomas žingsnis po žingsnio iki žvaigždutės), kliūtys (svyruoklės ir dingstančios plokštės) |
+| 91–99 | **komikso juosta**: keturi kadrai, sujungti raudona gija — mini žaidimai yra **viena istorija** |
+| 99–107 | **dovanų dėžė**: iš jos pakyla Lota su knygos apranga |
+| 107–115 | lapas užsiveria, nusileidžia **PREMIUM**, ir po juo po vieną prisirašo keturios eilutės |
+
+Kiekviena scena rodoma tol, kol suprantama, kas joje vyksta — mini žaidimui skirta 5 s
+vietoj buvusių 1,15 s, nes per sekundę matyti tik spalvos blyksnis, o ne žaidimas.
+Pardavinėjama vaizdu, ne šūkiu: nauda parodoma tuo, kas kadre vyksta, ir tik pačioje
+pabaigoje užrašoma keturiomis trumpomis eilutėmis ir vienu pažadu — *Tik kitoje knygos
+pusėje*.
+
+Premium ekranas (tas, kuris po filmuko) turi savo, ne pradžios ekrano, foną (irgi pieštą:
+atversta knyga, iš jos kylantys spinduliai ir plytelės), o viduryje — kas duodama: **+200
+lygių**, mini žaidimai, istorija ir **viena nemokama apranga**. Apačioje yra vieta
+mokėjimui ir vieta trijų lygių bandymui; abu mygtukai kol kas sako *netrukus* ir nieko
+nedaro.
 
 ## Aprangos
 
@@ -934,7 +992,8 @@ skaniukais, antras — žaisliukais, trečias — ir vienais, ir kitais (premija
 | `js/level.js` | trasos generatorius + fizikos konstantos (`PHYS`) |
 | `js/game.js` | variklis: įvestis, fizika, kamera, piešimas |
 | `js/brief.js` | boso lygio įžangos lapas: keturios judančios kortelės su paaiškinimais |
-| `js/premium.js` | Premium pristatymas: ~19 s filmukas (knyga, kreidinis pasaulis, 50 plytelių, mini žaidimai) ir Premium ekrano fonas |
+| `js/rooms.js` | keturi pradžios ekranų kambariai (namai, viešbutis, observatorija, veterinarija) ir Premium puslapis už jų |
+| `js/premium.js` | Premium pristatymas: ~115 s ranka pieštas filmukas (`boil()` ir `h*` piešimo įrankiai), Premium ekrano fonas |
 | `js/ui.js` | ekranai, HUD (boso energija ir persekiotojų juosta taip pat), aprangų parduotuvė, pauzės meniu, *Taip / Ne* langelis |
 | `dev/bgs.html` | visų vietų fonai vienoje lentelėje, po kelis kadrus iš eilės — kad kartojimasis matytųsi iš karto (atskiras puslapis) |
 | `dev/bot.js` | testinis botas (žaidimo neįkeliamas) |
@@ -958,6 +1017,16 @@ Dažniausiai keičiami dalykai:
 - **Dainos** — `RECORDINGS` (`js/music.js`): failas, pavadinimas, kompozitorius; garsumas —
   `Music.VOL` (0–1, tai `<audio>` elemento `volume`), pradžios ekrano pavyzdžio ilgis —
   `preview()` laikmatis. Naujo įrašo licencija rašoma į `audio/CREDITS.md`
+- **Pradžios ekrano vietos** — `Rooms.home/hotel/observatory/vet` (`js/rooms.js`); kas jose
+  bendra (kilimėlis, numeris, mintys virš galvos, vinjetė) — `Rooms.stage()`, o ką kiekviena
+  grąžina, aprašo `spec`: `floorY`, `mat`, `matKind`, `mood`, `numCol`, `vignette`
+- **Premium puslapis juostoje** — `Rooms.premium()` (`js/rooms.js`), puslapių skaičius —
+  `Game.lobbyPages()` / `Game.premiumPage()` (`js/game.js`), o kas rodoma virš jo —
+  `UI.premiumPageChanged()` ir `.premium-page` taisyklės (`css/style.css`)
+- **Kortelė perėjimo metu** — `Game.drawPageCard()` (`js/game.js`)
+- **Filmuko ritmas** — `PF` (`js/premium.js`): kiekviena scena yra sekundė, nuo kurios ji
+  prasideda; `PF.GAME_EACH` — kiek trunka vienas mini žaidimas. Rankos drebėjimo dažnis —
+  `boil()`
 - **Kur pradžios ekrane sėdi Lota** — `lobbyFocus` ir `lobbySize` (`js/game.js`,
   `resize()`): gulsčiame ekrane mygtukai užima vidurį, tad ji, jos kilimėlis ir lygio
   numeris nukeliauja į kairį kraštą ir, jei ten ankšta, susitraukia; stačiame ekrane

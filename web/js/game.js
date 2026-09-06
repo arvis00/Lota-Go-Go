@@ -254,7 +254,7 @@ const Game = {
   lobbyLevel() { return this.lobbyPage + 1; },
 
   gotoLobbyPage(n) {
-    n = clamp(n, 0, LEVELS.length - 1);
+    n = clamp(n, 0, this.lobbyPages() - 1);
     if (this.state !== 'lobby' || n === this.lobbyPage || this.lobbySlide < 1) return;
     this.lobbyFrom = this.lobbyPage;
     this.lobbyPage = n;
@@ -1607,8 +1607,16 @@ const Game = {
   },
 
   /* ---------- lobby scene ---------- */
-  /** The strip: the settled page, plus the one sliding past it. Each level
-      has the same room — a locked one is simply the colour taken out of it. */
+  /** How many pages the strip has: one per level, and then Premium — which
+      is not a level and not a room, and is reached the same way as one. */
+  lobbyPages() { return LEVELS.length + 1; },
+  premiumPage() { return LEVELS.length; },
+  onPremiumPage() { return this.lobbyPage === this.premiumPage(); },
+
+  /** The strip: the settled page, plus the one sliding past it. Every level
+      is a different place now, so the slide is also the announcement that
+      you have arrived somewhere else — a card rides in over the seam with
+      the name of whatever is now under the buttons. */
   renderLobby() {
     const ctx = this.ctx, VW = this.VW;
     const k = this.lobbySlide;
@@ -1618,23 +1626,68 @@ const Game = {
     const oFrom = -e * VW * dir;
     this.drawLobbyRoom(oFrom, this.lobbyFrom);
     this.drawLobbyRoom(oFrom + dir * VW, this.lobbyPage);
-    /* a seam of shadow so the two rooms read as separate places */
+    /* a seam of shadow so the two places read as separate places */
     const seam = oFrom + (dir > 0 ? VW : 0);
     ctx.save(); ctx.globalAlpha = .5;
     const g = ctx.createLinearGradient(seam - 26, 0, seam + 26, 0);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, 'rgba(0,0,0,.75)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(seam - 26, 0, 52, this.VH); ctx.restore();
+    this.drawPageCard(k, dir);
+  },
+
+  /** the name of the place you have just swiped into, carried in on the
+      slide and gone again by the time it has settled */
+  drawPageCard(k, dir) {
+    const ctx = this.ctx, VW = this.VW, VH = this.VH;
+    const prem = this.lobbyPage === this.premiumPage();
+    const L = prem ? null : Levels.get(this.lobbyPage + 1);
+    const title = prem ? '✦ PREMIUM' : L.name;
+    const sub = prem ? 'Kita knygos pusė' : (this.lobbyPage + 1) + ' lygis';
+    /* in over the first third, out over the last quarter */
+    const a = Math.min(inv(k, 0.06, 0.38), inv(1 - k, 0.0, 0.22));
+    if (a <= 0) return;
+    const y = VH * 0.30;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.translate(VW / 2 + (1 - smooth(k)) * dir * 90, y);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    /* a plate behind it, or half these rooms would swallow the words */
+    const fs = Math.round(VH * 0.062);
+    ctx.font = '900 ' + fs + 'px system-ui, sans-serif';
+    const w = Math.max(ctx.measureText(title).width, VW * 0.24) + 54;
+    ctx.save(); ctx.globalAlpha = a * 0.72;
+    fillRR(ctx, -w / 2, -fs * 1.15, w, fs * 2.35, 18, 'rgba(14,8,26,.86)');
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = a * 0.8;
+    rr(ctx, -w / 2, -fs * 1.15, w, fs * 2.35, 18);
+    ctx.strokeStyle = prem ? 'rgba(255,216,112,.8)' : 'rgba(255,255,255,.26)';
+    ctx.lineWidth = 2.4; ctx.stroke(); ctx.restore();
+    ctx.fillStyle = prem ? '#ffd870' : '#fff4e0';
+    ctx.fillText(title, 0, -fs * 0.22);
+    ctx.font = '900 ' + Math.round(VH * 0.03) + 'px system-ui, sans-serif';
+    ctx.fillStyle = prem ? 'rgba(255,216,112,.75)' : 'rgba(255,255,255,.6)';
+    ctx.fillText(sub.toUpperCase(), 0, fs * 0.72);
+    ctx.restore();
   },
 
   drawLobbyRoom(ox, page) {
     const ctx = this.ctx, VW = this.VW, VH = this.VH;
     if (ox <= -VW || ox >= VW) return;
+    /* the last page is the extension, and it is not a room */
+    if (page === this.premiumPage()) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ox, 0, VW, VH); ctx.clip();
+      ctx.translate(ox, 0);
+      Rooms.premium(this);
+      ctx.restore();
+      return;
+    }
     const level = page + 1;
     const locked = !Levels.unlocked(level);
     ctx.save();
     ctx.beginPath(); ctx.rect(ox, 0, VW, VH); ctx.clip();
     ctx.translate(ox, 0);
-    this.drawRoom(level, locked);
+    Rooms.draw(this, level, locked);
     ctx.restore();
 
     if (locked) {
@@ -1643,7 +1696,7 @@ const Game = {
       ctx.beginPath(); ctx.rect(ox, 0, VW, VH); ctx.clip();
       ctx.globalCompositeOperation = 'saturation';
       ctx.fillStyle = 'hsl(0,0%,50%)'; ctx.fillRect(ox, 0, VW, VH);
-      /* lift the blacks a little so it still reads as the same room,
+      /* lift the blacks a little so it still reads as the same place,
          only with the colour taken out of it */
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = 'rgba(226,226,236,.13)'; ctx.fillRect(ox, 0, VW, VH);
@@ -1651,112 +1704,6 @@ const Game = {
       ctx.restore();
       this.drawBigLock(ox + VW * this.lobbyFocus, VH * 0.345, level);
     }
-  },
-
-  /** one home page — the same room every time, so a locked level looks
-      exactly like the one you already know, only shut */
-  drawRoom(level, locked) {
-    const ctx = this.ctx, VW = this.VW, VH = this.VH, t = this.t;
-    const floorY = VH * 0.56;
-    const pal = { far: '#3a2b56', mid: '#4d3a70' };
-    ctx.fillStyle = pal.far; ctx.fillRect(0, 0, VW, VH);
-    ctx.save(); ctx.globalAlpha = .3;
-    for (let x = 0; x < VW; x += 56) for (let y = 0; y < floorY; y += 60) {
-      ctx.save(); ctx.translate(x + ((y / 60) % 2) * 28, y);
-      ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(9, -7, 18, 8);
-      ctx.quadraticCurveTo(9, 4, 0, 8); ctx.fillStyle = pal.mid; ctx.fill(); ctx.restore();
-    }
-    ctx.restore();
-
-    /* window with a night sky */
-    const wx = VW * 0.70, wy = VH * 0.12, ww = VW * 0.19, wh = VH * 0.28;
-    fillRR(ctx, wx, wy, ww, wh, 10, '#c9962c');
-    ctx.save(); rr(ctx, wx + 8, wy + 8, ww - 16, wh - 16, 6); ctx.clip();
-    const g = ctx.createLinearGradient(0, wy, 0, wy + wh);
-    g.addColorStop(0, '#1d2b55'); g.addColorStop(1, '#4a3a7a');
-    ctx.fillStyle = g; ctx.fillRect(wx, wy, ww, wh);
-    circle(ctx, wx + ww * 0.7, wy + wh * 0.28, 16, '#fff3c4');
-    for (let i = 0; i < 14; i++) {
-      const r = makeRng(i * 53 + 3);
-      ctx.save(); ctx.globalAlpha = .4 + Math.sin(t * 2 + i) * .35;
-      circle(ctx, wx + 12 + r() * (ww - 24), wy + 12 + r() * (wh - 24), 1.8, '#fff'); ctx.restore();
-    }
-    BG.clouds(ctx, ww, wh, t * 8, t, 'rgba(255,255,255,.35)', wy + wh * 0.55, 0.5);
-    ctx.restore();
-    line(ctx, wx + ww / 2, wy + 8, wx + ww / 2, wy + wh - 8, '#c9962c', 6);
-
-    /* the shelf carries what this level pays out: treats, toys, or both */
-    fillRR(ctx, VW * 0.07, VH * 0.24, VW * 0.19, 12, 4, '#8a6440');
-    const picks = Levels.get(level).picks;
-    if (level === 4) {
-      /* nothing is collected on the boss level — the prize sits there instead */
-      for (let i = 0; i < 3; i++) {
-        const a = t * 0.7 + i * 2.1;
-        ctx.save(); ctx.globalAlpha = .9;
-        fillEll(ctx, VW * 0.09 + i * 34, VH * 0.24 - 14 + Math.sin(a) * 3, 8, 5,
-          'hsla(' + ((i * 90 + t * 46) % 360) + ',90%,72%,1)', a * .3);
-        ctx.restore();
-      }
-    } else {
-      for (let i = 0; i < 3; i++) {
-        const x = VW * 0.09 + i * 34, y = VH * 0.24 - 12;
-        const toy = picks === 't' || (picks === 'bt' && i % 2 === 1);
-        if (toy) Levels.toyBall(ctx, x, y - 2, 11, t, i); else this.drawBone(x, y, 0.72);
-      }
-    }
-
-    /* floor + rug */
-    ctx.fillStyle = '#6b4a2c'; ctx.fillRect(0, floorY, VW, VH - floorY);
-    fillRR(ctx, 0, floorY - 10, VW, 14, 0, '#8a6440');
-    ctx.save(); ctx.globalAlpha = .35;
-    for (let x = 0; x < VW; x += 90) line(ctx, x, floorY, x, VH, '#4f351d', 3);
-    ctx.restore();
-    /* her corner of the room: dead centre when there is room for her there,
-       off to one side when the buttons have taken the middle */
-    const fx = VW * this.lobbyFocus, side = this.lobbyFocus < 0.45;
-    const sz = side ? this.lobbySize : 1;
-    const rugR = side ? VW * 0.24 * sz : VW * 0.3;
-    fillEll(ctx, fx, floorY + 46, rugR, 40, '#8a4a63');
-    ctx.save(); ctx.globalAlpha = .5; fillEll(ctx, fx, floorY + 46, rugR * 0.8, 30, '#c96f8a'); ctx.restore();
-
-    /* the level's number, painted on the wall above the rug */
-    ctx.save(); ctx.globalAlpha = .12;
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '900 ' + Math.round(VH * 0.3 * sz) + 'px ' + 'system-ui, sans-serif';
-    ctx.fillText(String(level), fx, floorY - VH * 0.13);
-    ctx.restore();
-
-    /* Lota, sitting and being cute. A locked room is one she has not been
-       let into yet, so she only sits on the page you actually own. */
-    if (!locked) {
-      const cycle = (t * 0.5) % 4;
-      drawLota(ctx, fx, floorY + 24, {
-        state: 'sit', t: t, skin: Save.data.skin, scale: 1.42 * sz,
-        face: 'calm', paw: cycle > 2.4 && cycle < 3.4,
-        tilt: Math.sin(t * 0.8) * 0.13
-      });
-      for (let i = 0; i < 3; i++) {
-        const ph = (t * 0.35 + i * 0.33) % 1;
-        ctx.save(); ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.55;
-        const hx = fx + 48 * sz + Math.sin(ph * 6 + i) * 12, hy = floorY - 60 * sz - ph * 130;
-        ctx.translate(hx, hy); ctx.scale(1.1, 1.1);
-        ctx.beginPath();
-        ctx.moveTo(0, 4); ctx.bezierCurveTo(-7, -3, -3, -9, 0, -4);
-        ctx.bezierCurveTo(3, -9, 7, -3, 0, 4); ctx.fillStyle = '#ff8fb0'; ctx.fill();
-        ctx.restore();
-      }
-    } else {
-      /* an empty rug, with her collar left on it */
-      ctx.save(); ctx.globalAlpha = .8;
-      ctx.beginPath(); ctx.ellipse(fx, floorY + 40, 26, 9, -0.1, 0, TAU);
-      ctx.strokeStyle = '#8a4a63'; ctx.lineWidth = 7; ctx.stroke();
-      circle(ctx, fx + 2, floorY + 49, 4.4, '#c9962c');
-      ctx.restore();
-    }
-
-    const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.35, VW / 2, VH / 2, VH);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,16,.55)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
   },
 
   /** the padlock hanging over a level that has not been earned */
